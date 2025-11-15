@@ -1,0 +1,64 @@
+# Plantilla .gitignore básica
+
+# Sistemas operativos
+.DS_Store
+Thumbs.db
+
+# IDE / editores
+.vscode/
+.idea/
+*.suo
+*.user
+*.userprefs
+*.iml
+
+# Compilados / binarios
+bin/
+obj/
+build/
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+*.pdb
+*.class
+
+# Node.js
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Logs y temporales
+*.log
+*.tmp
+*.temp
+*.swp
+
+# Archivos de empaquetado / dependencias
+*.zip
+*.tar.gz
+
+# Archivos de sistema y de entorno
+.env
+.env.local
+
+# Proyectos Unity (si aplica)
+[Ll]ibrary/
+[Tt]emp/
+Obj/
+Build/
+Builds/
+UserSettings/
+MemoryCaptures/
+*.csproj
+*.unityproj
+*.sln
+*.pidb
+*.mdb
+*.opendb
+*.apk
+*.aab
