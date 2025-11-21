@@ -81,12 +81,12 @@ const styles: { [key: string]: React.CSSProperties } = {
     cursor: 'pointer',
   },
   options: {
-    display: 'flex', //Vertical stack con espacio entre ellos
+    display: 'flex',
     height: '200px',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'space-around',
-    margin: '40px 0',
+    margin: '10px 0',
   },
   actionButton: {
     padding: '15px 20px',

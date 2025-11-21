@@ -2,31 +2,30 @@
 import React, { useState } from 'react';
 import { Bienvenida } from './views/Bienvenida';
 import { MenuPrincipal } from './views/MenuPrincipal';
-import { LobbyPartidas } from './views/LobbyPartidas'; // Importado
+import { LobbyPartidas } from './views/LobbyPartidas';
+import { CrearPartida } from './views/CrearPartida';
+import { RankingHistorico } from './views/RankingHistorico'; // <-- Nuevo Import
 
 // --- Definición de Tipos ---
-// Nuevo tipo para manejar todas las posibles vistas del menú
+// Tipo unificado para controlar todas las vistas de la aplicación
 type AppView = 'welcome' | 'menu' | 'lobby' | 'ranking' | 'create_game' | 'game';
 
 interface UserSession {
   nickname: string;
   socketID: string;
-  // Otros datos de sesión...
 }
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
-  // Usamos el tipo AppView expandido
   const [currentView, setCurrentView] = useState<AppView>('welcome'); 
+  const [currentGameId, setCurrentGameId] = useState<string | null>(null); 
 
-  // --- 1. Función de Navegación Central ---
+  // --- Funciones de Manejo de Estado y Navegación ---
   const handleNavigation = (view: AppView) => {
     setCurrentView(view);
   };
 
-  // Función que simula el proceso de login exitoso
   const handleLoginSuccess = (nickname: string) => {
-    // En un entorno real, esta data vendría del POST /api/join o un servicio de autenticación
     setCurrentUser({ nickname, socketID: 'mock-socket-id-' + Math.random().toString(10) });
     setCurrentView('menu');
   };
@@ -34,19 +33,22 @@ const App: React.FC = () => {
   const handleLogout = () => {
     setCurrentUser(null);
     setCurrentView('welcome');
+    setCurrentGameId(null);
   };
 
-  // Función al unirse a una partida desde el lobby (navega a 'game')
   const handleJoinGameSuccess = (partidaId: string) => {
-    console.log(`Iniciando juego para ${partidaId}`);
-    setCurrentView('game');
-    // Aquí se pasaría el ID de partida al componente 'game'
+    setCurrentGameId(partidaId);
+    handleNavigation('game');
   };
 
+  const handleCreateGameSuccess = (partidaId: string) => {
+    setCurrentGameId(partidaId);
+    handleNavigation('game'); 
+  };
 
   let content;
 
-  // --- 2. Switch Case con todas las vistas ---
+  // --- Router principal (Switch Case) ---
   switch (currentView) {
     case 'welcome':
       content = <Bienvenida onLoginSuccess={handleLoginSuccess} />;
@@ -57,49 +59,51 @@ const App: React.FC = () => {
         content = <h1 style={{color: 'red'}}>Error de Sesión.</h1>;
         break;
       }
-      // Se pasa la función onNavigate al MenuPrincipal
       content = (
           <MenuPrincipal 
               currentUser={currentUser} 
               onLogout={handleLogout} 
-              onNavigate={handleNavigation} // ⬅️ Conecta los botones del menú al cambio de vista
+              onNavigate={handleNavigation}
           />
       );
       break;
 
     case 'lobby':
-        // Renderiza el componente de Lobby/Unirse a Partida
         content = (
             <LobbyPartidas 
-                onBack={() => handleNavigation('menu')} // Botón de regreso al menú
+                onBack={() => handleNavigation('menu')} 
                 onJoinSuccess={handleJoinGameSuccess} 
             />
         );
         break;
 
     case 'create_game':
-        // Vista para crear una partida nueva
         content = (
-            <div>
-                <h1 style={{color: 'yellow'}}>Vista: Crear Partida (POST /api/partidas)</h1>
-                <button onClick={() => handleNavigation('menu')}>Regresar al Menú</button>
-            </div>
+            <CrearPartida 
+                onBack={() => handleNavigation('menu')} 
+                onCreateSuccess={handleCreateGameSuccess} 
+            />
         );
         break;
 
     case 'ranking':
-        // Vista para ver el ranking histórico
+        // <-- Implementación del componente RankingHistorico -->
         content = (
-            <div>
-                <h1 style={{color: 'lightgreen'}}>Vista: Ranking Histórico (GET /api/ranking)</h1>
-                <button onClick={() => handleNavigation('menu')}>Regresar al Menú</button>
-            </div>
+            <RankingHistorico
+                onBack={() => handleNavigation('menu')} // Regresa al menú
+            />
         );
         break;
 
     case 'game':
       // Vista del juego en tiempo real
-      content = <h1 style={{color: 'orange'}}>Vista de Partida (En Desarrollo)</h1>;
+      content = (
+          <div>
+              <h1 style={{color: 'orange'}}>🕹️ Partida Activa</h1>
+              <p>Jugando como: {currentUser?.nickname}. Código de Partida: {currentGameId}</p>
+              <button onClick={() => handleNavigation('menu')} style={styles.backButton}>Abandonar Partida</button>
+          </div>
+      );
       break;
 
     default:
@@ -109,12 +113,15 @@ const App: React.FC = () => {
   return (
     <div className="App" style={styles.container}>
       {content}
+      {/* Indicador visual de la vista actual para depuración */}
+      {/* <div style={{position: 'absolute', bottom: 10, right: 10, fontSize: 12, color: '#aaa'}}>Vista: {currentView}</div> */}
     </div>
   );
 };
 
 export default App;
 
+// --- Estilos Globales ---
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     fontFamily: 'Arial, sans-serif',
@@ -127,4 +134,13 @@ const styles: { [key: string]: React.CSSProperties } = {
     justifyContent: 'center',
     color: 'white',
   },
+  backButton: {
+    padding: '10px 20px',
+    backgroundColor: '#FF9800',
+    color: 'white',
+    border: 'none',
+    borderRadius: '5px',
+    cursor: 'pointer',
+    marginTop: '20px',
+  }
 };
