@@ -1,57 +1,64 @@
-// client/src/views/MenuPrincipal.tsx
 import React, { useState, useEffect } from 'react';
+// Definir los tipos de vista para el componente
+type MenuViews = 'menu' | 'lobby' | 'ranking' | 'create_game' | 'game';
 
 interface UserSession {
-  nickname: string;
-  socketID: string;
+  nickname: string;
+  socketID: string;
 }
-
 
 interface MenuPrincipalProps {
-  currentUser: UserSession;
-  onLogout: () => void;
-  // onStartNewGame: () => void; // Para la siguiente fase
+  currentUser: UserSession;
+  onLogout: () => void;
+  // NUEVA PROP: Función para notificar al padre qué vista mostrar
+  onNavigate: (view: MenuViews) => void; 
 }
 
-export const MenuPrincipal: React.FC<MenuPrincipalProps> = ({ currentUser, onLogout }) => {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export const MenuPrincipal: React.FC<MenuPrincipalProps> = ({ currentUser, onLogout, onNavigate }) => { // ⬅️ Recibir la nueva prop
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
- 
-  
+  // ... (el resto del estado y la lógica)
 
-  const handleJoinGame = (partidaId: string) => {
-    // REQ-012: Aquí se enviaría el evento Socket.IO 'unirse_partida'
-    console.log(`Intentando unirse a la partida: ${partidaId} con ${currentUser.nickname}`);
-    // Navegar a la vista de Partida
-  };
-  
-  const handleNewGame = () => {
-      // Navegar a un formulario de 'Crear Partida' que haga POST a /api/partidas
-      console.log("Navegar a vista de creación de partida.");
-  };
+  const handleUnirsePartida = () => {
+      // Usa onNavigate para cambiar a la vista del Lobby
+      onNavigate('lobby'); 
+      console.log("Navegar a vista de lobby de partidas.");
+  }
+  
+  const handleNuevoJuego = () => {
+      // Usa onNavigate para cambiar a la vista de Crear Partida
+      onNavigate('create_game'); 
+      console.log("Navegar a vista de creación de partida.");
+  };
 
-  return (
-    <div style={styles.menuContainer}>
-      <h1>Menú Principal</h1>
-      <h2>Usuario: {currentUser.nickname}</h2>
-      <button onClick={onLogout} style={styles.logoutButton}>Salir</button> 
-      
-      <div style={styles.options}>
-        <button onClick={handleNewGame} style={{ ...styles.actionButton, backgroundColor: '#4CAF50' }}>
-          Crear Partida Nueva
-        </button>
-        <button onClick={() => console.log('Navegar a Unirse a Partida')} style={{ ...styles.actionButton, backgroundColor: '#FF9800' }}>
-          Unirse a Partida
-        </button>
-        <button onClick={() => console.log('Navegar a Ranking')} style={{ ...styles.actionButton, backgroundColor: '#2196F3' }}>
-          Ver Ranking 
-        </button>
-      </div>
-    </div>
-  );
+  const handleVerRanking = () => {
+      // Usa onNavigate para cambiar a la vista de Ranking
+      onNavigate('ranking'); 
+      console.log("Navegar a Ranking.");
+  };
+
+
+  return (
+    <div style={styles.menuContainer}>
+      <h1>Menú Principal</h1>
+      <h2>Usuario: {currentUser.nickname}</h2>
+      <button onClick={onLogout} style={styles.logoutButton}>Cerrar Sesión</button> 
+      
+      <div style={styles.options}>
+        <button onClick={handleNuevoJuego} style={{ ...styles.actionButton, backgroundColor: '#4CAF50' }}>
+          Crear Partida Nueva
+        </button>
+        <button onClick={handleUnirsePartida} style={{ ...styles.actionButton, backgroundColor: '#FF9800' }}>
+          Unirse a Partida
+        </button>
+        <button onClick={handleVerRanking} style={{ ...styles.actionButton, backgroundColor: '#2196F3' }}>
+          Ver Ranking 
+        </button>
+      </div>
+    </div>
+  );
 };
-
 const styles: { [key: string]: React.CSSProperties } = {
   menuContainer: {
     padding: '50px',
