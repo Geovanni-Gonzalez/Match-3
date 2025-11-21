@@ -1,4 +1,4 @@
-import { Configuracion } from '../interfaces';
+import { Configuracion } from '../Interfaces';
 import { Jugador } from './Jugador';
 import { Tablero } from './Tablero';
 import { WorkerThreadUtility } from '../worker/workerUtility';

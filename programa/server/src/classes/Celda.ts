@@ -1,6 +1,6 @@
 // server/src/classes/Celda.ts
 
-import { Coordenada } from '../interfaces';
+import { Coordenada } from '../Interfaces';
 
 export class Celda {
     public colorID: string;

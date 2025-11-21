@@ -1,6 +1,6 @@
 // server/src/worker/workerUtility.ts
 
-import { Coordenada } from '../interfaces';
+import { Coordenada } from '../Interfaces';
 import { Celda } from '../classes/Celda'; // Necesita importar Celda para la tipificación de la matriz
 
 export class WorkerThreadUtility {

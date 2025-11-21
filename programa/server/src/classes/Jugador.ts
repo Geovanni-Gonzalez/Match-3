@@ -1,6 +1,6 @@
 // server/src/classes/Jugador.ts
 
-import { Coordenada } from '../interfaces';
+import { Coordenada } from '../Interfaces';
 import { DBManager } from '../db/dbManager';
 
 export class Jugador {

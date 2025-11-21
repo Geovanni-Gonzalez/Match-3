@@ -1,6 +1,6 @@
 // server/src/classes/ServidorPartidas.ts
 
-import { Configuracion } from '../interfaces';
+import { Configuracion } from '../Interfaces';
 import { Partida } from './Partida';
 import { Jugador } from './Jugador'; // Se usa al unirse a la partida
 

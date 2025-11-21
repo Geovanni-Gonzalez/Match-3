@@ -1,7 +1,7 @@
 // server/src/classes/Tablero.ts
 
 import { Celda } from './Celda';
-import { Configuracion, Coordenada } from '../interfaces';
+import { Configuracion, Coordenada } from '../Interfaces';
 
 export class Tablero {
     public matriz: Celda[][] = [];
