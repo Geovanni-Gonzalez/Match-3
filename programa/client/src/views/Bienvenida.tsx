@@ -47,12 +47,12 @@ export const Bienvenida: React.FC<BienvenidaProps> = ({ onLoginSuccess }) => {
 
   return (
     <div style={styles.card}>
-      <h1>🎮 Match-3 Multiplayer 🎲</h1>
-      <p>Bienvenido. Por favor, ingresa tu nickname para comenzar.</p>
+      <h1>Match-3</h1>
+      <p>Bienvenido(a) al juego multijugador Match-3</p>
 
       <input
         type="text"
-        placeholder="Tu Nickname"
+        placeholder="Ingresar nickname"
         value={nickname}
         onChange={(e) => setNickname(e.target.value)}
         style={styles.input}
@@ -61,7 +61,7 @@ export const Bienvenida: React.FC<BienvenidaProps> = ({ onLoginSuccess }) => {
       {error && <p style={styles.errorText}>⚠️ {error}</p>}
 
       <button onClick={handleLogin} disabled={nickname.trim().length < 3} style={styles.button}>
-        Entrar al Lobby
+        Empezar
       </button>
     </div>
   );
@@ -82,6 +82,7 @@ const styles: { [key: string]: React.CSSProperties } = {
         borderRadius: '5px',
         border: '1px solid #555',
         fontSize: '16px',
+        textAlign: 'center',
     },
     button: {
         padding: '10px 20px',
