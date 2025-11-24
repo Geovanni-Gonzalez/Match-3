@@ -5,7 +5,7 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 // Importar el Router de la API y la clase Singleton
 const apiRouter = require('./api');
-const { ServidorPartidas } = require('./classes/ServidorPartidas'); // Importar la clase
+const { ServidorPartidas } = require('../dist/classes/ServidorPartidas'); // Importar la clase
 
 // --- Configuración del Servidor ---
 const PORT = process.env.PORT || 4000; // Puerto para el servidor HTTP/Socket.IO

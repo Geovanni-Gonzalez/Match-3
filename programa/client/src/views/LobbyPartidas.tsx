@@ -1,17 +1,20 @@
 // client/src/views/LobbyPartidas.tsx
 
 import React, { useState, useEffect } from 'react';
-// import { useAuth } from '../context/AuthContext'; // Si se necesita el nickname del usuario
-// import { socket } from '../api/socket'; // Si se define la instancia de Socket.IO globalmente
+import { useAuth } from '../context/AuthContext';
+import { getSocket } from '../api/socket';
 
 // --- Interfaces de Tipos ---
 interface PartidaDisponible {
-  id: string; // Corresponde a "Identificador"
-  tematica: string; // No está en la API actual, se podría añadir o mockear
-  tipo: 'Match' | 'Tiempo'; // Corresponde a "Tipo"
-  jugadores: number; // Corresponde a "Jugadores" (número actual)
-  maxJugadores: number; // Necesario para "X/Y" en Jugadores
-  tiempoRestante: string; // Mockeado para "Tiempo restante"
+  codigo: string; // Código identificador de la partida
+  tipo: 'Match' | 'Tiempo';
+  tematica: string;
+  jugadores: number; // Número actual de jugadores
+  maxJugadores: number;
+  tiempoRestante: number; // En segundos
+  duracionMinutos?: number; // Duración configurada (solo para tipo Tiempo)
+  estado: string;
+  nicknames: string[]; // Lista de nicknames de jugadores unidos
 }
 
 interface LobbyPartidasProps {
@@ -20,12 +23,11 @@ interface LobbyPartidasProps {
 }
 
 export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({ onBack, onJoinSuccess }) => {
+    const { currentUser } = useAuth(); // Obtener el usuario logueado
     const [partidasDisponibles, setPartidasDisponibles] = useState<PartidaDisponible[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedPartidaId, setSelectedPartidaId] = useState<string | null>(null);
-
-  // const { currentUser } = useAuth(); // Obtener el usuario logueado
 
     useEffect(() => {
         fetchPartidas();
@@ -39,28 +41,36 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({ onBack, onJoinSucc
     setLoading(true);
     setError(null);
     try {
-      // REQ-011: Llama a la ruta REST para obtener partidas disponibles
-      const response = await fetch('http://localhost:4000/api/partidas'); 
-      const data: { id: string, tipo: 'Vs' | 'Vs Tiempo', jugadores: number }[] = await response.json();
+      console.log('[LOBBY] Obteniendo partidas disponibles...');
       
-      if (response.ok) {
-        // Mapear los datos de la API a la interfaz PartidaDisponible,
-        // añadiendo temáticas y tiempo restante mockeados por ahora.
-        const mappedData: PartidaDisponible[] = data.map(p => ({
-          id: p.id,
-          tipo: p.tipo === 'Vs' ? 'Match' : 'Tiempo',
+      // REQ-011: Llama a la ruta REST para obtener partidas disponibles
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:4000';
+      const response = await fetch(`${backendUrl}/api/partidas`); 
+      const data = await response.json();
+      
+      console.log('[LOBBY] Respuesta del servidor:', data);
+      
+      if (response.ok && data.success) {
+        // La API devuelve { success, total, partidas }
+        const partidas: PartidaDisponible[] = data.partidas.map((p: any) => ({
+          codigo: p.codigo,
+          tipo: p.tipo,
+          tematica: p.tematica,
           jugadores: p.jugadores,
-          tematica: p.id.startsWith('A') ? 'Hawai' : p.id.startsWith('B') ? 'Jungla' : 'Saturno', // Mock
-          maxJugadores: 2, // Asumimos 2 por ahora, REQ-008
-          tiempoRestante: '2:59', // Mock
+          maxJugadores: p.maxJugadores,
+          tiempoRestante: p.tiempoRestante,
+          estado: p.estado,
+          nicknames: p.nicknames || []
         }));
-        setPartidasDisponibles(mappedData);
+        
+        setPartidasDisponibles(partidas);
+        console.log(`[LOBBY] ${partidas.length} partidas cargadas`);
       } else {
-        setError('Error al cargar partidas del servidor.');
+        setError(data.message || 'Error al cargar partidas del servidor.');
       }
     } catch (e) {
       setError('Fallo de conexión con el servidor backend.');
-      console.error(e);
+      console.error('[LOBBY] Error:', e);
     } finally {
       setLoading(false);
     }
@@ -72,37 +82,57 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({ onBack, onJoinSucc
       return;
     }
 
-    // --- Lógica de unirse a la partida (REQ-012) ---
-    console.log(`Intentando unirse a la partida: ${selectedPartidaId}`);
+    if (!currentUser) {
+      alert('Debes estar autenticado para unirte a una partida.');
+      return;
+    }
+
+    console.log(`[LOBBY] Intentando unirse a la partida: ${selectedPartidaId}`);
     
     try {
-      // Se enviaría un evento de Socket.IO al backend:
-      /*
-      if (currentUser && socket) {
-        socket.emit('unirse_partida', { 
+      // Primero llamar a la API REST para unirse
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:4000';
+      const response = await fetch(`${backendUrl}/api/partidas/${selectedPartidaId}/unirse`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nickname: currentUser.nickname,
+          socketID: currentUser.socketID
+        }),
+      });
+
+      const data = await response.json();
+      console.log('[LOBBY] Respuesta de unirse:', data);
+
+      if (response.ok && data.success) {
+        // Luego conectarse por Socket.IO
+        const socket = getSocket();
+        if (socket) {
+          socket.emit('unirse_partida', { 
             codigo: selectedPartidaId, 
             nickname: currentUser.nickname 
-        });
+          });
 
-        // Escuchar un evento de confirmación o error desde el backend
-        socket.once('partida_unida_exitosa', (data) => {
-            onJoinSuccess(data.partidaId);
-        });
-        socket.once('error_partida', (data) => {
-            alert(`Error al unirse: ${data.message}`);
-        });
-      }
-      */
+          // Escuchar eventos de la partida
+          socket.on('partida_actualizada', (partidaData) => {
+            console.log('[SOCKET] Partida actualizada:', partidaData);
+          });
 
-      // SIMULACIÓN EXITOSA (para fines de prueba sin Socket.IO completo):
-      setTimeout(() => {
-        alert(`Te has unido a la partida ${selectedPartidaId}`);
+          socket.on('error_partida', (errorData) => {
+            alert(`Error: ${errorData.message}`);
+          });
+        }
+
+        alert(`¡Te has unido a la partida ${selectedPartidaId}!`);
         onJoinSuccess(selectedPartidaId);
-      }, 500);
-
+      } else {
+        alert(`Error al unirse: ${data.message}`);
+      }
     } catch (e) {
       setError('No se pudo establecer la conexión para unirse.');
-      console.error(e);
+      console.error('[LOBBY] Error:', e);
     }
   };
 
@@ -132,27 +162,37 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({ onBack, onJoinSucc
             <table style={styles.table}>
               <thead>
                 <tr>
-                  <th style={styles.tableHeader}>Identificador</th>
+                  <th style={styles.tableHeader}>Código</th>
                   <th style={styles.tableHeader}>Temática</th>
                   <th style={styles.tableHeader}>Tipo</th>
                   <th style={styles.tableHeader}>Jugadores</th>
-                  <th style={styles.tableHeader}>Tiempo restante</th>
+                  <th style={styles.tableHeader}>Duración/Tiempo</th>
                 </tr>
               </thead>
               <tbody>
-                {partidasDisponibles.map((partida) => (
+                {partidasDisponibles.map((partida) => {
+                  // Calcular el texto para la columna de duración/tiempo
+                  let duracionTexto = 'N/A';
+                  if (partida.tipo === 'Tiempo' && partida.duracionMinutos) {
+                    duracionTexto = `${partida.duracionMinutos} min`;
+                  } else if (partida.tipo === 'Match') {
+                    duracionTexto = 'N/A';
+                  }
+                  
+                  return (
                   <tr 
-                    key={partida.id} 
-                    style={selectedPartidaId === partida.id ? styles.tableRowSelected : styles.tableRow}
-                    onClick={() => setSelectedPartidaId(partida.id)}
+                    key={partida.codigo} 
+                    style={selectedPartidaId === partida.codigo ? styles.tableRowSelected : styles.tableRow}
+                    onClick={() => setSelectedPartidaId(partida.codigo)}
                   >
-                    <td style={styles.tableCell}>{partida.id}</td>
+                    <td style={styles.tableCell}>{partida.codigo}</td>
                     <td style={styles.tableCell}>{partida.tematica}</td>
                     <td style={styles.tableCell}>{partida.tipo}</td>
                     <td style={styles.tableCell}>{partida.jugadores}/{partida.maxJugadores}</td>
-                    <td style={styles.tableCell}>{partida.tiempoRestante}</td>
+                    <td style={styles.tableCell}>{duracionTexto}</td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

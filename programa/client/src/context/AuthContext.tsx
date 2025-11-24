@@ -1,6 +1,7 @@
 // client/src/context/AuthContext.tsx
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { initializeSocket, disconnectSocket, getSocket } from '../api/socket';
 
 // --- 1. INTERFACES DE TIPOS ---
 
@@ -32,28 +33,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
     const isAuthenticated = currentUser !== null;
 
-    // Función que maneja la lógica de autenticación (simulación de llamada API)
+    // Función que maneja la lógica de autenticación
     const login = async (nickname: string) => {
-        // --- LÓGICA DE AUTHENTICACIÓN REAL ---
+        // Inicializar conexión Socket.IO en segundo plano
+        const socket = initializeSocket();
         
-        // 1. Llamada a la API REST (e.g., POST /api/auth)
-        // const response = await fetch('...');
+        // Generar un socketID temporal inmediatamente
+        const tempSocketID = 'temp-' + Math.random().toString(36).substring(7);
+        setCurrentUser({ nickname, socketID: tempSocketID });
+        console.log(`[AUTH] Usuario ${nickname} autenticado (Socket conectando...)`);
         
-        // 2. Si es exitoso, se recibe el socketID y otros datos de sesión.
-
-        // SIMULACIÓN:
-        return new Promise<void>((resolve) => {
-            setTimeout(() => {
-                const mockSocketID = 'mock-' + Math.random().toString(10).slice(2, 8);
-                setCurrentUser({ nickname, socketID: mockSocketID });
-                console.log(`[AUTH] Usuario ${nickname} logueado con Socket ID: ${mockSocketID}`);
-                resolve();
-            }, 500);
+        // Actualizar el socketID cuando el socket se conecte
+        socket.on('connect', () => {
+            const realSocketID = socket.id || tempSocketID;
+            setCurrentUser({ nickname, socketID: realSocketID });
+            console.log(`[AUTH] Socket conectado. ID real: ${realSocketID}`);
         });
+        
+        // Si ya está conectado, actualizar inmediatamente
+        if (socket.connected && socket.id) {
+            setCurrentUser({ nickname, socketID: socket.id });
+            console.log(`[AUTH] Socket ya conectado. ID: ${socket.id}`);
+        }
+        
+        return Promise.resolve();
     };
 
     const logout = () => {
         // Aquí se limpiaría la sesión del usuario (localStorage, cookies, etc.)
+        disconnectSocket();
         setCurrentUser(null);
         console.log('[AUTH] Sesión cerrada.');
     };

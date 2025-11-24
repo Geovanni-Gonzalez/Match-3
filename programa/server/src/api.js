@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 // Importar la clase Singleton y la clase Jugador (para crear instancias)
-const { ServidorPartidas } = require('./classes/ServidorPartidas');
+const { ServidorPartidas } = require('../dist/classes/ServidorPartidas');
 
 // Obtener la única instancia del gestor de partidas
 const serverManager = ServidorPartidas.getInstance();
@@ -10,7 +10,21 @@ const serverManager = ServidorPartidas.getInstance();
 // --- Ruta: Listar partidas disponibles (REQ-011) ---
 router.get('/partidas', (req, res) => {
     try {
-        const partidas = serverManager.obtenerPartidasDisponibles();
+        const partidasInfo = serverManager.obtenerPartidasDisponibles();
+        
+        // Mapear a formato esperado por el cliente
+        const partidas = partidasInfo.map(p => ({
+            codigo: p.id,                          // Código de la partida
+            tipo: p.tipo,                          // Match o Tiempo
+            tematica: p.tematica,                  // Temática
+            jugadores: p.jugadoresActuales,        // Jugadores actuales
+            maxJugadores: p.jugadoresMaximos,      // Jugadores máximos
+            tiempoRestante: p.tiempoRestanteSegundos, // Tiempo en segundos
+            duracionMinutos: p.duracionMinutos,    // Duración configurada (solo para tipo Tiempo)
+            estado: 'espera',                      // Estado
+            nicknames: p.jugadoresNombres          // Lista de nicknames
+        }));
+        
         res.status(200).json({
             success: true,
             total: partidas.length,

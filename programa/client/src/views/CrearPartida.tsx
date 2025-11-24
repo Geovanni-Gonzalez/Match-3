@@ -1,6 +1,7 @@
 // client/src/views/CrearPartida.tsx
 
 import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 // --- Interfaces de Tipos ---
 interface CrearPartidaProps {
@@ -9,9 +10,11 @@ interface CrearPartidaProps {
 }
 
 export const CrearPartida: React.FC<CrearPartidaProps> = ({ onBack, onCreateSuccess }) => {
+  const { currentUser } = useAuth(); // Obtener usuario autenticado
   const [tipoJuego, setTipoJuego] = useState<'Match' | 'Tiempo'>('Match'); // Default "Match"
   const [tematica, setTematica] = useState<string>('Gemas'); // Default "Match" (interpretado como Temática)
   const [numJugadores, setNumJugadores] = useState<number>(2); // Default 2, REQ-008
+  const [duracionMinutos, setDuracionMinutos] = useState<number>(5); // Default 5 minutos para tipo Tiempo
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,34 +26,65 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({ onBack, onCreateSucc
   ];
 
   const handleCrearPartida = async () => {
+    console.log('[CREAR PARTIDA] Iniciando...');
+    console.log('[CREAR PARTIDA] Usuario actual:', currentUser);
+    
+    if (!currentUser) {
+      console.error('[CREAR PARTIDA] Error: currentUser es null');
+      setError('Debes estar autenticado para crear una partida. Por favor, regresa e ingresa tu nickname.');
+      return;
+    }
+
+    if (!currentUser.nickname) {
+      console.error('[CREAR PARTIDA] Error: nickname no existe en currentUser');
+      setError('Error: No se encontró tu nickname. Por favor, regresa e ingresa nuevamente.');
+      return;
+    }
+
     setError(null);
     setLoading(true);
 
     try {
+      console.log('[CREAR PARTIDA] Enviando solicitud al backend...');
+      
       // REQ-007: Llama a la ruta REST para crear una partida (POST /api/partidas)
-      const response = await fetch('http://localhost:4000/api/partidas', {
+      const body: any = {
+        nickname: currentUser.nickname,
+        tipoJuego: tipoJuego,
+        tematica: tematica,
+        numJugadoresMax: numJugadores, // REQ-008
+      };
+
+      // Si es tipo Tiempo, agregar duración
+      if (tipoJuego === 'Tiempo') {
+        body.duracionMinutos = duracionMinutos;
+      }
+
+      console.log('[CREAR PARTIDA] Body a enviar:', body);
+
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:4000';
+      const response = await fetch(`${backendUrl}/api/partidas`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          tipoJuego: tipoJuego,
-          tematica: tematica,
-          numJugadoresMax: numJugadores, // REQ-008
-        }),
+        body: JSON.stringify(body),
       });
 
+      console.log('[CREAR PARTIDA] Response status:', response.status);
       const data = await response.json();
+      console.log('[CREAR PARTIDA] Respuesta del servidor:', data);
 
-      if (response.ok) {
-        alert(`Partida creada! Código: ${data.codigo}`);
-        onCreateSuccess(data.codigo); // Notifica al padre con el código de la partida creada
+      if (response.ok && data.success) {
+        const codigoPartida = data.partida.codigo;
+        alert(`¡Partida creada exitosamente!\nCódigo: ${codigoPartida}`);
+        onCreateSuccess(codigoPartida); // Notifica al padre con el código de la partida creada
       } else {
         setError(data.message || 'Error al crear la partida.');
       }
     } catch (e) {
       setError('Fallo de conexión con el servidor backend.');
-      console.error(e);
+      console.error('[CREAR PARTIDA] Error:', e);
     } finally {
       setLoading(false);
     }
@@ -104,10 +138,25 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({ onBack, onCreateSucc
             value={numJugadores} 
             onChange={(e) => setNumJugadores(Math.max(2, parseInt(e.target.value) || 2))} // Mínimo 2
             min="2" // REQ-008: Mínimo 2 jugadores
-            max="6" // Máximo de 6 jugadores (ejemplo)
+            max="8" // Máximo de 8 jugadores
             style={styles.numberInput}
           />
         </div>
+
+        {/* Duración (solo si es tipo Tiempo) */}
+        {tipoJuego === 'Tiempo' && (
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Duración (minutos):</label>
+            <input 
+              type="number" 
+              value={duracionMinutos} 
+              onChange={(e) => setDuracionMinutos(Math.max(1, parseInt(e.target.value) || 5))}
+              min="1"
+              max="30"
+              style={styles.numberInput}
+            />
+          </div>
+        )}
 
         {error && <p style={styles.errorText}>Error: {error}</p>}
 

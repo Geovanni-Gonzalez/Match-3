@@ -3,10 +3,9 @@ import { Jugador } from './Jugador';
 import { Tablero } from './Tablero';
 import { WorkerThreadUtility } from '../worker/workerUtility';
 
-/**
- * Clase que representa una partida del juego Match-3
- * REQ-007, REQ-008, REQ-012
- */
+//-----------------------------------------
+// Clase que representa una partida del juego
+//-----------------------------------------
 export class Partida {
     public estado: 'espera' | 'jugando' | 'finalizada' = 'espera';
     public jugadores: Map<string, Jugador> = new Map();
@@ -49,7 +48,7 @@ export class Partida {
             throw new Error("No se puede unir a esta partida. Ya inició o finalizó.");
         }
         
-        // Validar que haya espacio
+        // Validar que haya campo en la partida
         if (this.jugadores.size >= this.numJugadoresMax) {
             console.log(`[Partida ${this.idPartida}] ✗ Error: Partida llena (${this.jugadores.size}/${this.numJugadoresMax})`);
             throw new Error("La partida está llena.");
@@ -77,10 +76,10 @@ export class Partida {
         this.enviarEstadoATodos();
     }
 
-    /**
-     * Inicia el juego cuando se completa el número de jugadores
-     * REQ-012: La partida solo cambia de estado cuando la cantidad de usuarios unidos es igual a la configurada
-     */
+    
+    //Inicia el juego cuando se completa el número de jugadores
+    //REQ-012: La partida solo cambia de estado cuando la cantidad de 
+    //                      usuarios unidos es igual a la configurada
     public iniciarJuego(): void {
         console.log(`\n========== INICIO DE JUEGO ==========`);
         console.log(`[Partida ${this.idPartida}] Cambiando estado: espera -> jugando`);
@@ -101,9 +100,8 @@ export class Partida {
         console.log('====================================\n');
     }
 
-    /**
-     * Configura el cronómetro para partidas de tipo Tiempo
-     */
+    
+    //Configura el cronometro para partidas de tipo Tiempo
     private configurarCronometroTiempo(): void {
         if (!this.duracionMinutos) return;
         
@@ -116,9 +114,8 @@ export class Partida {
         }, duracionMs);
     }
     
-    /**
-     * Procesa la validación de matches de un jugador usando Worker Thread
-     */
+
+    //Procesa la validación de matches de un jugador usando Worker Thread
     public async procesarMatch(nickname: string): Promise<void> {
         const jugador = this.jugadores.get(nickname);
         if (!jugador || jugador.celdasSeleccionadas.length < 3) return; // Validación rápida
@@ -141,11 +138,9 @@ export class Partida {
         this.enviarEstadoATodos();
     }
 
-    /**
-     * Finaliza el juego y calcula resultados
-     * REQ-030: Determinación de posiciones
-     * REQ-031, REQ-032: Persistencia de estadísticas
-     */
+    //Finaliza el juego y calcula resultados
+    //REQ-030: Determina posiciones
+    //REQ-031, REQ-032: Persistencia de estadisticas
     public finalizarJuego(): void {
         if (this.estado === 'finalizada') return;
 
@@ -165,7 +160,7 @@ export class Partida {
         });
         
         const ganador = resultadosOrdenados[0];
-        console.log(`[Partida ${this.idPartida}] 🏆 Ganador: ${ganador.nickname}`);
+        console.log(`[Partida ${this.idPartida}] Ganador: ${ganador.nickname}`);
         
         // Persistencia de Estadísticas (REQ-031, REQ-032)
         this.jugadores.forEach(jugador => {
@@ -173,25 +168,21 @@ export class Partida {
             jugador.guardarEstadisticas(this.idPartida, esGanador);
         });
 
-        console.log(`[Partida ${this.idPartida}] ✓ Partida finalizada`);
+        console.log(`[Partida ${this.idPartida}] Partida finalizada`);
         console.log('===========================================\n');
 
         this.enviarEstadoATodos(); // Notificar resultados finales
     }
 
-    /**
-     * Envía el estado actualizado a todos los jugadores
-     * REQ-011: Actualización constante de información
-     */
+
+    //Envía el estado actualizado a todos los jugadores
     public enviarEstadoATodos(): void {
         // Lógica real: io.to(this.idPartida).emit('estado_partida_actualizado', ...);
-        console.log(`[Partida ${this.idPartida}] 📡 Estado enviado a todos los jugadores`);
+        console.log(`[Partida ${this.idPartida}] Estado enviado a todos los jugadores`);
     }
 
-    /**
-     * Obtiene información completa de la partida
-     * REQ-011: Información completa de partidas disponibles
-     */
+    //Obtiene información completa de la partida
+    //REQ-011: Información completa de partidas disponibles
     public obtenerInformacion(): {
         id: string;
         tipo: string;
@@ -200,6 +191,7 @@ export class Partida {
         jugadoresMaximos: number;
         tiempoRestanteSegundos: number;
         jugadoresNombres: string[];
+        duracionMinutos?: number;
     } {
         const tiempoTranscurridoMs = Date.now() - this.fechaCreacion.getTime();
         const tiempoLimiteMs = this.config.TIEMPO_VIDA_PARTIDA_MIN * 60 * 1000;
@@ -213,27 +205,22 @@ export class Partida {
             jugadoresActuales: this.jugadores.size,
             jugadoresMaximos: this.numJugadoresMax,
             tiempoRestanteSegundos: tiempoRestanteSegundos,
-            jugadoresNombres: Array.from(this.jugadores.keys())
+            jugadoresNombres: Array.from(this.jugadores.keys()),
+            duracionMinutos: this.duracionMinutos
         };
     }
 
-    /**
-     * Obtiene el número máximo de jugadores
-     */
+    //Obtiene el numero maximo de jugadores
     public getNumJugadoresMax(): number {
         return this.numJugadoresMax;
     }
 
-    /**
-     * Obtiene el estado actual de la partida
-     */
+    //Obtiene el estado actual de la partida
     public getEstado(): 'espera' | 'jugando' | 'finalizada' {
         return this.estado;
     }
 
-    /**
-     * Obtiene la configuración de la partida
-     */
+    //Obtiene la configuracion de la partida
     public getConfiguracion(): Configuracion {
         return this.config;
     }

@@ -4,39 +4,33 @@ import { Bienvenida } from './views/Bienvenida';
 import { MenuPrincipal } from './views/MenuPrincipal';
 import { LobbyPartidas } from './views/LobbyPartidas';
 import { CrearPartida } from './views/CrearPartida';
-import { RankingHistorico } from './views/RankingHistorico'; // <-- Nuevo Import
+import { RankingHistorico } from './views/RankingHistorico';
+import { useAuth } from './context/AuthContext';
 
 // --- Definición de Tipos ---
 // Tipo unificado para controlar todas las vistas de la aplicación
 type AppView = 'welcome' | 'menu' | 'lobby' | 'ranking' | 'create_game' | 'game';
 
-interface UserSession {
-  nickname: string;
-  socketID: string;
-}
-
 const App: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
-  const [currentView, setCurrentView] = useState<AppView>('welcome'); 
+  const { currentUser, logout } = useAuth(); // Usar el contexto de autenticación
+  const [currentView, setCurrentView] = useState<AppView>('welcome'); 
   const [currentGameId, setCurrentGameId] = useState<string | null>(null); 
 
-  // --- Funciones de Manejo de Estado y Navegación ---
-  const handleNavigation = (view: AppView) => {
-    setCurrentView(view);
-  };
+  // --- Funciones de Manejo de Estado y Navegación ---
+  const handleNavigation = (view: AppView) => {
+    setCurrentView(view);
+  };
 
-  const handleLoginSuccess = (nickname: string) => {
-    setCurrentUser({ nickname, socketID: 'mock-socket-id-' + Math.random().toString(10) });
-    setCurrentView('menu');
-  };
+  const handleLoginSuccess = (nickname: string) => {
+    // El usuario ya está en el contexto gracias a AuthContext
+    setCurrentView('menu');
+  };
 
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setCurrentView('welcome');
-    setCurrentGameId(null);
-  };
-
-  const handleJoinGameSuccess = (partidaId: string) => {
+  const handleLogout = () => {
+    logout(); // Usar la función del contexto
+    setCurrentView('welcome');
+    setCurrentGameId(null);
+  };  const handleJoinGameSuccess = (partidaId: string) => {
     setCurrentGameId(partidaId);
     handleNavigation('game');
   };
