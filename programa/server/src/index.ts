@@ -3,23 +3,23 @@ import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import { GameManager } from './managers/GameManager.js';
+import { Jugador } from './models/jugador.js'; // Importamos la clase Jugador
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 const server = http.createServer(app);
-// Configuración de Socket.io con CORS para permitir conexión desde el cliente React
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:3000", // URL de tu Frontend
+        origin: "http://localhost:3000",
         methods: ["GET", "POST"]
     }
 });
 
 const gameManager = GameManager.getInstance();
 
-// --- API REST (Para listar partidas en el Lobby - REQ-011) ---
+// --- API REST ---
 app.get('/api/partidas', (req, res) => {
     const partidas = gameManager.listarPartidasDisponibles();
     res.json(partidas);
@@ -27,67 +27,68 @@ app.get('/api/partidas', (req, res) => {
 
 app.post('/api/partidas', (req, res) => {
     const { maxJugadores } = req.body;
-    // Por defecto creamos partidas de 2 jugadores si no se especifica
     const nuevaPartida = gameManager.crearPartida(maxJugadores || 2); 
     res.json({ codigo: nuevaPartida.id });
 });
 
-// --- WebSockets (Lógica de Juego en Tiempo Real - REQ-001) ---
+// --- WebSockets ---
 io.on('connection', (socket) => {
     console.log(`Usuario conectado: ${socket.id}`);
 
-    // Evento: Unirse a una partida
+    // Evento: Unirse a una partida (Sala de Espera)
     socket.on('unirse_partida', (data) => {
         const { codigoPartida, nickname } = data;
         const partida = gameManager.obtenerPartida(codigoPartida);
 
         if (partida) {
-            // Crear jugador y agregarlo
-            const nuevoJugador = { 
-                id: socket.id, 
-                nickname, 
-                puntaje: 0, 
-                isReady: false 
-            };
-            // Nota: Aquí deberíamos usar la clase Jugador, adaptamos para simplicidad de socket
+            // 1. Crear el Jugador real
+            const nuevoJugador = new Jugador(socket.id, nickname);
             
-            // Unir el socket a la "sala" (room) de esa partida
-            socket.join(codigoPartida);
-            
-            // Notificar a todos en la sala que alguien se unió
-            io.to(codigoPartida).emit('jugador_unido', {
-                jugadores: partida.jugadores.length + 1, // Simulado por ahora
-                nickname: nickname
-            });
-            
-            console.log(`${nickname} se unió a la partida ${codigoPartida}`);
+            // 2. Intentar agregarlo a la partida
+            const agregado = partida.agregarJugador(nuevoJugador);
+
+            if (agregado) {
+                socket.join(codigoPartida);
+                
+                // 3. Enviar confirmación al usuario que se unió
+                // Le enviamos la lista actual de jugadores para que pinte la sala
+                socket.emit('unido_exitosamente', { 
+                    codigoPartida,
+                    jugadores: partida.obtenerInfoJugadores() 
+                });
+
+                // 4. Notificar a TODOS en la sala (incluido el nuevo) la nueva lista de jugadores
+                io.to(codigoPartida).emit('actualizar_sala', {
+                    jugadores: partida.obtenerInfoJugadores()
+                });
+                
+                console.log(`${nickname} se unió a la partida ${codigoPartida}. (${partida.jugadores.length}/${partida.maxJugadores})`);
+            } else {
+                socket.emit('error', { message: 'La partida está llena o ya iniciada.' });
+            }
         } else {
             socket.emit('error', { message: 'Partida no encontrada' });
         }
     });
 
-    // Evento: Selección de celda (REQ-020 - Bloqueo Visual)
+    // Evento: Jugador listo para iniciar (Opcional, para el botón "Listo")
+    // ... aquí iría esa lógica luego
+
+    // Evento: Selección de celda (Juego)
     socket.on('seleccionar_celda', (data) => {
         const { partidaId, celdaId } = data;
-        
-        // Enviar evento a TODOS en la sala EXCEPTO al remitente
-        // Esto permite que los otros vean el bloqueo inmediatamente
         socket.to(partidaId).emit('celda_bloqueada', {
             celdaId: celdaId,
             jugadorId: socket.id
         });
-        
-        console.log(`Celda ${celdaId} bloqueada por ${socket.id} en partida ${partidaId}`);
     });
 
-    // Evento: Desconexión
     socket.on('disconnect', () => {
         console.log(`Usuario desconectado: ${socket.id}`);
-        // Aquí iría lógica para sacar al jugador de la partida
+        // Aquí deberíamos remover al jugador de la partida si está en sala de espera
     });
 });
 
-// --- Iniciar Servidor ---
 const PORT = 4000;
 server.listen(PORT, () => {
     console.log(`>> Servidor de Match-3 corriendo en puerto ${PORT}`);
