@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 // import { useAuth } from '../context/AuthContext'; // Si se necesita el nickname del usuario
-// import { socket } from '../api/socket'; // Si se define la instancia de Socket.IO globalmente
+import { socket } from '../api/socket'; // Si se define la instancia de Socket.IO globalmente
 
 // --- Interfaces de Tipos ---
 interface PartidaDisponible {
@@ -66,44 +66,32 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({ onBack, onJoinSucc
     }
   };
 
-  const handleUnirseClick = async () => {
+const handleUnirseClick = () => {
     if (!selectedPartidaId) {
       alert('Por favor, selecciona una partida para unirte.');
       return;
     }
 
-    // --- Lógica de unirse a la partida (REQ-012) ---
-    console.log(`Intentando unirse a la partida: ${selectedPartidaId}`);
+    console.log(`Enviando solicitud para unirse a: ${selectedPartidaId}`);
     
-    try {
-      // Se enviaría un evento de Socket.IO al backend:
-      /*
-      if (currentUser && socket) {
-        socket.emit('unirse_partida', { 
-            codigo: selectedPartidaId, 
-            nickname: currentUser.nickname 
-        });
+    // 1. Emitir evento al servidor (Backend)
+    // Nota: 'Jugador Invitado' es temporal. Más adelante usaremos el nombre real del usuario.
+    socket.emit('unirse_partida', { 
+        codigoPartida: selectedPartidaId, 
+        nickname: 'Jugador Invitado' 
+    });
 
-        // Escuchar un evento de confirmación o error desde el backend
-        socket.once('partida_unida_exitosa', (data) => {
-            onJoinSuccess(data.partidaId);
-        });
-        socket.once('error_partida', (data) => {
-            alert(`Error al unirse: ${data.message}`);
-        });
-      }
-      */
+    // 2. Escuchar confirmación de éxito (solo una vez)
+    socket.once('jugador_unido', (data) => {
+        console.log('¡Éxito! Te has unido a la sala:', data);
+        // alert(`Te has unido a la partida ${selectedPartidaId}`); // Opcional
+        onJoinSuccess(selectedPartidaId); // Cambiar de pantalla al juego
+    });
 
-      // SIMULACIÓN EXITOSA (para fines de prueba sin Socket.IO completo):
-      setTimeout(() => {
-        alert(`Te has unido a la partida ${selectedPartidaId}`);
-        onJoinSuccess(selectedPartidaId);
-      }, 500);
-
-    } catch (e) {
-      setError('No se pudo establecer la conexión para unirse.');
-      console.error(e);
-    }
+    // 3. Escuchar si hubo algún error (ej: partida llena o no existe)
+    socket.once('error', (err: any) => {
+        alert(`Error del servidor: ${err.message}`);
+    });
   };
 
   return (
