@@ -1,18 +1,19 @@
 // client/src/context/AuthContext.tsx
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { io, Socket } from 'socket.io-client'; // Importamos el cliente de socket
 
 // --- 1. INTERFACES DE TIPOS ---
 
 export interface UserSession {
     nickname: string;
     socketID: string;
-    // Puedes agregar más datos aquí: idDB, token de sesión, etc.
 }
 
 interface AuthContextType {
     currentUser: UserSession | null;
     isAuthenticated: boolean;
+    socket: Socket | null; // Agregamos el socket al contexto para usarlo en otras vistas
     login: (nickname: string) => Promise<void>;
     logout: () => void;
 }
@@ -30,37 +31,43 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
+    const [socket, setSocket] = useState<Socket | null>(null);
     const isAuthenticated = currentUser !== null;
 
-    // Función que maneja la lógica de autenticación (simulación de llamada API)
     const login = async (nickname: string) => {
-        // --- LÓGICA DE AUTHENTICACIÓN REAL ---
-        
-        // 1. Llamada a la API REST (e.g., POST /api/auth)
-        // const response = await fetch('...');
-        
-        // 2. Si es exitoso, se recibe el socketID y otros datos de sesión.
+        return new Promise<void>((resolve, reject) => {
+            // Conectamos al servidor real en el puerto 4000
+            const newSocket = io('http://localhost:4000');
 
-        // SIMULACIÓN:
-        return new Promise<void>((resolve) => {
-            setTimeout(() => {
-                const mockSocketID = 'mock-' + Math.random().toString(10).slice(2, 8);
-                setCurrentUser({ nickname, socketID: mockSocketID });
-                console.log(`[AUTH] Usuario ${nickname} logueado con Socket ID: ${mockSocketID}`);
+            newSocket.on('connect', () => {
+                console.log(`[Auth] Conectado al servidor con ID: ${newSocket.id}`);
+                
+                // Guardamos el socket y el usuario en el estado
+                setSocket(newSocket);
+                setCurrentUser({ nickname, socketID: newSocket.id || '' });
                 resolve();
-            }, 500);
+            });
+
+            newSocket.on('connect_error', (err) => {
+                console.error('[Auth] Error de conexión con el servidor:', err);
+                reject(new Error('No se pudo conectar al servidor de juego.'));
+            });
         });
     };
 
     const logout = () => {
-        // Aquí se limpiaría la sesión del usuario (localStorage, cookies, etc.)
+        if (socket) {
+            socket.disconnect(); // Desconectamos el socket al salir
+            console.log('[Auth] Socket desconectado.');
+        }
+        setSocket(null);
         setCurrentUser(null);
-        console.log('[AUTH] Sesión cerrada.');
     };
 
     const contextValue: AuthContextType = {
         currentUser,
         isAuthenticated,
+        socket,
         login,
         logout,
     };
