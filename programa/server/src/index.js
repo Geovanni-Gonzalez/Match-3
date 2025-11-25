@@ -3,53 +3,77 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
-const apiRoutes = require('./api'); // Importamos las rutas que acabamos de crear
+const apiRoutes = require('./api');
 
 const app = express();
 const PORT = 4000;
 
-// Middleware para permitir que el cliente (puerto 3000) hable con el servidor (puerto 4000)
+// Constantes del Juego (Mismas que en el cliente)
+const FILAS = 9;
+const COLUMNAS = 7;
+const COLORES = ['#1E90FF', '#FF8C00', '#FF4500', '#32CD32', '#FFD700', '#8A2BE2', '#00CED1']; 
+
 app.use(cors());
 app.use(express.json());
-
-// Usar las rutas API REST
 app.use('/api', apiRoutes);
 
-// Crear servidor HTTP y adjuntar Socket.io (REQ-001)
 const server = http.createServer(app);
 const io = new Server(server, {
-    cors: {
-        origin: "http://localhost:3000", // Origen del Cliente React
-        methods: ["GET", "POST"]
-    }
+    cors: { origin: "http://localhost:3000", methods: ["GET", "POST"] }
 });
 
-// --- LÓGICA DE WEBSOCKETS ---
+// Función Helper para generar tablero
+const generarTableroAleatorio = () => {
+    const tablero = [];
+    for (let fila = 0; fila < FILAS; fila++) {
+        const filaArray = [];
+        for (let col = 0; col < COLUMNAS; col++) {
+            const id = fila * COLUMNAS + col;
+            // Elegir color aleatorio (excluyendo el último si es 'vacío' o similar, ajusta según tu lógica)
+            const colorIndex = Math.floor(Math.random() * (COLORES.length - 1)); 
+            filaArray.push({ id, color: COLORES[colorIndex] });
+        }
+        tablero.push(filaArray); // Guardamos por filas para facilitar manejo matricial
+    }
+    // Aplanamos para enviarlo como lista simple si tu frontend lo prefiere así, 
+    // pero mantenerlo como matriz 9x7 es útil. Tu frontend actual usa .flat() así que enviaremos matriz.
+    return tablero;
+};
+
 io.on('connection', (socket) => {
     console.log(`[Socket] Cliente conectado: ${socket.id}`);
 
-    // Evento: Unirse a una sala de partida (REQ-012)
-    socket.on('join_room', (data) => {
+    socket.on('join_room', async (data) => {
         const { partidaId, nickname } = data;
         socket.join(partidaId);
-        console.log(`[Socket] ${nickname} entró a la sala ${partidaId}`);
-        
-        // Avisar a los demás en la sala que alguien entró
-        socket.to(partidaId).emit('user_joined', { nickname });
+        socket.data.nickname = nickname;
+        socket.data.isReady = false; 
+
+        const sockets = await io.in(partidaId).fetchSockets();
+        const currentPlayers = sockets.map(s => ({
+            nickname: s.data.nickname,
+            socketID: s.id,
+            isReady: s.data.isReady || false
+        }));
+        io.to(partidaId).emit('update_players_list', currentPlayers);
     });
 
-    // Evento: Jugador listo para iniciar
     socket.on('player_ready', (data) => {
-        const { partidaId, nickname } = data;
-        // Reenviar evento a todos en la sala para actualizar la UI
-        io.to(partidaId).emit('update_player_status', { nickname, status: 'READY' });
+        const { partidaId, isReady } = data;
+        socket.data.isReady = isReady;
+        io.to(partidaId).emit('player_status_changed', { socketID: socket.id, isReady });
     });
 
-    // Evento: Bloqueo visual de celda (REQ-020)
-    socket.on('select_cell', (data) => {
-        const { partidaId, cellId, nickname } = data;
-        // Emitir a todos MENOS al que envió (broadcast)
-        socket.to(partidaId).emit('cell_locked', { cellId, lockedBy: nickname });
+    // --- MODIFICADO: GENERAR Y ENVIAR TABLERO ---
+    socket.on('start_game', (data) => {
+        const { partidaId } = data;
+        console.log(`[Socket] Iniciando partida ${partidaId}`);
+        
+        // 1. Generar el tablero AUTORITATIVO en el servidor
+        const tableroInicial = generarTableroAleatorio();
+
+        // 2. Enviarlo a todos junto con la señal de inicio
+        io.to(partidaId).emit('game_started', { tablero: tableroInicial });
     });
 
     socket.on('disconnect', () => {
@@ -57,10 +81,6 @@ io.on('connection', (socket) => {
     });
 });
 
-// Arrancar el servidor
 server.listen(PORT, () => {
-    console.log(`---------------------------------------`);
-    console.log(`Backend corriendo en: http://localhost:${PORT}`);
-    console.log(`WebSockets listos`);
-    console.log(`---------------------------------------`);
+    console.log(`[Server] Corriendo en http://localhost:${PORT}`);
 });

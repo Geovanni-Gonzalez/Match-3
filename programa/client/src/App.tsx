@@ -4,75 +4,88 @@ import { Bienvenida } from './views/Bienvenida';
 import { MenuPrincipal } from './views/MenuPrincipal';
 import { LobbyPartidas } from './views/LobbyPartidas';
 import { CrearPartida } from './views/CrearPartida';
-import { RankingHistorico } from './views/RankingHistorico'; // <-- Nuevo Import
+import { RankingHistorico } from './views/RankingHistorico';
+import { SalaDeEspera } from './views/SalaDeEspera'; 
+import { Juego } from './views/Juego';
+import { useAuth } from './context/AuthContext';
 
-// --- Definición de Tipos ---
-// Tipo unificado para controlar todas las vistas de la aplicación
-type AppView = 'welcome' | 'menu' | 'lobby' | 'ranking' | 'create_game' | 'game';
+// --- Tipos ---
+type AppView = 'welcome' | 'menu' | 'lobby' | 'ranking' | 'create_game' | 'waiting_room' | 'game';
 
-interface UserSession {
-  nickname: string;
-  socketID: string;
+// Interfaz para las celdas del tablero
+interface Celda {
+  id: number;
+  color: string;
 }
 
 const App: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
-  const [currentView, setCurrentView] = useState<AppView>('welcome'); 
+  const { currentUser, login, logout } = useAuth();
+  
+  const [currentView, setCurrentView] = useState<AppView>('welcome'); 
   const [currentGameId, setCurrentGameId] = useState<string | null>(null); 
+  
+  // Estado para guardar el tablero inicial que envía el servidor
+  const [initialBoard, setInitialBoard] = useState<Celda[][]>([]);
 
-  // --- Funciones de Manejo de Estado y Navegación ---
-  const handleNavigation = (view: AppView) => {
-    setCurrentView(view);
-  };
+  const handleNavigation = (view: AppView) => {
+    setCurrentView(view);
+  };
 
-  const handleLoginSuccess = (nickname: string) => {
-    setCurrentUser({ nickname, socketID: 'mock-socket-id-' + Math.random().toString(10) });
-    setCurrentView('menu');
-  };
+  const handleLoginSuccess = async (nickname: string) => {
+    await login(nickname); 
+    setCurrentView('menu');
+  };
 
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setCurrentView('welcome');
-    setCurrentGameId(null);
-  };
+  const handleLogout = () => {
+    logout();
+    setCurrentView('welcome');
+    setCurrentGameId(null);
+    setInitialBoard([]); // Limpiar tablero al salir
+  };
 
-  const handleJoinGameSuccess = (partidaId: string) => {
-    setCurrentGameId(partidaId);
-    handleNavigation('game');
-  };
+  const handleGoToWaitingRoom = (partidaId: string) => {
+    setCurrentGameId(partidaId);
+    handleNavigation('waiting_room');
+  };
 
-  const handleCreateGameSuccess = (partidaId: string) => {
-    setCurrentGameId(partidaId);
-    handleNavigation('game'); 
-  };
+  // --- MODIFICADO: Ahora recibe el tablero del servidor ---
+  const handleStartGame = (partidaId: string, tableroServidor: any[]) => {
+    setCurrentGameId(partidaId);
+    setInitialBoard(tableroServidor); // Guardamos la matriz recibida
+    handleNavigation('game');
+  };
 
-  let content;
+  let content;
 
-  // --- Router principal (Switch Case) ---
-  switch (currentView) {
-    case 'welcome':
-      content = <Bienvenida onLoginSuccess={handleLoginSuccess} />;
-      break;
+  switch (currentView) {
+    case 'welcome':
+      if (currentUser) {
+          setCurrentView('menu'); 
+          content = null;
+      } else {
+          content = <Bienvenida onLoginSuccess={handleLoginSuccess} />;
+      }
+      break;
       
-    case 'menu':
-      if (!currentUser) {
-        content = <h1 style={{color: 'red'}}>Error de Sesión.</h1>;
-        break;
-      }
-      content = (
-          <MenuPrincipal 
-              currentUser={currentUser} 
-              onLogout={handleLogout} 
-              onNavigate={handleNavigation}
-          />
-      );
-      break;
+    case 'menu':
+      if (!currentUser) {
+        content = <Bienvenida onLoginSuccess={handleLoginSuccess} />;
+      } else {
+        content = (
+            <MenuPrincipal 
+                currentUser={currentUser} 
+                onLogout={handleLogout} 
+                onNavigate={handleNavigation}
+            />
+        );
+      }
+      break;
 
     case 'lobby':
         content = (
             <LobbyPartidas 
                 onBack={() => handleNavigation('menu')} 
-                onJoinSuccess={handleJoinGameSuccess} 
+                onJoinSuccess={handleGoToWaitingRoom} 
             />
         );
         break;
@@ -81,66 +94,66 @@ const App: React.FC = () => {
         content = (
             <CrearPartida 
                 onBack={() => handleNavigation('menu')} 
-                onCreateSuccess={handleCreateGameSuccess} 
+                onCreateSuccess={handleGoToWaitingRoom} 
             />
         );
         break;
 
     case 'ranking':
-        // <-- Implementación del componente RankingHistorico -->
         content = (
             <RankingHistorico
-                onBack={() => handleNavigation('menu')} // Regresa al menú
+                onBack={() => handleNavigation('menu')} 
             />
         );
         break;
 
-    case 'game':
-      // Vista del juego en tiempo real
-      content = (
-          <div>
-              <h1 style={{color: 'orange'}}>🕹️ Partida Activa</h1>
-              <p>Jugando como: {currentUser?.nickname}. Código de Partida: {currentGameId}</p>
-              <button onClick={() => handleNavigation('menu')} style={styles.backButton}>Abandonar Partida</button>
-          </div>
+    case 'waiting_room':
+        if (!currentGameId || !currentUser) return null;
+        content = (
+            <SalaDeEspera 
+                partidaId={currentGameId}
+                currentUserNickname={currentUser.nickname}
+                onLeave={() => handleNavigation('menu')}
+                onStartGame={handleStartGame} // Pasamos la función que recibe el tablero
+            />
+        );
+        break;
+
+    case 'game':
+      if (!currentGameId || !currentUser) return null;
+      content = (
+          <Juego 
+            partidaId={currentGameId}
+            currentUserNickname={currentUser.nickname}
+            initialTablero={initialBoard} // <--- Enviamos el tablero al juego
+            onLeave={() => handleNavigation('menu')}
+          />
       );
-      break;
+      break;
 
-    default:
-      content = <Bienvenida onLoginSuccess={handleLoginSuccess} />;
-  }
+    default:
+      content = <Bienvenida onLoginSuccess={handleLoginSuccess} />;
+  }
 
-  return (
-    <div className="App" style={styles.container}>
-      {content}
-      {/* Indicador visual de la vista actual para depuración */}
-      {/* <div style={{position: 'absolute', bottom: 10, right: 10, fontSize: 12, color: '#aaa'}}>Vista: {currentView}</div> */}
-    </div>
-  );
+  return (
+    <div className="App" style={styles.container}>
+      {content}
+    </div>
+  );
 };
 
 export default App;
 
-// --- Estilos Globales ---
 const styles: { [key: string]: React.CSSProperties } = {
-  container: {
-    fontFamily: 'Arial, sans-serif',
-    textAlign: 'center',
-    backgroundColor: '#282c34',
-    minHeight: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: 'white',
-  },
-  backButton: {
-    padding: '10px 20px',
-    backgroundColor: '#FF9800',
+  container: {
+    fontFamily: 'Arial, sans-serif',
+    textAlign: 'center',
+    backgroundColor: '#282c34',
+    minHeight: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
     color: 'white',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
-    marginTop: '20px',
-  }
+  },
 };
