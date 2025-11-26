@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext'; 
 
-// --- Interfaces ---
 interface JugadorSala {
   nickname: string;
   socketID: string;
@@ -14,8 +13,8 @@ interface SalaDeEsperaProps {
   partidaId: string;
   currentUserNickname: string;
   onLeave: () => void;
-  // ACTUALIZADO: Ahora acepta el tablero como segundo argumento
-  onStartGame: (partidaId: string, tablero: any[]) => void; 
+  // --- CORRECCIÓN AQUÍ: Agregamos 'jugadores' a la definición ---
+  onStartGame: (partidaId: string, tablero: any[], jugadores: any[]) => void;
 }
 
 export const SalaDeEspera: React.FC<SalaDeEsperaProps> = ({ 
@@ -32,30 +31,23 @@ export const SalaDeEspera: React.FC<SalaDeEsperaProps> = ({
     if (!socket) return;
 
     console.log(`[Client] Uniéndose a sala: ${partidaId}`);
-    
-    // 1. Unirse a la sala
     socket.emit('join_room', { partidaId, nickname: currentUserNickname });
 
-    // 2. Actualización de lista de jugadores
     socket.on('update_players_list', (listaServidor: JugadorSala[]) => {
         setJugadores(listaServidor);
     });
 
-    // 3. Cambios de estado (Ready)
     socket.on('player_status_changed', (data) => {
         setJugadores(prev => prev.map(p => 
             p.socketID === data.socketID ? { ...p, isReady: data.isReady } : p
         ));
     });
 
-    // 4. INICIO DEL JUEGO (ACTUALIZADO)
-    // Ahora recibimos el tablero generado por el servidor
-    socket.on('game_started', (data: { tablero: any[] }) => {
-        console.log('[Client] Partida iniciada por el servidor.');
-        console.log('[Client] Tablero recibido:', data.tablero);
-        
-        // Pasamos el ID y el TABLERO a la función del padre (App.tsx)
-        onStartGame(partidaId, data.tablero); 
+    // --- CORRECCIÓN AQUÍ: Recibimos y pasamos 'jugadores' ---
+    socket.on('game_started', (data: { tablero: any[], jugadores: any[] }) => {
+        console.log('[Client] Partida iniciada. Datos recibidos:', data);
+        // Pasamos los 3 argumentos requeridos por App.tsx
+        onStartGame(partidaId, data.tablero, data.jugadores); 
     });
 
     return () => {
@@ -72,7 +64,6 @@ export const SalaDeEspera: React.FC<SalaDeEsperaProps> = ({
     socket.emit('player_ready', { partidaId, isReady: newState });
   };
 
-  // Función para que el host inicie la partida
   const handleEmitStartGame = () => {
       if (!socket) return;
       console.log('[Client] Solicitando iniciar partida...');

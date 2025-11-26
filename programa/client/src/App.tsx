@@ -18,6 +18,12 @@ interface Celda {
   color: string;
 }
 
+// Interfaz para los jugadores
+interface Jugador {
+  nickname: string;
+  puntaje: number;
+}
+
 const App: React.FC = () => {
   const { currentUser, login, logout } = useAuth();
   
@@ -26,6 +32,8 @@ const App: React.FC = () => {
   
   // Estado para guardar el tablero inicial que envía el servidor
   const [initialBoard, setInitialBoard] = useState<Celda[][]>([]);
+  // Estado para guardar la lista inicial de jugadores
+  const [initialPlayers, setInitialPlayers] = useState<Jugador[]>([]);
 
   const handleNavigation = (view: AppView) => {
     setCurrentView(view);
@@ -40,7 +48,8 @@ const App: React.FC = () => {
     logout();
     setCurrentView('welcome');
     setCurrentGameId(null);
-    setInitialBoard([]); // Limpiar tablero al salir
+    setInitialBoard([]); 
+    setInitialPlayers([]); // Limpiar jugadores al salir
   };
 
   const handleGoToWaitingRoom = (partidaId: string) => {
@@ -48,10 +57,11 @@ const App: React.FC = () => {
     handleNavigation('waiting_room');
   };
 
-  // --- MODIFICADO: Ahora recibe el tablero del servidor ---
-  const handleStartGame = (partidaId: string, tableroServidor: any[]) => {
+  // --- MODIFICADO: Ahora recibe tablero Y jugadores ---
+  const handleStartGame = (partidaId: string, tableroServidor: any[], jugadoresServidor: any[]) => {
     setCurrentGameId(partidaId);
-    setInitialBoard(tableroServidor); // Guardamos la matriz recibida
+    setInitialBoard(tableroServidor); 
+    setInitialPlayers(jugadoresServidor); // Guardamos la lista de jugadores
     handleNavigation('game');
   };
 
@@ -114,7 +124,7 @@ const App: React.FC = () => {
                 partidaId={currentGameId}
                 currentUserNickname={currentUser.nickname}
                 onLeave={() => handleNavigation('menu')}
-                onStartGame={handleStartGame} // Pasamos la función que recibe el tablero
+                onStartGame={handleStartGame} 
             />
         );
         break;
@@ -125,7 +135,8 @@ const App: React.FC = () => {
           <Juego 
             partidaId={currentGameId}
             currentUserNickname={currentUser.nickname}
-            initialTablero={initialBoard} // <--- Enviamos el tablero al juego
+            initialTablero={initialBoard}
+            initialPlayers={initialPlayers} // <--- Pasamos la prop requerida
             onLeave={() => handleNavigation('menu')}
           />
       );
