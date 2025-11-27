@@ -1,3 +1,7 @@
+//-------TEST PARA PROBAR LA CREACION DE PARTIDA EN EL BACKEND-------
+//-------TEST GENERADO POR CHATGPT-------
+
+
 // server/src/test-crear-partida.js
 // Script de prueba para demostrar la funcionalidad de crear partida
 // Ejecutar con: npm run build && node src/test-crear-partida.js
