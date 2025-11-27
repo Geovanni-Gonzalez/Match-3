@@ -6,12 +6,24 @@ export class Celda {
     public colorID: string;
     public estado: 'libre' | 'seleccion_propia' | 'seleccion_otro';
 
+    /**
+     * Constructor de Celda
+     * @param fila - Posición en fila
+     * @param columna - Posición en columna
+     * @param colorOColores - Si es string, usa ese color. Si es array, genera uno aleatorio
+     */
     constructor(
         public fila: number,
         public columna: number,
-        coloresValidos: string[]
+        colorOColores: string | string[]
     ) {
-        this.colorID = this.generarColorAleatorio(coloresValidos);
+        if (typeof colorOColores === 'string') {
+            // Color específico proporcionado
+            this.colorID = colorOColores;
+        } else {
+            // Array de colores: generar uno aleatorio
+            this.colorID = this.generarColorAleatorio(colorOColores);
+        }
         this.estado = 'libre';
     }
 

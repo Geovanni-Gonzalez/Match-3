@@ -115,27 +115,92 @@ export class Partida {
     }
     
 
-    //Procesa la validación de matches de un jugador usando Worker Thread
+    /**
+     * procesarMatch - Valida el match de un jugador, aplica gravedad y suma puntos
+     * REQ-027: Puntuación con fórmula n²
+     * REQ-018: Sistema de relleno con gravedad
+     * @param nickname - Identificador del jugador que hizo el match
+     * Nota: Los combos en cascada NO multiplican puntos, solo rellenan el tablero
+     */
     public async procesarMatch(nickname: string): Promise<void> {
         const jugador = this.jugadores.get(nickname);
-        if (!jugador || jugador.celdasSeleccionadas.length < 3) return; // Validación rápida
-
-        // 1. Ejecutar la validación en el Worker Thread
-        const resultado = await WorkerThreadUtility.validarCadena(
-            jugador.celdasSeleccionadas,
-            this.tablero.matriz
-        );
         
-        // 2. Procesar el resultado
-        if (resultado.valido) {
-            jugador.calcularPuntaje(resultado.n); // REQ-027
-            this.tablero.actualizarCeldas(resultado.celdas); // REQ-026
+        // Validaciones previas
+        if (!jugador) {
+            console.log(`[Partida ${this.idPartida}] X Error: Jugador ${nickname} no encontrado`);
+            return;
         }
 
-        // 3. Limpiar selecciones
-        jugador.limpiarSelecciones();
-        this.tablero.matriz.forEach(row => row.forEach(celda => celda.establecerEstado('libre')));
-        this.enviarEstadoATodos();
+        if (jugador.celdasSeleccionadas.length < 3) {
+            console.log(`[Partida ${this.idPartida}] X Match inválido: ${nickname} seleccionó ${jugador.celdasSeleccionadas.length} celdas (mínimo 3)`);
+            jugador.limpiarSelecciones();
+            return;
+        }
+
+        console.log(`\n[Partida ${this.idPartida}] ========== PROCESANDO MATCH DE ${nickname.toUpperCase()} ==========`);
+        console.log(`[Partida ${this.idPartida}] Celdas seleccionadas: ${jugador.celdasSeleccionadas.length}`);
+
+        try {
+            // 1. Validar el match con Worker Thread
+            const resultado = await WorkerThreadUtility.validarCadena(
+                jugador.celdasSeleccionadas,
+                this.tablero.matriz
+            );
+            
+            if (!resultado.valido) {
+                console.log(`[Partida ${this.idPartida}] X Match inválido: No forma una cadena válida`);
+                jugador.limpiarSelecciones();
+                this.limpiarEstadosCeldas();
+                this.enviarEstadoATodos();
+                return;
+            }
+
+            console.log(`[Partida ${this.idPartida}] ✓ Match válido: ${resultado.n} celdas del mismo color`);
+
+            // 2. Calcular y asignar puntos (n²)
+            jugador.calcularPuntaje(resultado.n);
+
+            // 3. Procesar cascada (eliminar, aplicar gravedad, rellenar)
+            this.tablero.procesarMatchesEnCascada(resultado.celdas);
+
+            // 4. Mostrar tabla de posiciones
+            this.mostrarTablaPosiciones();
+
+        } catch (error) {
+            console.error(`[Partida ${this.idPartida}] X Error al procesar match:`, error);
+        } finally {
+            // 6. Limpiar selecciones y estado del tablero
+            jugador.limpiarSelecciones();
+            this.limpiarEstadosCeldas();
+            
+            // 7. Notificar a todos los jugadores
+            this.enviarEstadoATodos();
+            console.log(`[Partida ${this.idPartida}] ========================================\n`);
+        }
+    }
+
+    /**
+     * limpiarEstadosCeldas - Resetea el estado de todas las celdas a 'libre'
+     */
+    private limpiarEstadosCeldas(): void {
+        this.tablero.matriz.forEach(fila => 
+            fila.forEach(celda => celda.establecerEstado('libre'))
+        );
+    }
+
+    /**
+     * mostrarTablaPosiciones - Imprime en consola el ranking actual de jugadores en consola
+     */
+    private mostrarTablaPosiciones(): void {
+        console.log(`\n[Partida ${this.idPartida}] Tabla de posiciones:`);
+        const ranking = Array.from(this.jugadores.values())
+            .sort((a, b) => b.puntaje - a.puntaje);
+        
+        ranking.forEach((jugador, index) => {
+            const medalla = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '  ';
+            console.log(`[Partida ${this.idPartida}]   ${medalla} ${index + 1}. ${jugador.nickname}: ${jugador.puntaje} puntos`);
+        });
+        console.log('');
     }
 
     //Finaliza el juego y calcula resultados
