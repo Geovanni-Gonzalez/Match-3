@@ -1,48 +1,48 @@
 // client/src/views/Bienvenida.tsx
 import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext'; 
+import axios from 'axios'; 
+const API_URL = 'http://localhost:4000/api'; 
 
 interface BienvenidaProps {
-  onLoginSuccess: (nickname: string) => void;
+// Función callback para notificar al componente padre sobre el login exitoso
 }
 
-export const Bienvenida: React.FC<BienvenidaProps> = ({ onLoginSuccess }) => {
+export const Bienvenida: React.FC<BienvenidaProps> = () => {
+  const { login } = useAuth();
   const [nickname, setNickname] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (nickname.trim().length < 3) {
-      setError('El nickname debe tener al menos 3 caracteres.');
-      return;
-    }
-    setError('');
+    if (nickname.trim().length < 3) {
+      setError('El nickname debe tener al menos 3 caracteres.');
+      return;
+    }
+    setError('');
+    setIsLoading(true);
 
-    // --- Simulación de Autenticación / Registro (POST /api/login o POST /api/join) ---
-    console.log(`Intentando autenticar a: ${nickname}`);
+    try {
+      const registerResponse = await axios.post(`${API_URL}/register`, { nickname });
+      
+      const { jugadorId } = registerResponse.data;
+      console.log(`[Cliente] Jugador ID obtenido de la DB: ${jugadorId}`);
 
-    try {
-        // En un proyecto real, se haría una llamada fetch o axios al backend:
-        /*
-        const response = await fetch('http://localhost:4000/api/auth', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nickname }),
-        });
-        const data = await response.json();
-        if (response.ok) {
-            onLoginSuccess(data.nickname); // Usar data real del servidor
-        } else {
-            setError(data.message || 'Error de servidor.');
-        }
-        */
+      // 2. PASO SOCKET: Iniciar la conexión Socket.IO y establecer la sesión
+      await login(nickname); // Esto conecta el socket y guarda el nickname
 
-        // SIMULACIÓN EXITOSA:
-        setTimeout(() => {
-            onLoginSuccess(nickname);
-        }, 500);
+      // 3. El componente padre ahora redirigirá porque isAuthenticated será true
 
-    } catch (e) {
-      setError('No se pudo conectar con el servidor.');
-    }
+
+
+    } catch (e) {
+      const errorMessage = axios.isAxiosError(e) 
+        ? e.response?.data?.message || 'Error de conexión con el servidor.' 
+        : 'Error desconocido al iniciar sesión.';
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

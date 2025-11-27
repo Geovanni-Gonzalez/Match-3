@@ -1,14 +1,13 @@
 // server/src/index.js
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const cors = require('cors');
-const apiRoutes = require('./api');
+import express from 'express'; // Añadir @types/express si no lo has hecho
+import http from 'http';
+import { Server } from 'socket.io';
+import cors from 'cors';
+import apiRoutes from './api.js';
 
 const app = express();
 const PORT = 4000;
 
-// Constantes del Juego (Mismas que en el cliente)
 const FILAS = 9;
 const COLUMNAS = 7;
 const COLORES = ['#1E90FF', '#FF8C00', '#FF4500', '#32CD32', '#FFD700', '#8A2BE2', '#00CED1']; 
@@ -41,7 +40,7 @@ const generarTableroAleatorio = () => {
 };
 
 io.on('connection', (socket) => {
-    console.log(`[Socket] Cliente conectado: ${socket.id}`);
+    console.log('[Socket] Nuevo cliente conectado:', socket.id);
 
     socket.on('join_room', async (data) => {
         const { partidaId, nickname } = data;
@@ -79,8 +78,8 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log('[Socket] Cliente desconectado:', socket.id);
     });
-});
 
+});
 server.listen(PORT, () => {
     console.log(`[Server] Corriendo en http://localhost:${PORT}`);
 });

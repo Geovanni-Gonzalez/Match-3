@@ -63,13 +63,13 @@ const App: React.FC = () => {
           setCurrentView('menu'); 
           content = null;
       } else {
-          content = <Bienvenida onLoginSuccess={handleLoginSuccess} />;
+          content = <Bienvenida />;
       }
       break;
       
     case 'menu':
       if (!currentUser) {
-        content = <Bienvenida onLoginSuccess={handleLoginSuccess} />;
+        content = <Bienvenida/>;
       } else {
         content = (
             <MenuPrincipal 
@@ -132,7 +132,7 @@ const App: React.FC = () => {
       break;
 
     default:
-      content = <Bienvenida onLoginSuccess={handleLoginSuccess} />;
+      content = <Bienvenida/>;
   }
 
   return (

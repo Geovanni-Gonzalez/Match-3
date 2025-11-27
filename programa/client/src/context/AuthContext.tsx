@@ -94,7 +94,3 @@ export const useAuth = (): AuthContextType => {
     return context;
 };
 
-/*
-// Ejemplo de uso en App.tsx:
-// const App: React.FC = () => { return (<AuthProvider><MainRouter /></AuthProvider>); };
-*/

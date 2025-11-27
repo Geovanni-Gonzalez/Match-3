@@ -1,10 +1,36 @@
 // server/src/api.js
-const express = require('express');
-const router = express.Router();
-const { v4: uuidv4 } = require('uuid'); 
+import express, { Router } from 'express';
+import { DBManager } from './db/dbManager.js';
+import { v4 as uuidv4 } from 'uuid';
+const router = Router();
 
 // Simulación de Base de Datos en Memoria (Array temporal)
 const partidas = [];
+
+// Endpoint: Registrar jugador (o buscar por nickname)
+router.post('/register', async (req, res) => {
+    const { nickname } = req.body;
+    
+    if (!nickname) {
+        return res.status(400).json({ message: 'El nickname es obligatorio.' });
+    }
+
+    try {
+        // Llama al método estático para registrar o buscar el ID en la DB
+        const jugadorId = await DBManager.registrarJugador(nickname);
+        
+        // El servidor devuelve el ID del jugador, que es la llave única
+        res.status(200).json({ 
+            message: 'Registro exitoso',
+            jugadorId: jugadorId,
+            nickname: nickname
+        });
+
+    } catch (error) {
+        console.error('Error al registrar/buscar jugador en DB:', error);
+        res.status(500).json({ message: 'Error interno al procesar el registro.' });
+    }
+});
 
 // Endpoint: Obtener lista de partidas disponibles (REQ-011)
 router.get('/partidas', (req, res) => {
@@ -47,4 +73,4 @@ router.post('/partidas', (req, res) => {
     });
 });
 
-module.exports = router;
+export default router;
