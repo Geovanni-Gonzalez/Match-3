@@ -32,9 +32,15 @@ export class Jugador {
         this.celdasSeleccionadas = [];
     }
 
+    /**
+     * calcularPuntaje - Suma puntos usando fórmula n² (REQ-027)
+     * @param n - Cantidad de celdas en el match
+     * Ejemplo: 3 celdas = 9 puntos, 4 celdas = 16 puntos, 5 celdas = 25 puntos
+     */
     public calcularPuntaje(n: number): void {
-        const puntajeAdicional = Math.pow(n, 2); // REQ-027
+        const puntajeAdicional = Math.pow(n, 2); // n²
         this.puntaje += puntajeAdicional;
+        console.log(`[JUGADOR ${this.nickname}] +${puntajeAdicional} puntos (${n} celdas) | Total: ${this.puntaje}`);
     }
 
     public async guardarEstadisticas(partidaId: string, esGanador: boolean): Promise<void> {
