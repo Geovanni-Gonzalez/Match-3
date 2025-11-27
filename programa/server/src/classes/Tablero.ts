@@ -19,9 +19,9 @@ export class Tablero {
     }
 
     /**
-     * inicializar - Genera la matriz inicial con colores aleatorios sin matches de 3+
-     * REQ-018: Garantiza que no existan matches al inicio del juego
-     * @restricciones - No debe haber 3+ colores iguales en línea (horizontal/vertical)
+     * inicializar - Genera la matriz inicial con colores completamente aleatorios
+     * NOTA: Permite matches desde el inicio (es parte del juego encontrarlos)
+     * @restricciones - Ninguna, los colores son 100% aleatorios
      */
     private inicializar(): void {
         const { TAMANIO_FILA: R, TAMANIO_COLUMNA: C, COLORES_VALIDOS } = this.config;
@@ -33,13 +33,13 @@ export class Tablero {
         for (let r = 0; r < R; r++) {
             this.matriz[r] = [];
             for (let c = 0; c < C; c++) {
-                // Generar color válido que no forme match de 3 en primera instancia
-                const colorValido = this.generarColorSinMatch(r, c, COLORES_VALIDOS);
-                this.matriz[r][c] = new Celda(r, c, colorValido);
+                // Generar color completamente aleatorio (sin restricciones)
+                const colorAleatorio = COLORES_VALIDOS[Math.floor(Math.random() * COLORES_VALIDOS.length)];
+                this.matriz[r][c] = new Celda(r, c, colorAleatorio);
             }
         }
         
-        console.log('[TABLERO] ✓ Tablero inicializado sin matches iniciales');
+        console.log('[TABLERO] ✓ Tablero inicializado con colores aleatorios');
     }
 
     /**
@@ -94,6 +94,68 @@ export class Tablero {
             return this.matriz[r][c];
         }
         return undefined;
+    }
+
+    /**
+     * detectarGrupoDesde - Detecta el grupo completo de 3+ celdas del mismo color desde una celda inicial
+     * Usa algoritmo flood fill (BFS) para encontrar TODAS las celdas conectadas del mismo color
+     * @param r - Fila inicial
+     * @param c - Columna inicial
+     * @returns Array de coordenadas que forman el grupo, o array vacío si no hay grupo válido (< 3)
+     */
+    public detectarGrupoDesde(r: number, c: number): Coordenada[] {
+        const celda = this.obtenerCelda(r, c);
+        if (!celda) return [];
+
+        const color = celda.colorID;
+        const visitadas = new Set<string>();
+        const grupoCompleto: Coordenada[] = [];
+        
+        // Cola para BFS (Breadth-First Search)
+        const cola: Coordenada[] = [{ r, c }];
+        visitadas.add(`${r},${c}`);
+
+        // Direcciones: horizontal, vertical y diagonales (8 direcciones)
+        const direcciones = [
+            { dr: 0, dc: 1 },   // Derecha
+            { dr: 0, dc: -1 },  // Izquierda
+            { dr: 1, dc: 0 },   // Abajo
+            { dr: -1, dc: 0 },  // Arriba
+            { dr: 1, dc: 1 },   // Diagonal abajo-derecha
+            { dr: -1, dc: -1 }, // Diagonal arriba-izquierda
+            { dr: 1, dc: -1 },  // Diagonal abajo-izquierda
+            { dr: -1, dc: 1 }   // Diagonal arriba-derecha
+        ];
+
+        // BFS: explorar todas las celdas conectadas
+        while (cola.length > 0) {
+            const actual = cola.shift()!;
+            grupoCompleto.push(actual);
+
+            // Explorar vecinos
+            for (const { dr, dc } of direcciones) {
+                const nr = actual.r + dr;
+                const nc = actual.c + dc;
+                const clave = `${nr},${nc}`;
+
+                // Saltar si ya fue visitada
+                if (visitadas.has(clave)) continue;
+
+                const celdaVecina = this.obtenerCelda(nr, nc);
+                
+                // Si existe, tiene el mismo color y no ha sido visitada
+                if (celdaVecina && celdaVecina.colorID === color) {
+                    visitadas.add(clave);
+                    cola.push({ r: nr, c: nc });
+                }
+            }
+        }
+
+        // Solo retornar si hay 3 o más celdas
+        if (grupoCompleto.length < 3) return [];
+
+        console.log(`[TABLERO] Grupo detectado desde [${r},${c}]: ${grupoCompleto.length} celdas del color ${color}`);
+        return grupoCompleto;
     }
 
     /**

@@ -1,4 +1,4 @@
-import { Configuracion } from '../interfaces';
+import { Configuracion, Coordenada } from '../interfaces';
 import { Jugador } from './Jugador';
 import { Tablero } from './Tablero';
 import { WorkerThreadUtility } from '../worker/workerUtility';
@@ -13,7 +13,7 @@ export class Partida {
     public cronometro: ReturnType<typeof setInterval> | null = null;
     private config: Configuracion;
     private fechaCreacion: Date;
-    private duracionMinutos?: number;
+    public duracionMinutos?: number;
 
     constructor(
         public idPartida: string,
@@ -116,75 +116,163 @@ export class Partida {
     
 
     /**
-     * procesarMatch - Valida el match de un jugador, aplica gravedad y suma puntos
-     * REQ-027: Puntuación con fórmula n²
-     * REQ-018: Sistema de relleno con gravedad
-     * @param nickname - Identificador del jugador que hizo el match
-     * Nota: Los combos en cascada NO multiplican puntos, solo rellenan el tablero
+     * seleccionarCelda - Jugador toca una celda para seleccionar su grupo
+     * Detecta el grupo completo de 3+ celdas del mismo color y las bloquea para ese jugador
+     * @param nickname - Jugador que selecciona
+     * @param r - Fila de la celda tocada
+     * @param c - Columna de la celda tocada
+     * @returns { exito, mensaje, grupo } - Resultado de la operación
      */
-    public async procesarMatch(nickname: string): Promise<void> {
+    public seleccionarCelda(nickname: string, r: number, c: number): { 
+        exito: boolean; 
+        mensaje: string; 
+        grupo?: Coordenada[] 
+    } {
+        const jugador = this.jugadores.get(nickname);
+        if (!jugador) {
+            return { exito: false, mensaje: 'Jugador no encontrado' };
+        }
+
+        const celda = this.tablero.obtenerCelda(r, c);
+        if (!celda) {
+            return { exito: false, mensaje: 'Celda fuera de límites' };
+        }
+
+        // Verificar si la celda ya está bloqueada por otro jugador
+        if (celda.estaBloqueada() && celda.bloqueadaPor !== nickname) {
+            return { exito: false, mensaje: `Celda bloqueada por ${celda.bloqueadaPor}` };
+        }
+
+        // Si el jugador ya tiene este grupo seleccionado, cancelar selección
+        if (celda.bloqueadaPor === nickname) {
+            return this.cancelarSeleccion(nickname);
+        }
+
+        // Detectar el grupo completo desde esta celda
+        const grupo = this.tablero.detectarGrupoDesde(r, c);
+
+        if (grupo.length < 3) {
+            return { exito: false, mensaje: 'No hay grupo válido (se necesitan 3+ celdas)' };
+        }
+
+        // Verificar que ninguna celda del grupo esté bloqueada por otro jugador
+        for (const coord of grupo) {
+            const celdaGrupo = this.tablero.obtenerCelda(coord.r, coord.c);
+            if (celdaGrupo && celdaGrupo.estaBloqueada() && celdaGrupo.bloqueadaPor !== nickname) {
+                return { exito: false, mensaje: `Grupo parcialmente bloqueado por ${celdaGrupo.bloqueadaPor}` };
+            }
+        }
+
+        // Limpiar selección anterior si existe
+        this.limpiarSeleccionJugador(nickname);
+
+        // Bloquear todas las celdas del grupo para este jugador
+        grupo.forEach(coord => {
+            const celdaGrupo = this.tablero.obtenerCelda(coord.r, coord.c);
+            if (celdaGrupo) {
+                celdaGrupo.bloquearPara(nickname);
+                celdaGrupo.establecerEstado('seleccion_propia');
+            }
+        });
+
+        // Guardar grupo en el jugador
+        jugador.celdasSeleccionadas = grupo;
+
+        console.log(`[Partida ${this.idPartida}] ${nickname} seleccionó grupo de ${grupo.length} celdas (${celda.colorID})`);
+
+        return { 
+            exito: true, 
+            mensaje: `Grupo de ${grupo.length} celdas seleccionado`, 
+            grupo 
+        };
+    }
+
+    /**
+     * cancelarSeleccion - Cancela la selección actual de un jugador
+     */
+    public cancelarSeleccion(nickname: string): { exito: boolean; mensaje: string } {
+        this.limpiarSeleccionJugador(nickname);
+        console.log(`[Partida ${this.idPartida}] ${nickname} canceló su selección`);
+        return { exito: true, mensaje: 'Selección cancelada' };
+    }
+
+    /**
+     * limpiarSeleccionJugador - Desbloquea las celdas seleccionadas por un jugador
+     */
+    private limpiarSeleccionJugador(nickname: string): void {
+        const jugador = this.jugadores.get(nickname);
+        if (!jugador) return;
+
+        jugador.celdasSeleccionadas.forEach(coord => {
+            const celda = this.tablero.obtenerCelda(coord.r, coord.c);
+            if (celda && celda.bloqueadaPor === nickname) {
+                celda.desbloquear();
+            }
+        });
+
+        jugador.limpiarSelecciones();
+    }
+
+    /**
+     * confirmarMatch - Procesa el match seleccionado por un jugador
+     * Calcula puntos, elimina celdas, aplica gravedad y rellena
+     * @param nickname - Jugador que confirma su match
+     */
+    public confirmarMatch(nickname: string): { exito: boolean; mensaje: string; puntos?: number } {
         const jugador = this.jugadores.get(nickname);
         
-        // Validaciones previas
         if (!jugador) {
-            console.log(`[Partida ${this.idPartida}] X Error: Jugador ${nickname} no encontrado`);
-            return;
+            return { exito: false, mensaje: 'Jugador no encontrado' };
         }
 
         if (jugador.celdasSeleccionadas.length < 3) {
-            console.log(`[Partida ${this.idPartida}] X Match inválido: ${nickname} seleccionó ${jugador.celdasSeleccionadas.length} celdas (mínimo 3)`);
-            jugador.limpiarSelecciones();
-            return;
+            return { exito: false, mensaje: 'No hay grupo seleccionado' };
         }
 
-        console.log(`\n[Partida ${this.idPartida}] ========== PROCESANDO MATCH DE ${nickname.toUpperCase()} ==========`);
-        console.log(`[Partida ${this.idPartida}] Celdas seleccionadas: ${jugador.celdasSeleccionadas.length}`);
+        console.log(`\n[Partida ${this.idPartida}] ========== ${nickname.toUpperCase()} CONFIRMA MATCH ==========`);
+        console.log(`[Partida ${this.idPartida}] Celdas: ${jugador.celdasSeleccionadas.length}`);
 
         try {
-            // 1. Validar el match con Worker Thread
-            const resultado = await WorkerThreadUtility.validarCadena(
-                jugador.celdasSeleccionadas,
-                this.tablero.matriz
-            );
-            
-            if (!resultado.valido) {
-                console.log(`[Partida ${this.idPartida}] X Match inválido: No forma una cadena válida`);
-                jugador.limpiarSelecciones();
-                this.limpiarEstadosCeldas();
-                this.enviarEstadoATodos();
-                return;
-            }
+            const n = jugador.celdasSeleccionadas.length;
 
-            console.log(`[Partida ${this.idPartida}] ✓ Match válido: ${resultado.n} celdas del mismo color`);
+            // 1. Calcular y asignar puntos (n²)
+            jugador.calcularPuntaje(n);
 
-            // 2. Calcular y asignar puntos (n²)
-            jugador.calcularPuntaje(resultado.n);
+            // 2. Eliminar celdas, aplicar gravedad y rellenar
+            this.tablero.procesarMatchesEnCascada(jugador.celdasSeleccionadas);
 
-            // 3. Procesar cascada (eliminar, aplicar gravedad, rellenar)
-            this.tablero.procesarMatchesEnCascada(resultado.celdas);
+            // 3. Limpiar selección
+            this.limpiarSeleccionJugador(nickname);
 
             // 4. Mostrar tabla de posiciones
             this.mostrarTablaPosiciones();
 
-        } catch (error) {
-            console.error(`[Partida ${this.idPartida}] X Error al procesar match:`, error);
-        } finally {
-            // 6. Limpiar selecciones y estado del tablero
-            jugador.limpiarSelecciones();
-            this.limpiarEstadosCeldas();
-            
-            // 7. Notificar a todos los jugadores
+            // 5. Notificar a todos
             this.enviarEstadoATodos();
+
             console.log(`[Partida ${this.idPartida}] ========================================\n`);
+
+            return { 
+                exito: true, 
+                mensaje: `Match confirmado: +${Math.pow(n, 2)} puntos`, 
+                puntos: Math.pow(n, 2) 
+            };
+
+        } catch (error) {
+            console.error(`[Partida ${this.idPartida}] ✗ Error al confirmar match:`, error);
+            return { exito: false, mensaje: 'Error al procesar match' };
         }
     }
 
     /**
-     * limpiarEstadosCeldas - Resetea el estado de todas las celdas a 'libre'
+     * limpiarEstadosCeldas - Resetea el estado de todas las celdas a 'libre' y desbloquea
      */
     private limpiarEstadosCeldas(): void {
         this.tablero.matriz.forEach(fila => 
-            fila.forEach(celda => celda.establecerEstado('libre'))
+            fila.forEach(celda => {
+                celda.establecerEstado('libre');
+                celda.desbloquear();
+            })
         );
     }
 
@@ -288,5 +376,32 @@ export class Partida {
     //Obtiene la configuracion de la partida
     public getConfiguracion(): Configuracion {
         return this.config;
+    }
+
+    /**
+     * obtenerEstadoTablero - Retorna la matriz del tablero para enviar al cliente
+     */
+    public obtenerEstadoTablero(): any {
+        return this.tablero.matriz.map(fila => 
+            fila.map(celda => ({
+                fila: celda.fila,
+                columna: celda.columna,
+                colorID: celda.colorID,
+                estado: celda.estado,
+                bloqueadaPor: celda.bloqueadaPor
+            }))
+        );
+    }
+
+    /**
+     * obtenerJugadores - Retorna información de todos los jugadores
+     */
+    public obtenerJugadores(): any[] {
+        return Array.from(this.jugadores.values()).map(jugador => ({
+            nickname: jugador.nickname,
+            socketID: jugador.socketID,
+            puntaje: jugador.puntaje,
+            celdasSeleccionadas: jugador.celdasSeleccionadas
+        }));
     }
 }

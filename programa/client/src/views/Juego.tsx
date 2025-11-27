@@ -7,14 +7,27 @@ import { useAuth } from '../context/AuthContext';
 const FILAS = 9;
 const COLUMNAS = 7;
 
+// Mapeo de colores del servidor a CSS
+const COLOR_MAP: { [key: string]: string } = {
+  'azul': '#1E90FF',      // DodgerBlue
+  'naranja': '#FF8C00',   // DarkOrange
+  'rojo': '#DC143C',      // Crimson
+  'verde': '#32CD32',     // LimeGreen
+  'amarillo': '#FFD700',  // Gold
+  'morado': '#9370DB'     // MediumPurple
+};
+
 interface JugadorPartida {
   nickname: string;
   puntaje: number;
 }
 
 interface Celda {
-  id: number;
-  color: string;
+  fila: number;
+  columna: number;
+  colorID: string;
+  estado: string;
+  bloqueadaPor: string | null;
 }
 
 interface JuegoProps {
@@ -22,6 +35,7 @@ interface JuegoProps {
   currentUserNickname: string;
   initialTablero: Celda[][];
   initialPlayers: JugadorPartida[];
+  gameInfo: { tipoJuego: string; tematica: string; duracionMinutos?: number };
   onLeave: () => void;
 }
 
@@ -30,69 +44,105 @@ export const Juego: React.FC<JuegoProps> = ({
   currentUserNickname, 
   initialTablero,
   initialPlayers,
+  gameInfo,
   onLeave 
 }) => {
   const { socket } = useAuth(); 
   
+  console.log('[Juego] Recibido initialTablero:', initialTablero);
+  console.log('[Juego] Tipo de juego:', gameInfo.tipoJuego);
+  console.log('[Juego] Temática:', gameInfo.tematica);
+  
   const [tablero, setTablero] = useState<Celda[][]>(initialTablero || []);
   const [jugadores, setJugadores] = useState<JugadorPartida[]>(initialPlayers || []);
-  const [selectedCell, setSelectedCell] = useState<number | null>(null);
-  const [blockedCells, setBlockedCells] = useState<{ [id: number]: string }>({});
-  const [matchGoal, setMatchGoal] = useState<number>(100); 
-  const [tiempoRestante, setTiempoRestante] = useState<number>(300); 
-
-  if (!tablero || tablero.length === 0) {
-    return <div style={styles.windowFrame}><h1>Cargando partida...</h1></div>;
-  }
+  const [grupoSeleccionado, setGrupoSeleccionado] = useState<{fila: number, columna: number}[]>([]);
+  const [mensajeError, setMensajeError] = useState<string | null>(null);
+  // Configurar según tipo de juego
+  const [tiempoRestante, setTiempoRestante] = useState<number>(
+    gameInfo.tipoJuego === 'Tiempo' && gameInfo.duracionMinutos 
+      ? gameInfo.duracionMinutos * 60 
+      : 0
+  );
 
   useEffect(() => {
     if (!socket) return;
 
-    // --- ESCUCHAR ACTUALIZACIONES DEL JUEGO (REQ-029) ---
-    socket.on('game_update', (data) => {
-        console.log('[Client] Actualización recibida:', data);
-        setTablero(data.tablero);       // Nuevo tablero
-        setJugadores(data.jugadores);   // Nuevos puntajes
+    // --- GRUPO BLOQUEADO: Cuando alguien selecciona un grupo ---
+    socket.on('grupo_bloqueado', (data) => {
+        console.log('[Client] Grupo bloqueado:', data);
+        console.log('[Client] Bloqueado por:', data.nickname);
+        console.log('[Client] Usuario actual:', currentUserNickname);
         
-        // Si yo hice el match, limpio mi selección
-        if (selectedCell !== null) {
-            setSelectedCell(null);
+        // Actualizar tablero con el estado del servidor
+        if (data.tablero) {
+            setTablero(data.tablero);
+        }
+        
+        // Si soy yo quien lo bloqueó, guardar el grupo
+        if (data.nickname === currentUserNickname) {
+            setGrupoSeleccionado(data.grupo);
         }
     });
 
-    socket.on('match_failed', (data) => {
-        alert(data.message); // Aviso si no es grupo de 3
+    // --- GRUPO LIBERADO: Cuando alguien cancela ---
+    socket.on('grupo_liberado', (data) => {
+        console.log('[Client] Grupo liberado:', data);
+        
+        // Actualizar tablero con el estado del servidor
+        if (data.tablero) {
+            setTablero(data.tablero);
+        }
+        
+        if (data.nickname === currentUserNickname) {
+            setGrupoSeleccionado([]);
+        }
     });
 
-    socket.on('cell_locked', ({ cellId, lockedBy }) => {
-        setBlockedCells(prev => ({ ...prev, [cellId]: lockedBy }));
+    // --- GAME UPDATE: Tablero actualizado después de un match ---
+    socket.on('game_update', (data) => {
+        console.log('[Client] Actualización recibida:', data);
+        setTablero(data.tablero);
+        setJugadores(data.jugadores);
+        setGrupoSeleccionado([]);
+        setMensajeError(null);
     });
 
-    socket.on('cell_unlocked', ({ cellId }) => {
-        setBlockedCells(prev => {
-            const newState = { ...prev };
-            delete newState[cellId];
-            return newState;
-        });
+    // --- ERROR SELECCIÓN ---
+    socket.on('error_seleccion', (data) => {
+        console.log('[Client] Error:', data.mensaje);
+        setMensajeError(data.mensaje);
+        setTimeout(() => setMensajeError(null), 3000);
+    });
+
+    // --- ERROR MATCH ---
+    socket.on('error_match', (data) => {
+        console.log('[Client] Error match:', data.mensaje);
+        setMensajeError(data.mensaje);
+        setTimeout(() => setMensajeError(null), 3000);
     });
 
     return () => {
+        socket.off('grupo_bloqueado');
+        socket.off('grupo_liberado');
         socket.off('game_update');
-        socket.off('match_failed');
-        socket.off('cell_locked');
-        socket.off('cell_unlocked');
+        socket.off('error_seleccion');
+        socket.off('error_match');
     };
-  }, [socket, selectedCell]);
+  }, [socket, currentUserNickname]);
 
-  // Cronómetro
+  // Cronómetro (solo para tipo Tiempo)
   useEffect(() => {
-    if (tiempoRestante > 0) {
+    if (gameInfo.tipoJuego === 'Tiempo' && tiempoRestante > 0) {
       const timer = setInterval(() => {
         setTiempoRestante(prev => prev - 1);
       }, 1000);
       return () => clearInterval(timer);
     }
-  }, [tiempoRestante]);
+  }, [tiempoRestante, gameInfo.tipoJuego]);
+
+  if (!tablero || tablero.length === 0) {
+    return <div style={styles.windowFrame}><h1>Cargando partida...</h1></div>;
+  }
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -100,44 +150,66 @@ export const Juego: React.FC<JuegoProps> = ({
     return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleCellClick = (cellId: number) => {
-    if (blockedCells[cellId]) return;
-
-    if (selectedCell === cellId) {
-      setSelectedCell(null);
-      socket?.emit('deselect_cell', { partidaId, cellId });
-    } else {
-      if (selectedCell !== null) {
-          socket?.emit('deselect_cell', { partidaId, cellId: selectedCell });
-      }
-      setSelectedCell(cellId);
-      socket?.emit('select_cell', { partidaId, cellId, nickname: currentUserNickname });
+  const handleCellClick = (fila: number, columna: number) => {
+    const celda = tablero[fila][columna];
+    
+    // No permitir click si está bloqueada por otro
+    if (celda.bloqueadaPor && celda.bloqueadaPor !== currentUserNickname) {
+      return;
     }
+
+    // Si ya tengo un grupo seleccionado, cancelar primero
+    if (grupoSeleccionado.length > 0) {
+      handleCancelar();
+    }
+
+    // Enviar selección al servidor
+    console.log('[Client] Seleccionando celda:', fila, columna);
+    socket?.emit('select_cell', { 
+      partidaId, 
+      fila, 
+      columna, 
+      nickname: currentUserNickname 
+    });
   };
 
-  // --- MATCH REAL (REQ-024, REQ-025) ---
-  const handleMatch = () => {
-    if (selectedCell === null) {
-      alert('Debes seleccionar una celda para intentar un Match.');
+  const handleConfirmar = () => {
+    if (grupoSeleccionado.length === 0) {
+      setMensajeError('Debes seleccionar un grupo primero');
+      setTimeout(() => setMensajeError(null), 3000);
       return;
     }
     
-    // En lugar de calcular localmente, le pedimos al servidor que lo intente
-    console.log('[Client] Solicitando match en celda:', selectedCell);
-    socket?.emit('attempt_match', { 
-        partidaId, 
-        cellId: selectedCell, 
-        nickname: currentUserNickname 
+    console.log('[Client] Confirmando match');
+    socket?.emit('confirm_match', { 
+      partidaId, 
+      nickname: currentUserNickname 
     });
+  };
+
+  const handleCancelar = () => {
+    console.log('[Client] Cancelando selección');
+    socket?.emit('cancel_selection', { 
+      partidaId, 
+      nickname: currentUserNickname 
+    });
+    setGrupoSeleccionado([]);
   };
   
   return (
     <div style={styles.windowFrame}>
-        <h1 style={styles.title}>Juego: {partidaId.substring(0, 8)}...</h1>
+        <h1 style={styles.title}>{gameInfo.tematica} - {gameInfo.tipoJuego}</h1>
 
-        <div style={styles.goalHeader}>
-            Matches: {matchGoal} / Tiempo: {formatTime(tiempoRestante)}
-        </div>
+        {gameInfo.tipoJuego === 'Tiempo' && (
+          <div style={styles.goalHeader}>
+              Tiempo restante: {formatTime(tiempoRestante)}
+          </div>
+        )}
+        {gameInfo.tipoJuego === 'Match' && (
+          <div style={styles.goalHeader}>
+              Modo: Match (sin límite de tiempo)
+          </div>
+        )}
 
         <div style={styles.gameArea}>
             <div style={styles.scorePanel}>
@@ -166,36 +238,83 @@ export const Juego: React.FC<JuegoProps> = ({
 
             <div style={styles.boardContainer}>
                 <div style={styles.boardGrid}>
-                    {tablero.flat().map((celda) => {
-                        const isBlocked = !!blockedCells[celda.id];
-                        const lockedBy = blockedCells[celda.id];
-                        return (
-                            <div 
-                                key={celda.id}
-                                style={{
-                                    ...styles.cell,
-                                    backgroundColor: celda.color,
-                                    border: selectedCell === celda.id 
-                                        ? '3px solid #FFD700' 
-                                        : isBlocked 
-                                            ? '3px solid #FF4500' 
-                                            : '1px solid #333',
-                                    opacity: isBlocked ? 0.5 : 1,
-                                    cursor: isBlocked ? 'not-allowed' : 'pointer',
-                                    transform: selectedCell === celda.id ? 'scale(0.9)' : 'scale(1)'
-                                }}
-                                onClick={() => handleCellClick(celda.id)}
-                                title={isBlocked ? `Bloqueada por ${lockedBy}` : ''}
-                            >
-                                {isBlocked && <span style={styles.lockIcon}>🔒</span>}
-                            </div>
-                        );
-                    })}
+                    {tablero.map((fila, filaIdx) => 
+                        fila.map((celda, colIdx) => {
+                            const estaBloqueadaPorMi = celda.bloqueadaPor === currentUserNickname;
+                            const estaBloqueadaPorOtro = celda.bloqueadaPor && celda.bloqueadaPor !== currentUserNickname;
+                            
+                            // Debug: mostrar celdas bloqueadas
+                            if (celda.bloqueadaPor && filaIdx === 0 && colIdx === 0) {
+                                console.log('[Render] Celda [0,0] bloqueada por:', celda.bloqueadaPor, 'Usuario actual:', currentUserNickname);
+                            }
+                            
+                            // Mapear color del servidor a CSS
+                            const colorCSS = COLOR_MAP[celda.colorID] || celda.colorID;
+                            
+                            return (
+                                <div 
+                                    key={`${filaIdx}-${colIdx}`}
+                                    style={{
+                                        ...styles.cell,
+                                        backgroundColor: colorCSS,
+                                        // Usar outline en lugar de border para no afectar el tamaño
+                                        outline: estaBloqueadaPorMi
+                                            ? '3px solid #00FF00' 
+                                            : estaBloqueadaPorOtro
+                                                ? '3px solid #FF4500' 
+                                                : 'none',
+                                        outlineOffset: '-3px',
+                                        opacity: estaBloqueadaPorOtro ? 0.4 : 1,
+                                        cursor: estaBloqueadaPorOtro ? 'not-allowed' : 'pointer',
+                                        boxShadow: estaBloqueadaPorMi 
+                                            ? '0 0 15px #00FF00, inset 0 0 10px rgba(0, 255, 0, 0.3)' 
+                                            : estaBloqueadaPorOtro
+                                                ? 'inset 0 0 20px rgba(0, 0, 0, 0.7)'
+                                                : 'none',
+                                        filter: estaBloqueadaPorOtro ? 'brightness(0.5) saturate(0.7)' : 'none',
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                    onClick={() => handleCellClick(filaIdx, colIdx)}
+                                    title={celda.bloqueadaPor ? `Bloqueada por ${celda.bloqueadaPor}` : ''}
+                                >
+                                    {estaBloqueadaPorOtro && <span style={styles.lockIcon}>🔒</span>}
+                                </div>
+                            );
+                        })
+                    )}
                 </div>
             </div>
         </div>
         
-        <button onClick={handleMatch} style={styles.matchButton}>Match</button>
+        {mensajeError && (
+            <div style={styles.errorMessage}>{mensajeError}</div>
+        )}
+        
+        <div style={styles.buttonContainer}>
+            <button 
+                onClick={handleConfirmar} 
+                style={{
+                    ...styles.confirmButton,
+                    opacity: grupoSeleccionado.length > 0 ? 1 : 0.5,
+                    cursor: grupoSeleccionado.length > 0 ? 'pointer' : 'not-allowed'
+                }}
+                disabled={grupoSeleccionado.length === 0}
+            >
+                Confirmar ({grupoSeleccionado.length} celdas)
+            </button>
+            <button 
+                onClick={handleCancelar} 
+                style={{
+                    ...styles.cancelButton,
+                    opacity: grupoSeleccionado.length > 0 ? 1 : 0.5,
+                    cursor: grupoSeleccionado.length > 0 ? 'pointer' : 'not-allowed'
+                }}
+                disabled={grupoSeleccionado.length === 0}
+            >
+                Cancelar
+            </button>
+        </div>
+        
         <button onClick={onLeave} style={styles.leaveButton}>Abandonar Partida</button>
     </div>
   );
@@ -225,11 +344,26 @@ const styles: { [key: string]: React.CSSProperties } = {
   boardContainer: { backgroundColor: '#282c34', padding: '5px', borderRadius: '8px', boxShadow: 'inset 0 0 10px rgba(0, 0, 0, 0.5)' },
   boardGrid: { display: 'grid', gridTemplateColumns: `repeat(${COLUMNAS}, 1fr)`, gridTemplateRows: `repeat(${FILAS}, 1fr)`, gap: '2px' },
   cell: { 
-      width: '35px', height: '35px', borderRadius: '4px', cursor: 'pointer', 
-      transition: 'transform 0.1s, border 0.1s, opacity 0.2s',
-      display: 'flex', justifyContent: 'center', alignItems: 'center' 
+      width: '35px', 
+      height: '35px', 
+      borderRadius: '4px', 
+      cursor: 'pointer', 
+      transition: 'all 0.2s ease',
+      display: 'flex', 
+      justifyContent: 'center', 
+      alignItems: 'center',
+      position: 'relative',
+      boxSizing: 'border-box'
   },
-  lockIcon: { fontSize: '12px' },
-  matchButton: { padding: '12px 30px', backgroundColor: '#00CED1', color: '#222', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '18px', fontWeight: 'bold', transition: 'background-color 0.2s', marginTop: '10px', boxShadow: '0 4px #00A3A8' },
+  lockIcon: { 
+      fontSize: '20px', 
+      position: 'absolute',
+      textShadow: '0 0 3px rgba(0, 0, 0, 0.8)',
+      pointerEvents: 'none'
+  },
+  errorMessage: { color: '#FF4500', backgroundColor: '#333', padding: '10px', borderRadius: '5px', marginTop: '10px', fontWeight: 'bold' },
+  buttonContainer: { display: 'flex', gap: '10px', marginTop: '10px' },
+  confirmButton: { padding: '12px 30px', backgroundColor: '#00FF00', color: '#222', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '18px', fontWeight: 'bold', transition: 'all 0.2s', boxShadow: '0 4px #00AA00' },
+  cancelButton: { padding: '12px 30px', backgroundColor: '#FF4500', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '18px', fontWeight: 'bold', transition: 'all 0.2s', boxShadow: '0 4px #CC3300' },
   leaveButton: { position: 'absolute', bottom: '10px', right: '10px', backgroundColor: 'transparent', color: '#999', border: 'none', fontSize: '12px', cursor: 'pointer' }
 };

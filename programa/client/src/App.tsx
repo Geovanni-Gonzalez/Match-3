@@ -12,10 +12,13 @@ import { useAuth } from './context/AuthContext';
 // --- Tipos ---
 type AppView = 'welcome' | 'menu' | 'lobby' | 'ranking' | 'create_game' | 'waiting_room' | 'game';
 
-// Interfaz para las celdas del tablero
+// Interfaz para las celdas del tablero (debe coincidir con el backend)
 interface Celda {
-  id: number;
-  color: string;
+  fila: number;
+  columna: number;
+  colorID: string;
+  estado: string;
+  bloqueadaPor: string | null;
 }
 
 // Interfaz para los jugadores
@@ -34,6 +37,8 @@ const App: React.FC = () => {
   const [initialBoard, setInitialBoard] = useState<Celda[][]>([]);
   // Estado para guardar la lista inicial de jugadores
   const [initialPlayers, setInitialPlayers] = useState<Jugador[]>([]);
+  // Estado para guardar info del juego
+  const [gameInfo, setGameInfo] = useState<any>(null);
 
   const handleNavigation = (view: AppView) => {
     setCurrentView(view);
@@ -49,7 +54,8 @@ const App: React.FC = () => {
     setCurrentView('welcome');
     setCurrentGameId(null);
     setInitialBoard([]); 
-    setInitialPlayers([]); // Limpiar jugadores al salir
+    setInitialPlayers([]);
+    setGameInfo(null);
   };
 
   const handleGoToWaitingRoom = (partidaId: string) => {
@@ -57,11 +63,12 @@ const App: React.FC = () => {
     handleNavigation('waiting_room');
   };
 
-  // --- MODIFICADO: Ahora recibe tablero Y jugadores ---
-  const handleStartGame = (partidaId: string, tableroServidor: any[], jugadoresServidor: any[]) => {
+  // --- MODIFICADO: Ahora recibe info del juego ---
+  const handleStartGame = (partidaId: string, tableroServidor: any[], jugadoresServidor: any[], infoJuego: any) => {
     setCurrentGameId(partidaId);
     setInitialBoard(tableroServidor); 
-    setInitialPlayers(jugadoresServidor); // Guardamos la lista de jugadores
+    setInitialPlayers(jugadoresServidor);
+    setGameInfo(infoJuego); // Guardar tipo de juego, temática, duración
     handleNavigation('game');
   };
 
@@ -130,13 +137,14 @@ const App: React.FC = () => {
         break;
 
     case 'game':
-      if (!currentGameId || !currentUser) return null;
+      if (!currentGameId || !currentUser || !gameInfo) return null;
       content = (
           <Juego 
             partidaId={currentGameId}
             currentUserNickname={currentUser.nickname}
             initialTablero={initialBoard}
-            initialPlayers={initialPlayers} // <--- Pasamos la prop requerida
+            initialPlayers={initialPlayers}
+            gameInfo={gameInfo} // Pasar info del juego
             onLeave={() => handleNavigation('menu')}
           />
       );

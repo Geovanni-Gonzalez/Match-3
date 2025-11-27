@@ -50,6 +50,7 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({ onBack, onCreateSucc
       // REQ-007: Llama a la ruta REST para crear una partida (POST /api/partidas)
       const body: any = {
         nickname: currentUser.nickname,
+        socketID: currentUser.socketID,
         tipoJuego: tipoJuego,
         tematica: tematica,
         numJugadoresMax: numJugadores, // REQ-008
@@ -76,9 +77,9 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({ onBack, onCreateSucc
       console.log('[CREAR PARTIDA] Respuesta del servidor:', data);
 
       if (response.ok && data.success) {
-        const codigoPartida = data.partida.codigo;
-        alert(`¡Partida creada exitosamente!\nCódigo: ${codigoPartida}`);
-        onCreateSuccess(codigoPartida); // Notifica al padre con el código de la partida creada
+        const partidaId = data.partidaId;
+        console.log('[CREAR PARTIDA] Partida creada con ID:', partidaId);
+        onCreateSuccess(partidaId); // Notifica al padre para ir a sala de espera
       } else {
         setError(data.message || 'Error al crear la partida.');
       }

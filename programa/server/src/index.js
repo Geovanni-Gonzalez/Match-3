@@ -28,59 +28,7 @@ const io = new Server(server, {
 });
 
 // --- FUNCIONES AUXILIARES ---
-
-const generarTableroAleatorio = () => {
-    const tablero = [];
-    for (let fila = 0; fila < FILAS; fila++) {
-        const filaArray = [];
-        for (let col = 0; col < COLUMNAS; col++) {
-            const id = fila * COLUMNAS + col;
-            const colorIndex = Math.floor(Math.random() * (COLORES.length - 1)); 
-            filaArray.push({ id, color: COLORES[colorIndex] });
-        }
-        tablero.push(filaArray);
-    }
-    return tablero;
-};
-
-// Algoritmo de Búsqueda (Flood Fill / DFS) para encontrar grupos (REQ-024)
-const encontrarGrupo = (tablero, cellId) => {
-    const fila = Math.floor(cellId / COLUMNAS);
-    const col = cellId % COLUMNAS;
-    const colorObjetivo = tablero[fila][col].color;
-    const grupo = [];
-    const visitados = new Set();
-
-    const busqueda = (f, c) => {
-        const id = f * COLUMNAS + c;
-        if (
-            f < 0 || f >= FILAS || c < 0 || c >= COLUMNAS || // Límites
-            visitados.has(id) || // Ya visitado
-            tablero[f][c].color !== colorObjetivo // Distinto color
-        ) {
-            return;
-        }
-
-        visitados.add(id);
-        grupo.push(id);
-
-        // Buscar en 4 direcciones (Arriba, Abajo, Izq, Der)
-        // Nota: REQ-024 menciona 8 direcciones, para simplificar iniciamos con 4, 
-        // puedes agregar diagonales añadiendo (f+1, c+1), etc.
-        busqueda(f + 1, c);
-        busqueda(f - 1, c);
-        busqueda(f, c + 1);
-        busqueda(f, c - 1);
-        // Diagonales (Opcional según dificultad deseada, el REQ dice 8)
-        busqueda(f + 1, c + 1);
-        busqueda(f - 1, c - 1);
-        busqueda(f + 1, c - 1);
-        busqueda(f - 1, c + 1);
-    };
-
-    busqueda(fila, col);
-    return grupo;
-};
+// (Eliminadas: generarTableroAleatorio y encontrarGrupo - ahora manejadas por clases TypeScript)
 
 io.on('connection', (socket) => {
     console.log(`[Socket] Cliente conectado: ${socket.id}`);
@@ -108,86 +56,130 @@ io.on('connection', (socket) => {
 
     // --- INICIO DEL JUEGO ---
     socket.on('start_game', async (data) => {
-        const { partidaId } = data;
-        
-        const tableroInicial = generarTableroAleatorio();
-        const sockets = await io.in(partidaId).fetchSockets();
-        
-        // Inicializar estado en el servidor
-        partidasActivas[partidaId] = {
-            tablero: tableroInicial,
-            jugadores: sockets.map(s => ({
-                nickname: s.data.nickname,
-                socketID: s.id,
-                puntaje: 0
-            }))
-        };
+        try {
+            const { partidaId, tipoJuego, tematica, duracion } = data;
+            
+            console.log(`[Socket] Iniciando partida ${partidaId}...`);
+            
+            // Importar las clases TypeScript compiladas desde dist
+            const { Partida } = require('../dist/classes/Partida');
+            const { Jugador } = require('../dist/classes/Jugador');
+            
+            const sockets = await io.in(partidaId).fetchSockets();
+            
+            if (sockets.length === 0) {
+                console.error('[Socket] No hay jugadores en la sala');
+                return;
+            }
+            
+            // Configuración del juego
+            const config = {
+                TAMANIO_FILA: 9,
+                TAMANIO_COLUMNA: 7,
+                COLORES_VALIDOS: ['azul', 'naranja', 'rojo', 'verde', 'amarillo', 'morado'],
+                TIEMPO_VIDA_PARTIDA_MIN: 60
+            };
+            
+            // Crear instancia de Partida con las clases TypeScript
+            const partida = new Partida(
+                partidaId, 
+                tipoJuego || 'Match', 
+                tematica || 'General',
+                sockets.length, // numJugadoresMax = número de jugadores actuales
+                config,
+                duracion
+            );
+            
+            // Agregar jugadores
+            sockets.forEach(s => {
+                const jugador = new Jugador(s.data.nickname, s.id);
+                partida.agregarJugador(jugador);
+            });
 
-        console.log(`[Game] Partida ${partidaId} iniciada. Jugadores:`, partidasActivas[partidaId].jugadores);
+            // Inicializar estado en el servidor
+            partidasActivas[partidaId] = { partida };
 
-        // Enviar estado inicial completo
-        io.to(partidaId).emit('game_started', { 
-            tablero: tableroInicial,
-            jugadores: partidasActivas[partidaId].jugadores 
-        });
+            console.log(`[Game] Partida ${partidaId} iniciada con ${sockets.length} jugadores`);
+
+            // Enviar estado inicial completo con info de la partida
+            io.to(partidaId).emit('game_started', { 
+                tablero: partida.obtenerEstadoTablero(),
+                jugadores: partida.obtenerJugadores(),
+                tipoJuego: partida.tipoJuego,
+                tematica: partida.tematica,
+                duracionMinutos: partida.duracionMinutos || null
+            });
+            
+        } catch (error) {
+            console.error('[Socket] Error al iniciar partida:', error);
+            socket.emit('error_match', { mensaje: 'Error al iniciar la partida: ' + error.message });
+        }
     });
 
+    // --- SELECCIONAR CELDA: Detecta grupo y bloquea para el jugador ---
     socket.on('select_cell', (data) => {
-        const { partidaId, cellId, nickname } = data;
-        socket.to(partidaId).emit('cell_locked', { cellId, lockedBy: nickname });
-    });
-
-    socket.on('deselect_cell', (data) => {
-        const { partidaId, cellId } = data;
-        socket.to(partidaId).emit('cell_unlocked', { cellId });
-    });
-
-    // --- LÓGICA DE MATCH (REQ-024, REQ-025, REQ-026, REQ-027) ---
-    socket.on('attempt_match', (data) => {
-        const { partidaId, cellId, nickname } = data;
+        const { partidaId, fila, columna, nickname } = data;
         const juego = partidasActivas[partidaId];
 
-        if (!juego) return; // Seguridad
+        if (!juego || !juego.partida) {
+            console.log(`[Socket] Partida ${partidaId} no encontrada`);
+            return;
+        }
 
-        // 1. Encontrar el grupo de celdas conectadas
-        const grupo = encontrarGrupo(juego.tablero, cellId);
+        // Llamar al método de la clase Partida
+        const resultado = juego.partida.seleccionarCelda(nickname, fila, columna);
 
-        // 2. Validar tamaño del grupo (REQ-025: Mínimo 3)
-        if (grupo.length >= 3) {
-            console.log(`[Game] Match exitoso de ${grupo.length} celdas por ${nickname}`);
-            
-            // 3. Calcular puntaje (REQ-027: n^2)
-            const puntosGanados = Math.pow(grupo.length, 2);
-            
-            // 4. Actualizar puntaje del jugador
-            const jugadorIndex = juego.jugadores.findIndex(j => j.nickname === nickname);
-            if (jugadorIndex !== -1) {
-                juego.jugadores[jugadorIndex].puntaje += puntosGanados;
-            }
-
-            // 5. Regenerar celdas (REQ-026)
-            // Simplemente cambiamos el color de las celdas matcheadas por nuevos aleatorios
-            grupo.forEach(id => {
-                const f = Math.floor(id / COLUMNAS);
-                const c = id % COLUMNAS;
-                const nuevoColorIndex = Math.floor(Math.random() * (COLORES.length - 1));
-                juego.tablero[f][c].color = COLORES[nuevoColorIndex];
+        if (resultado.exito) {
+            // Notificar a TODOS que este grupo está bloqueado
+            io.to(partidaId).emit('grupo_bloqueado', {
+                nickname,
+                grupo: resultado.grupo,
+                mensaje: resultado.mensaje,
+                tablero: juego.partida.obtenerEstadoTablero()
             });
-
-            // 6. Emitir actualización a TODOS (Tablero nuevo + Puntajes nuevos)
-            io.to(partidaId).emit('game_update', {
-                tablero: juego.tablero,
-                jugadores: juego.jugadores,
-                mensaje: `¡${nickname} hizo un match de ${grupo.length} y ganó ${puntosGanados} pts!`
-            });
-
-            // Liberar el bloqueo visual de la celda que originó el match
-            io.to(partidaId).emit('cell_unlocked', { cellId });
-
         } else {
-            // Match inválido
-            console.log(`[Game] Intento fallido de ${nickname}. Solo ${grupo.length} celdas.`);
-            socket.emit('match_failed', { message: "Se necesitan al menos 3 celdas del mismo color." });
+            // Notificar solo al jugador del error
+            socket.emit('error_seleccion', { mensaje: resultado.mensaje });
+        }
+    });
+
+    // --- CANCELAR SELECCIÓN: Libera el grupo bloqueado ---
+    socket.on('cancel_selection', (data) => {
+        const { partidaId, nickname } = data;
+        const juego = partidasActivas[partidaId];
+
+        if (!juego || !juego.partida) return;
+
+        const resultado = juego.partida.cancelarSeleccion(nickname);
+
+        if (resultado.exito) {
+            // Notificar a todos que el grupo fue liberado
+            io.to(partidaId).emit('grupo_liberado', { 
+                nickname,
+                tablero: juego.partida.obtenerEstadoTablero()
+            });
+        }
+    });
+
+    // --- CONFIRMAR MATCH: Procesa el match del jugador ---
+    socket.on('confirm_match', (data) => {
+        const { partidaId, nickname } = data;
+        const juego = partidasActivas[partidaId];
+
+        if (!juego || !juego.partida) return;
+
+        const resultado = juego.partida.confirmarMatch(nickname);
+
+        if (resultado.exito) {
+            // Enviar tablero actualizado y puntajes a TODOS
+            io.to(partidaId).emit('game_update', {
+                tablero: juego.partida.obtenerEstadoTablero(),
+                jugadores: juego.partida.obtenerJugadores(),
+                mensaje: resultado.mensaje,
+                puntos: resultado.puntos
+            });
+        } else {
+            socket.emit('error_match', { mensaje: resultado.mensaje });
         }
     });
 

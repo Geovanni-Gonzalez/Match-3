@@ -5,6 +5,7 @@ import { Coordenada } from '../interfaces';
 export class Celda {
     public colorID: string;
     public estado: 'libre' | 'seleccion_propia' | 'seleccion_otro';
+    public bloqueadaPor: string | null = null; // nickname del jugador que bloqueó esta celda
 
     /**
      * Constructor de Celda
@@ -38,6 +39,19 @@ export class Celda {
 
     public establecerEstado(nuevoEstado: 'libre' | 'seleccion_propia' | 'seleccion_otro'): void {
         this.estado = nuevoEstado;
+    }
+
+    public bloquearPara(nickname: string): void {
+        this.bloqueadaPor = nickname;
+    }
+
+    public desbloquear(): void {
+        this.bloqueadaPor = null;
+        this.estado = 'libre';
+    }
+
+    public estaBloqueada(): boolean {
+        return this.bloqueadaPor !== null;
     }
 
     public obtenerCoordenadas(): Coordenada {
