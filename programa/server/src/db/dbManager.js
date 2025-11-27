@@ -3,7 +3,6 @@ import pool from './dbPool.js';
 
 export class DBManager {
 
-    //La tabla en la DB se llama 'jugador' y recibe 'nickname', fecha_creacion. 
     static async registrarJugador(nickname) {
             const connection = await pool.getConnection(); 
             try {
