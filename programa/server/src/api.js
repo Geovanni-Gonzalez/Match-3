@@ -1,63 +1,50 @@
 // server/src/api.js
 const express = require('express');
 const router = express.Router();
-// Importar la clase Singleton y la clase Jugador (para crear instancias)
-const { ServidorPartidas } = require('./classes/ServidorPartidas');
+const { v4: uuidv4 } = require('uuid'); 
 
-// Obtener la única instancia del gestor de partidas
-const serverManager = ServidorPartidas.getInstance();
+// Simulación de Base de Datos en Memoria (Array temporal)
+const partidas = [];
 
-// --- Ruta: Listar partidas disponibles (REQ-011) ---
+// Endpoint: Obtener lista de partidas disponibles (REQ-011)
 router.get('/partidas', (req, res) => {
-    try {
-        const partidas = serverManager.obtenerPartidasDisponibles();
-        res.status(200).json(partidas);
-    } catch (error) {
-        res.status(500).json({ message: 'Error al obtener la lista de partidas.' });
-    }
+    // Filtramos solo las que están en espera
+    const disponibles = partidas.filter(p => p.estado === 'espera');
+    
+    // Mapeamos para enviar solo la info necesaria al lobby
+    res.json(disponibles.map(p => ({
+        id: p.id,
+        tipo: p.tipoJuego,
+        tematica: p.tematica,
+        jugadores: p.jugadores.length,
+        maxJugadores: p.numJugadoresMax
+    })));
 });
 
-// --- Ruta: Crear una nueva partida (REQ-007, REQ-009) ---
+// Endpoint: Crear nueva partida (REQ-007, REQ-008, REQ-009)
 router.post('/partidas', (req, res) => {
-    try {
-        const { tipoJuego, tematica, numJugadoresMax } = req.body;
-        
-        if (!tipoJuego || !tematica || !numJugadoresMax) {
-            return res.status(400).json({ message: 'Faltan parámetros requeridos.' });
-        }
-        
-        const nuevaPartida = serverManager.crearPartida(tipoJuego, tematica, numJugadoresMax);
-        
-        res.status(201).json({
-            message: 'Partida creada con éxito.',
-            codigo: nuevaPartida.idPartida,
-            tipo: nuevaPartida.tipoJuego,
-        });
-    } catch (error) {
-        res.status(500).json({ message: 'Error al crear la partida.' });
-    }
-});
+    const { tipoJuego, tematica, numJugadoresMax } = req.body;
+    
+    const nuevaPartida = {
+        id: uuidv4(), // ID único
+        codigo: uuidv4().substring(0, 6).toUpperCase(), // Código visual
+        tipoJuego,
+        tematica,
+        numJugadoresMax: parseInt(numJugadoresMax) || 2,
+        jugadores: [],
+        estado: 'espera', // estados: espera, jugando, finalizada
+        tablero: [], // Aquí se guardará la matriz
+        createdAt: new Date()
+    };
 
-// --- Ruta: Obtener ranking histórico (REQ-032) ---
-router.get('/ranking', async (req, res) => {
-    try {
-        // En un entorno real, esta ruta llamaría al DBManager para ejecutar la consulta SQL:
-        /*
-        const rankingData = await DBManager.obtenerRankingGlobal();
-        res.status(200).json(rankingData);
-        */
-        
-        // Mock de datos para el ranking
-        const mockRanking = [
-            { nickname: 'PlayerMax', puntaje: 520, tematica: 'Gemas', fecha: '2025-11-20' },
-            { nickname: 'Neo', puntaje: 480, tematica: 'Monstruos', fecha: '2025-11-19' },
-            { nickname: 'Alfa', puntaje: 450, tematica: 'Gemas', fecha: '2025-11-18' },
-        ];
-        
-        res.status(200).json(mockRanking);
-    } catch (error) {
-        res.status(500).json({ message: 'Error al obtener el ranking histórico.' });
-    }
+    partidas.push(nuevaPartida);
+    console.log(`[API] Nueva partida creada. ID: ${nuevaPartida.id} | Temática: ${tematica}`);
+    
+    res.status(201).json({ 
+        message: 'Partida creada exitosamente', 
+        codigo: nuevaPartida.id, // Usamos el ID como código de enlace
+        partidaId: nuevaPartida.id 
+    });
 });
 
 module.exports = router;

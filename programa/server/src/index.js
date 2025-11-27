@@ -1,76 +1,86 @@
-// Importaciones de módulos principales
+// server/src/index.js
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
-// Importar el Router de la API y la clase Singleton
-const apiRouter = require('./api');
-const { ServidorPartidas } = require('./classes/ServidorPartidas'); // Importar la clase
+const apiRoutes = require('./api');
 
-// --- Configuración del Servidor ---
-const PORT = process.env.PORT || 4000; // Puerto para el servidor HTTP/Socket.IO
 const app = express();
-const httpServer = http.createServer(app);
+const PORT = 4000;
 
-// Inicializar ServidorPartidas (Singleton)
-const serverManager = ServidorPartidas.getInstance();
+// Constantes del Juego (Mismas que en el cliente)
+const FILAS = 9;
+const COLUMNAS = 7;
+const COLORES = ['#1E90FF', '#FF8C00', '#FF4500', '#32CD32', '#FFD700', '#8A2BE2', '#00CED1']; 
 
-// Inicializar Socket.IO Server
-// Permite la conexión desde el Frontend (http://localhost:3000)
-const io = new Server(httpServer, {
-    cors: {
-        origin: "http://localhost:3000", // Permitir acceso desde el Frontend
-        methods: ["GET", "POST"]
+app.use(cors());
+app.use(express.json());
+app.use('/api', apiRoutes);
+
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: { origin: "http://localhost:3000", methods: ["GET", "POST"] }
+});
+
+// Función Helper para generar tablero
+const generarTableroAleatorio = () => {
+    const tablero = [];
+    for (let fila = 0; fila < FILAS; fila++) {
+        const filaArray = [];
+        for (let col = 0; col < COLUMNAS; col++) {
+            const id = fila * COLUMNAS + col;
+            // Elegir color aleatorio (excluyendo el último si es 'vacío' o similar, ajusta según tu lógica)
+            const colorIndex = Math.floor(Math.random() * (COLORES.length - 1)); 
+            filaArray.push({ id, color: COLORES[colorIndex] });
+        }
+        tablero.push(filaArray); // Guardamos por filas para facilitar manejo matricial
     }
-});
+    // Aplanamos para enviarlo como lista simple si tu frontend lo prefiere así, 
+    // pero mantenerlo como matriz 9x7 es útil. Tu frontend actual usa .flat() así que enviaremos matriz.
+    return tablero;
+};
 
-// --- Middleware ---
-app.use(cors()); // Habilitar CORS para permitir solicitudes desde el frontend
-app.use(express.json()); // Middleware para parsear cuerpos de solicitud JSON
-
-// --- Rutas REST ---
-app.use('/api', apiRouter);
-
-// --- Manejo de Conexiones Socket.IO ---
 io.on('connection', (socket) => {
-    console.log(`[SOCKET] Cliente conectado: ${socket.id}`);
-    
-    // Llamar al método del Singleton para registrar la conexión
-    serverManager.manejarConexionSocket(socket.id); 
+    console.log(`[Socket] Cliente conectado: ${socket.id}`);
 
-    // Evento de ejemplo para unirse a una partida
-    socket.on('unirse_partida', ({ codigo, nickname }) => {
-        try {
-            const jugador = serverManager.unirseAPartida(codigo, nickname, socket.id);
-            socket.join(codigo); // Unir el socket a la sala de la partida
-            console.log(`[SOCKET] ${nickname} unido a la sala: ${codigo}`);
-            // Aquí podrías emitir un evento solo a ese socket (socket.emit) con el estado inicial.
-        } catch (error) {
-            console.error(`[ERROR] Fallo al unirse a ${codigo}:`, error.message);
-            socket.emit('error_partida', { message: error.message });
-        }
+    socket.on('join_room', async (data) => {
+        const { partidaId, nickname } = data;
+        socket.join(partidaId);
+        socket.data.nickname = nickname;
+        socket.data.isReady = false; 
+
+        const sockets = await io.in(partidaId).fetchSockets();
+        const currentPlayers = sockets.map(s => ({
+            nickname: s.data.nickname,
+            socketID: s.id,
+            isReady: s.data.isReady || false
+        }));
+        io.to(partidaId).emit('update_players_list', currentPlayers);
     });
 
-    // Evento para activar la lógica de match (Botón)
-    socket.on('activar_match', ({ codigo, nickname }) => {
-        const partida = serverManager.partidasActivas.get(codigo);
-        if (partida && partida.estado === 'jugando') {
-            // Dispara el proceso de validación en el Worker Thread
-            partida.procesarMatch(nickname);
-        }
+    socket.on('player_ready', (data) => {
+        const { partidaId, isReady } = data;
+        socket.data.isReady = isReady;
+        io.to(partidaId).emit('player_status_changed', { socketID: socket.id, isReady });
     });
 
-    // Evento de desconexión
+    // --- MODIFICADO: GENERAR Y ENVIAR TABLERO ---
+    socket.on('start_game', (data) => {
+        const { partidaId } = data;
+        console.log(`[Socket] Iniciando partida ${partidaId}`);
+        
+        // 1. Generar el tablero AUTORITATIVO en el servidor
+        const tableroInicial = generarTableroAleatorio();
+
+        // 2. Enviarlo a todos junto con la señal de inicio
+        io.to(partidaId).emit('game_started', { tablero: tableroInicial });
+    });
+
     socket.on('disconnect', () => {
-        console.log(`[SOCKET] Cliente desconectado: ${socket.id}`);
-        // Lógica para manejar la salida de jugadores de partidas activas
+        console.log('[Socket] Cliente desconectado:', socket.id);
     });
 });
 
-// --- Inicio del Servidor ---
-httpServer.listen(PORT, () => {
-    console.log(`🚀 Servidor backend escuchando en http://localhost:${PORT}`);
+server.listen(PORT, () => {
+    console.log(`[Server] Corriendo en http://localhost:${PORT}`);
 });
-
-// Exportar IO para usarlo en otras clases si es necesario (ej: Partida.enviarEstadoATodos)
-// module.exports = { io };
