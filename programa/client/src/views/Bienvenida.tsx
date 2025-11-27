@@ -1,13 +1,16 @@
 // client/src/views/Bienvenida.tsx
 import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 interface BienvenidaProps {
   onLoginSuccess: (nickname: string) => void;
 }
 
 export const Bienvenida: React.FC<BienvenidaProps> = ({ onLoginSuccess }) => {
+  const { login } = useAuth();
   const [nickname, setNickname] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     if (nickname.trim().length < 3) {
@@ -15,33 +18,21 @@ export const Bienvenida: React.FC<BienvenidaProps> = ({ onLoginSuccess }) => {
       return;
     }
     setError('');
-
-    // --- Simulación de Autenticación / Registro (POST /api/login o POST /api/join) ---
-    console.log(`Intentando autenticar a: ${nickname}`);
+    setLoading(true);
 
     try {
-        // En un proyecto real, se haría una llamada fetch o axios al backend:
-        /*
-        const response = await fetch('http://localhost:4000/api/auth', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nickname }),
-        });
-        const data = await response.json();
-        if (response.ok) {
-            onLoginSuccess(data.nickname); // Usar data real del servidor
-        } else {
-            setError(data.message || 'Error de servidor.');
-        }
-        */
-
-        // SIMULACIÓN EXITOSA:
-        setTimeout(() => {
-            onLoginSuccess(nickname);
-        }, 500);
-
+      console.log(`[BIENVENIDA] Autenticando a: ${nickname}`);
+      
+      // Usar el contexto de autenticación para hacer login
+      await login(nickname);
+      
+      console.log('[BIENVENIDA] Autenticación exitosa');
+      onLoginSuccess(nickname);
     } catch (e) {
       setError('No se pudo conectar con el servidor.');
+      console.error('[BIENVENIDA] Error:', e);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -60,8 +51,12 @@ export const Bienvenida: React.FC<BienvenidaProps> = ({ onLoginSuccess }) => {
       
       {error && <p style={styles.errorText}>⚠️ {error}</p>}
 
-      <button onClick={handleLogin} disabled={nickname.trim().length < 3} style={styles.button}>
-        Empezar
+      <button 
+        onClick={handleLogin} 
+        disabled={nickname.trim().length < 3 || loading} 
+        style={styles.button}
+      >
+        {loading ? 'Conectando...' : 'Empezar'}
       </button>
     </div>
   );

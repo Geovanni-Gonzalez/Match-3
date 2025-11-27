@@ -1,6 +1,6 @@
 {
     "TIEMPO_VIDA_PARTIDA_MIN": 3,
-    "MATCH_FINITO_LIMITE": 15,
+    "MATCH_FINITO_LIMITE": 100,
     "TAMANIO_FILA": 9,
     "TAMANIO_COLUMNA": 7,
     "COLORES_VALIDOS": ["azul", "naranja", "rojo", "verde", "amarillo", "morado"],
