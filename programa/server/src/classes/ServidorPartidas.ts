@@ -30,6 +30,27 @@ export class ServidorPartidas {
         return ServidorPartidas.instance;
     }
 
+    public obtenerConfiguracion(): Configuracion {
+    return this.config;
+    }
+
+    public manejarDesconexionJugador(socketID: string): void {
+    for (const [id, partida] of this.partidasActivas.entries()) {
+        const jugador = partida.jugadores.get(socketID);
+        
+        if (jugador) {
+            partida.eliminarJugador(socketID); // Debes implementar este método en Partida
+            
+            // Si la partida queda vacía, la eliminamos
+            if (partida.jugadores.size === 0) {
+                this.partidasActivas.delete(id);
+                // NOTA: Una emisión de "partida cerrada" podría ir aquí si tienes acceso a `io`
+            }
+            break; 
+        }
+    }
+}
+
     public crearPartida(tipo: 'Match' | 'Tiempo', tematica: string, max: number): Partida {
         // Genera un código único para la sala (REQ-009)
         const idPartida = Math.random().toString(36).substring(2, 7).toUpperCase(); 

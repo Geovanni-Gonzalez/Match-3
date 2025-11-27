@@ -4,13 +4,10 @@ import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import apiRoutes from './api.js';
+import { ServidorPartidas } from './classes/ServidorPartidas.js';
 
 const app = express();
 const PORT = 4000;
-
-const FILAS = 9;
-const COLUMNAS = 7;
-const COLORES = ['#1E90FF', '#FF8C00', '#FF4500', '#32CD32', '#FFD700', '#8A2BE2', '#00CED1']; 
 
 app.use(cors());
 app.use(express.json());
@@ -21,65 +18,108 @@ const io = new Server(server, {
     cors: { origin: "http://localhost:3000", methods: ["GET", "POST"] }
 });
 
-// Función Helper para generar tablero
-const generarTableroAleatorio = () => {
-    const tablero = [];
-    for (let fila = 0; fila < FILAS; fila++) {
-        const filaArray = [];
-        for (let col = 0; col < COLUMNAS; col++) {
-            const id = fila * COLUMNAS + col;
-            // Elegir color aleatorio (excluyendo el último si es 'vacío' o similar, ajusta según tu lógica)
-            const colorIndex = Math.floor(Math.random() * (COLORES.length - 1)); 
-            filaArray.push({ id, color: COLORES[colorIndex] });
-        }
-        tablero.push(filaArray); // Guardamos por filas para facilitar manejo matricial
-    }
-    // Aplanamos para enviarlo como lista simple si tu frontend lo prefiere así, 
-    // pero mantenerlo como matriz 9x7 es útil. Tu frontend actual usa .flat() así que enviaremos matriz.
-    return tablero;
-};
+const servidorPartidas = ServidorPartidas.getInstance();
+
 
 io.on('connection', (socket) => {
     console.log('[Socket] Nuevo cliente conectado:', socket.id);
 
+    // Maneja la unión a la partida
     socket.on('join_room', async (data) => {
         const { partidaId, nickname } = data;
-        socket.join(partidaId);
-        socket.data.nickname = nickname;
-        socket.data.isReady = false; 
+        
+        try {
+            // 1. Llama al método de la clase ServidorPartidas
+            const nuevoJugador = servidorPartidas.unirseAPartida(partidaId, nickname, socket.id);
+            
+            // 2. Si es exitoso, une el socket a la sala
+            socket.join(partidaId);
+            socket.data.nickname = nickname; // Mantener datos de socket
+            socket.data.isReady = false; 
 
-        const sockets = await io.in(partidaId).fetchSockets();
-        const currentPlayers = sockets.map(s => ({
-            nickname: s.data.nickname,
-            socketID: s.id,
-            isReady: s.data.isReady || false
-        }));
-        io.to(partidaId).emit('update_players_list', currentPlayers);
+            // 3. Obtener la lista de jugadores actualizada
+            const partida = servidorPartidas.partidasActivas.get(partidaId);
+            const currentPlayers = Array.from(partida.jugadores.values()).map(j => ({
+                nickname: j.nickname,
+                socketID: j.socketID,
+                isReady: j.isReady // Asume que la clase Jugador tiene un isReady
+            }));
+
+            // 4. Notificar a todos en la sala
+            io.to(partidaId).emit('update_players_list', currentPlayers);
+
+        } catch (error) {
+            console.error(`Error al unirse a la partida ${partidaId}:`, error.message);
+            socket.emit('error_join', { message: error.message });
+        }
     });
 
+    // Maneja el estado de "listo"
     socket.on('player_ready', (data) => {
         const { partidaId, isReady } = data;
-        socket.data.isReady = isReady;
+        
+        // 1. Actualiza el estado en la clase Jugador/Partida
+        const partida = servidorPartidas.partidasActivas.get(partidaId);
+        if (partida) {
+            const jugador = partida.jugadores.get(socket.id);
+            if (jugador) {
+                jugador.isReady = isReady; // Asume que Jugador tiene propiedad isReady
+            }
+        }
+
+        // 2. Notifica a la sala el cambio de estado
         io.to(partidaId).emit('player_status_changed', { socketID: socket.id, isReady });
     });
 
-    // --- MODIFICADO: GENERAR Y ENVIAR TABLERO ---
+    // Maneja el inicio del juego
     socket.on('start_game', (data) => {
         const { partidaId } = data;
         console.log(`[Socket] Iniciando partida ${partidaId}`);
         
-        // 1. Generar el tablero AUTORITATIVO en el servidor
-        const tableroInicial = generarTableroAleatorio();
-
-        // 2. Enviarlo a todos junto con la señal de inicio
-        io.to(partidaId).emit('game_started', { tablero: tableroInicial });
+        const partida = servidorPartidas.partidasActivas.get(partidaId);
+        if (partida) {
+            // 1. Generar el tablero (idealmente usando un método de la clase Partida)
+            // Aquí usamos la función helper temporalmente:
+            const tableroInicial = generarTableroAleatorio();
+            // Lógica de Partida: partida.iniciar(tableroInicial);
+            
+            // 2. Enviarlo a todos junto con la señal de inicio
+            io.to(partidaId).emit('game_started', { 
+                tablero: tableroInicial,
+                config: servidorPartidas.obtenerConfiguracion() // Enviar la config también
+            });
+            
+            // 3. Opcional: Actualizar el estado de la partida a 'iniciada'
+            partida.estado = 'iniciada'; 
+        } else {
+            socket.emit('game:error', { message: 'Partida no encontrada para iniciar.' });
+        }
     });
-
+    
+    // Maneja la desconexión
     socket.on('disconnect', () => {
         console.log('[Socket] Cliente desconectado:', socket.id);
+        
+        // 1. Itera y limpia el jugador de la partida
+        // Mejor añadir un método específico en ServidorPartidas:
+        servidorPartidas.manejarDesconexionJugador(socket.id); 
+        
+        // 2. Notifica a la sala si el jugador estaba en una
+        const partidaId = Object.keys(socket.rooms).find(room => room !== socket.id);
+        if (partidaId && servidorPartidas.partidasActivas.get(partidaId)) {
+            const partida = servidorPartidas.partidasActivas.get(partidaId);
+            const currentPlayers = Array.from(partida.jugadores.values()).map(j => ({
+                nickname: j.nickname,
+                socketID: j.socketID,
+                isReady: j.isReady 
+            }));
+            io.to(partidaId).emit('update_players_list', currentPlayers);
+            // Si la partida se cerró por quedar vacía, se puede emitir aquí.
+        }
     });
-
 });
+
+
 server.listen(PORT, () => {
     console.log(`[Server] Corriendo en http://localhost:${PORT}`);
 });

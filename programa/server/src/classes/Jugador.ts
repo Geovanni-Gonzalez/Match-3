@@ -37,7 +37,13 @@ export class Jugador {
         this.puntaje += puntajeAdicional;
     }
 
-    public async guardarEstadisticas(partidaId: string, esGanador: boolean): Promise<void> {
-        await DBManager.guardarEstadisticas(partidaId, this.idDB, this.puntaje, esGanador);
+    public obtenerInfoBasica() {
+    return {
+        nickname: this.nickname,
+        idDB: this.idDB,
+        socketID: this.socketID,
+        puntaje: this.puntaje,
+        celdasSeleccionadas: this.celdasSeleccionadas,
+        };
     }
 }

@@ -5,7 +5,8 @@ import axios from 'axios';
 const API_URL = 'http://localhost:4000/api'; 
 
 interface BienvenidaProps {
-// Función callback para notificar al componente padre sobre el login exitoso
+  // Props si son necesarias
+  
 }
 
 export const Bienvenida: React.FC<BienvenidaProps> = () => {
