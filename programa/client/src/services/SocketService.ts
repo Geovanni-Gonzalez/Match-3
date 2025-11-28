@@ -44,9 +44,9 @@ export class SocketService {
      * Emite un evento para que el jugador se una a una partida existente.
      * @param gameId ID de la partida a la que unirse.
      */
-    public joinGame(gameId: string, nickName: string, jugadorDBId: number): void {
-        this.socket.emit('join_game', { gameId, nickName, jugadorDBId });
-        console.log(`[SocketService] Emitido: join_game para ID: ${gameId}`);
+    public joinGame(idPartida: string, nickName: string, jugadorDBId: number): void {
+        this.socket.emit('join_game', { idPartida, nickName, jugadorDBId });
+        console.log(`[SocketService] Emitido: join_game para ID: ${idPartida}, Nickname: ${nickName}, JugadorDBId: ${jugadorDBId}`);
     }
 
     /**
@@ -95,7 +95,7 @@ export class SocketService {
             this.socket.off('players_update', callback);
         };
     }
-    public onGameCreated(callback: (data: { partidaId: string }) => void): () => void {
+    public onGameCreated(callback: (data: { idPartida: string }) => void): () => void {
         this.socket.on('game_created', callback);
         return () => {
             this.socket.off('game_created', callback);
@@ -103,7 +103,7 @@ export class SocketService {
     }
 
 
-    public onJoinedGame(callback: (data: { partidaId: string, nickname: string, socketID: string }) => void): () => void {
+    public onJoinedGame(callback: (data: { idPartida: string, nickname: string, socketID: string }) => void): () => void {
         this.socket.on('joined_game', callback);
         return () => {
             this.socket.off('joined_game', callback);

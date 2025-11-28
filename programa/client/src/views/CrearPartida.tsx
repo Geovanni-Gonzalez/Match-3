@@ -1,9 +1,10 @@
 // client/src/views/CrearPartida.tsx
+import { useAuth } from '../context/AuthContext';
 import React, { useState } from 'react';
 import axios from 'axios'; 
 import { useGameEvents } from '../hooks/useGameEvents';
 const API_URL = 'http://localhost:4000/api'; 
-import { useAuth } from '../context/AuthContext';
+
 
 
 
@@ -56,11 +57,11 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({ onBack, onCreateSucc
         createGame(partidaId, tipoJuego, tematica, numJugadores);
         // Esperar confirmación del servidor vía Socket.IO
         const unsubscribe = onGameCreated?.((data) => {
-          console.log(`[Cliente] Confirmación de creación de partida recibida. ID: ${data.partidaId}`);
-          onCreateSuccess(data.partidaId);
+          console.log(`[Cliente] Confirmación de creación de partida recibida. ID: ${data.idPartida}`);
+          onCreateSuccess(data.idPartida);
           unsubscribe && unsubscribe(); // Desuscribirse después de recibir la confirmación
           // Unirse automáticamente a la partida creada
-          joinGame?.(data.partidaId, currentUser?.nickname || 'JugadorAleatorio', currentUser?.idDB || 0);
+          joinGame?.(data.idPartida, currentUser?.nickname || 'JugadorAleatorio', currentUser?.idDB || 0);
         });
 
         } else {

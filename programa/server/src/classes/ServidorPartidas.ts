@@ -58,10 +58,10 @@ export class ServidorPartidas {
         return nuevaPartida;
     }
     
-    public unirseAPartida(codigoPartida: string, nickname: string, socketID: string, jugadorDBId: number): Jugador {
-        const partida = this.partidasActivas.get(codigoPartida);
+    public unirseAPartida(idPartida: string, nickname: string, socketID: string, jugadorDBId: number): Jugador {
+        const partida = this.partidasActivas.get(idPartida);
         if (!partida) {
-            throw new Error('Partida no encontrada o ya finalizada.');
+            throw new Error('[ServidorPartidas] Partida no encontrada o ya finalizada.');
         }
         const nuevoJugador = new Jugador(nickname, jugadorDBId, socketID);
         partida.agregarJugador(nuevoJugador);
