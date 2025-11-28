@@ -1,4 +1,4 @@
-import { Configuracion } from '../Interfaces';
+import { Configuracion } from '../interfaces';
 import { Jugador } from './Jugador';
 import { Tablero } from './Tablero';
 import { WorkerThreadUtility } from '../worker/workerUtility';
@@ -156,5 +156,7 @@ private esAdyacente(r1: number, c1: number, r2: number, c2: number): boolean {
     // Adyacente si la diferencia de una coordenada es 1 y la otra es 0 (horizontal o vertical)
     return (dr === 1 && dc === 0) || (dr === 0 && dc === 1); 
 }
+
+
 }
 

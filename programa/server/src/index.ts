@@ -1,10 +1,10 @@
 // server/src/index.js
-import express from 'express'; // Añadir @types/express si no lo has hecho
+import express from 'express'; 
 import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
-import apiRoutes from './api.js';
-import { ServidorPartidas } from './classes/ServidorPartidas.js';
+import  apiRoutes  from './api.js';
+import  {ServidorPartidas}  from './classes/ServidorPartidas';
 
 const app = express();
 const PORT = 4000;
@@ -24,34 +24,60 @@ const servidorPartidas = ServidorPartidas.getInstance();
 io.on('connection', (socket) => {
     console.log('[Socket] Nuevo cliente conectado:', socket.id);
 
+
+    // Crear partida index.ts
+    socket.on('create_game', (data) => {
+        const { idPartida, tipoJuego, tematica, numJugadoresMax } = data;
+        console.log(`[Socket] Creando partida con ID: ${idPartida}, Tipo: ${tipoJuego}, Temática: ${tematica}, Max Jugadores: ${numJugadoresMax}`);
+        const nuevaPartida = servidorPartidas.crearPartida(idPartida, tipoJuego, tematica, numJugadoresMax);
+        console.log(`[Socket] Partida creada con ID: ${nuevaPartida.idPartida}`);
+        socket.emit('game_created', { partidaId: nuevaPartida.idPartida });
+    });
+
+
     // Maneja la unión a la partida
-    socket.on('join_room', async (data) => {
-        const { partidaId, nickname } = data;
+    socket.on('join_game', async (data) => {
+        const { partidaId, nickname, jugadorDBId } = data;
         
         try {
-            // 1. Llama al método de la clase ServidorPartidas
-            const nuevoJugador = servidorPartidas.unirseAPartida(partidaId, nickname, socket.id);
-            
-            // 2. Si es exitoso, une el socket a la sala
-            socket.join(partidaId);
-            socket.data.nickname = nickname; // Mantener datos de socket
-            socket.data.isReady = false; 
+                // 1. Llama al método de la clase ServidorPartidas
+                const nuevoJugador = servidorPartidas.unirseAPartida(partidaId, nickname, socket.id, jugadorDBId);
+                console.log(`[Socket] Jugador ${nickname} unido a la partida ${partidaId}`);
+                // 2. Si es exitoso, une el socket a la sala
+                socket.join(partidaId);
+                socket.data.nickname = nickname; // Mantener datos de socket
+                socket.data.isReady = false; 
+                // Notificar al jugador que se unió exitosamente
+                socket.emit('joined_game', { partidaId, nickname: nuevoJugador.nickname, socketID: socket.id });
 
-            // 3. Obtener la lista de jugadores actualizada
-            const partida = servidorPartidas.partidasActivas.get(partidaId);
-            const currentPlayers = Array.from(partida.jugadores.values()).map(j => ({
-                nickname: j.nickname,
-                socketID: j.socketID,
-                isReady: j.isReady // Asume que la clase Jugador tiene un isReady
-            }));
+                // 3. Obtener la lista de jugadores actualizada
+                const partida = servidorPartidas.partidasActivas.get(partidaId);
+                if (!partida) {
+                    const message = 'Partida no encontrada';
+                    console.error(`Error al obtener partida ${partidaId}: ${message}`);
+                    socket.emit('error_join', { message });
+                    return;
+                }
+                const currentPlayers = Array.from(partida.jugadores.values()).map(j => ({
+                    nickname: j.nickname,
+                    socketID: j.socketID,
+                    isReady: j.isReady 
+                }));
 
-            // 4. Notificar a todos en la sala
-            io.to(partidaId).emit('update_players_list', currentPlayers);
-
-        } catch (error) {
-            console.error(`Error al unirse a la partida ${partidaId}:`, error.message);
-            socket.emit('error_join', { message: error.message });
-        }
+                // 4. Notificar a todos en la sala
+                io.to(partidaId).emit('update_players_list', currentPlayers);
+    
+            } catch (error: unknown) {
+                // Asegurarse de obtener un mensaje seguro desde un error de tipo unknown
+                let message = 'Error desconocido';
+                if (error instanceof Error && error.message) {
+                    message = error.message;
+                } else if (typeof error === 'string') {
+                    message = error;
+                }
+                console.error(`Error al unirse a la partida ${partidaId}:`, message);
+                socket.emit('error_join', { message });
+            }
     });
 
     // Maneja el estado de "listo"
@@ -80,17 +106,17 @@ io.on('connection', (socket) => {
         if (partida) {
             // 1. Generar el tablero (idealmente usando un método de la clase Partida)
             // Aquí usamos la función helper temporalmente:
-            const tableroInicial = generarTableroAleatorio();
+          //  const tableroInicial = generarTableroAleatorio();
             // Lógica de Partida: partida.iniciar(tableroInicial);
             
             // 2. Enviarlo a todos junto con la señal de inicio
             io.to(partidaId).emit('game_started', { 
-                tablero: tableroInicial,
+              //  tablero: tableroInicial,
                 config: servidorPartidas.obtenerConfiguracion() // Enviar la config también
             });
             
             // 3. Opcional: Actualizar el estado de la partida a 'iniciada'
-            partida.estado = 'iniciada'; 
+            partida.estado = 'jugando'; 
         } else {
             socket.emit('game:error', { message: 'Partida no encontrada para iniciar.' });
         }
@@ -106,8 +132,8 @@ io.on('connection', (socket) => {
         
         // 2. Notifica a la sala si el jugador estaba en una
         const partidaId = Object.keys(socket.rooms).find(room => room !== socket.id);
-        if (partidaId && servidorPartidas.partidasActivas.get(partidaId)) {
-            const partida = servidorPartidas.partidasActivas.get(partidaId);
+        const partida = partidaId ? servidorPartidas.partidasActivas.get(partidaId) : undefined;
+        if (partida && partidaId) {
             const currentPlayers = Array.from(partida.jugadores.values()).map(j => ({
                 nickname: j.nickname,
                 socketID: j.socketID,

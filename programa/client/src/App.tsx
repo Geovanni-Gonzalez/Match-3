@@ -31,8 +31,8 @@ const App: React.FC = () => {
     setCurrentView(view);
   };
 
-  const handleLoginSuccess = async (nickname: string) => {
-    await login(nickname); 
+  const handleLoginSuccess = async (nickname: string, idDB: number) => {
+    await login(nickname, idDB); 
     setCurrentView('menu');
   };
 

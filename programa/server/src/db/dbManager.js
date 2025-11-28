@@ -20,12 +20,28 @@ export class DBManager {
                     'INSERT INTO jugador (nickname, fecha_registro) VALUES (?, NOW())',
                     [nickname]
                 );
-                return result.insertId; // Retornar el ID del nuevo jugador
+                return result.insertId; // Retornar el ID asignado al nuevo jugador
             } catch (error) {
                 console.error('Error en DBManager.registrarJugador:', error);
                 throw error;
             } finally {
                 connection.release();
             }
+    }
+
+    static async registrarPartida(coodigoPartida, tipoJuego, tematica, numJugadoresMax) {
+        const connection = await pool.getConnection();
+        try {
+            const [result] = await connection.execute(
+                'INSERT INTO partida (codigo_partida, tipo_juego, tematica, num_jugadores, fecha_inicio, fecha_fin, id_ganador_principal) VALUES (?, ?, ?, ?, NULL, NULL, NULL)',
+                [coodigoPartida, tipoJuego, tematica, numJugadoresMax]
+            );
+            return result.insertId; // Retornar el ID de la nueva partida
+        } catch (error) {
+            console.error('Error en DBManager.registrarPartida:', error);
+            throw error;
+        } finally {
+            connection.release();
+        }
     }
 }

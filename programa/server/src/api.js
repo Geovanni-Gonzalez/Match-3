@@ -8,7 +8,7 @@ const router = Router();
 const partidas = [];
 
 // Endpoint: Registrar jugador (o buscar por nickname)
-router.post('/register', async (req, res) => {
+router.post('/registrar_jugador', async (req, res) => {
     const { nickname } = req.body;
     
     if (!nickname) {
@@ -48,28 +48,18 @@ router.get('/partidas', (req, res) => {
 });
 
 // Endpoint: Crear nueva partida (REQ-007, REQ-008, REQ-009)
-router.post('/partidas', (req, res) => {
+router.post('/crear_partida', (req, res) => {
     const { tipoJuego, tematica, numJugadoresMax } = req.body;
-    
-    const nuevaPartida = {
-        id: uuidv4(), // ID único
-        codigo: uuidv4().substring(0, 6).toUpperCase(), // Código visual
-        tipoJuego,
-        tematica,
-        numJugadoresMax: parseInt(numJugadoresMax) || 2,
-        jugadores: [],
-        estado: 'espera', // estados: espera, jugando, finalizada
-        tablero: [], // Aquí se guardará la matriz
-        createdAt: new Date()
-    };
-
-    partidas.push(nuevaPartida);
-    console.log(`[API] Nueva partida creada. ID: ${nuevaPartida.id} | Temática: ${tematica}`);
-    
-    res.status(201).json({ 
-        message: 'Partida creada exitosamente', 
-        codigo: nuevaPartida.id, // Usamos el ID como código de enlace
-        partidaId: nuevaPartida.id 
+    if (!tipoJuego || !tematica || !numJugadoresMax) {
+        return res.status(400).json({ message: 'Faltan datos para crear la partida.' });
+    }
+    //Generar código único para la partida, de 5 caracteres
+    const codigoPartida = uuidv4().slice(0, 5).toUpperCase();
+    // Llamar al DBManager para registrar la partida en la base de datos
+    DBManager.registrarPartida(codigoPartida, tipoJuego, tematica, numJugadoresMax)
+    return res.status(201).json({
+        message: 'Partida creada exitosamente.',
+        partidaId: codigoPartida
     });
 });
 

@@ -1,6 +1,5 @@
 // server/src/classes/ServidorPartidas.ts
-
-import { Configuracion } from '../Interfaces';
+import { Configuracion } from '../interfaces';
 import { Partida } from './Partida';
 import { Jugador } from './Jugador'; // Se usa al unirse a la partida
 
@@ -39,7 +38,7 @@ export class ServidorPartidas {
         const jugador = partida.jugadores.get(socketID);
         
         if (jugador) {
-            partida.eliminarJugador(socketID); // Debes implementar este método en Partida
+           // partida.eliminarJugador(socketID); // Debes implementar este método en Partida
             
             // Si la partida queda vacía, la eliminamos
             if (partida.jugadores.size === 0) {
@@ -51,27 +50,21 @@ export class ServidorPartidas {
     }
 }
 
-    public crearPartida(tipo: 'Match' | 'Tiempo', tematica: string, max: number): Partida {
-        // Genera un código único para la sala (REQ-009)
-        const idPartida = Math.random().toString(36).substring(2, 7).toUpperCase(); 
+    public crearPartida(idPartida: string, tipo: 'Match' | 'Tiempo', tematica: string, max: number): Partida {
         
+        // Crea y almacena la nueva partida
         const nuevaPartida = new Partida(idPartida, tipo, tematica, max, this.config);
         this.partidasActivas.set(idPartida, nuevaPartida);
         return nuevaPartida;
     }
     
-    public unirseAPartida(codigo: string, nickname: string, socketID: string): Jugador {
-        const partida = this.partidasActivas.get(codigo);
+    public unirseAPartida(codigoPartida: string, nickname: string, socketID: string, jugadorDBId: number): Jugador {
+        const partida = this.partidasActivas.get(codigoPartida);
         if (!partida) {
             throw new Error('Partida no encontrada o ya finalizada.');
         }
-
-        // Simular obtención de ID de BD (idDB)
-        const jugadorDBId = Math.floor(Math.random() * 1000) + 1; 
         const nuevoJugador = new Jugador(nickname, jugadorDBId, socketID);
-
         partida.agregarJugador(nuevoJugador);
-        // Lógica de Socket.IO: socket.join(codigo);
         return nuevoJugador;
     }
 

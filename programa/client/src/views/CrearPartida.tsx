@@ -1,22 +1,32 @@
 // client/src/views/CrearPartida.tsx
-
 import React, { useState } from 'react';
+import axios from 'axios'; 
+import { useGameEvents } from '../hooks/useGameEvents';
+const API_URL = 'http://localhost:4000/api'; 
+import { useAuth } from '../context/AuthContext';
+
+
+
 
 // --- Interfaces de Tipos ---
 interface CrearPartidaProps {
   onBack: () => void; // Función para regresar al menú principal
-  onCreateSuccess: (partidaId: string) => void; // Función al crear exitosamente
+  onCreateSuccess: (partidaId: string) => void; // Función al crear exitosamente, recibe el ID de la partida
 }
 
 export const CrearPartida: React.FC<CrearPartidaProps> = ({ onBack, onCreateSuccess }) => {
-  const [tipoJuego, setTipoJuego] = useState<'Match' | 'Tiempo'>('Match'); // Default "Match"
-  const [tematica, setTematica] = useState<string>('Gemas'); // Default "Match" (interpretado como Temática)
-  const [numJugadores, setNumJugadores] = useState<number>(2); // Default 2, REQ-008
+  const { createGame, onGameCreated, joinGame } = useGameEvents(); // 1. Obtenemos la función de conexión del hook
+  const { currentUser } = useAuth(); // Obtener el usuario actual para el nickname
+
+  // Estados del formulario         
+  const [tipoJuego, setTipoJuego] = useState<'Match' | 'Tiempo'>('Match'); 
+  const [tematica, setTematica] = useState<string>('Gemas'); 
+  const [numJugadores, setNumJugadores] = useState<number>(2); 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Opciones para los selectores (REQ-003 COLORES_VALIDOS para temática)
-  const opcionesTematica = ['Gemas', 'Monstruos', 'Frutas', 'Animales']; // Mock de temáticas
+  // Opciones
+  const opcionesTematica = ['Gemas', 'Monstruos', 'Frutas', 'Animales']; 
   const opcionesTipoJuego = [
     { value: 'Match', label: 'Match' }, 
     { value: 'Tiempo', label: 'Tiempo' }
@@ -26,30 +36,38 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({ onBack, onCreateSucc
     setError(null);
     setLoading(true);
 
+    if (!createGame) {
+      setError('Error: El servicio de conexión no está disponible.');
+      setLoading(false);
+      return;
+    }
     try {
-      // REQ-007: Llama a la ruta REST para crear una partida (POST /api/partidas)
-      const response = await fetch('http://localhost:4000/api/partidas', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          tipoJuego: tipoJuego,
-          tematica: tematica,
-          numJugadoresMax: numJugadores, // REQ-008
-        }),
+      // 1. Llamada REST para crear la partida en el backend
+      const response = await axios.post(`${API_URL}/crear_partida`, {
+        tipoJuego,
+        tematica,
+        numJugadoresMax: numJugadores,
       });
 
-      const data = await response.json();
+      if (response.status === 201 && response.data.partidaId) {
+    
+        const partidaId = response.data.partidaId;
+        console.log(`[Cliente] ¡Partida creada! Código: ${partidaId}`);
+        createGame(partidaId, tipoJuego, tematica, numJugadores);
+        // Esperar confirmación del servidor vía Socket.IO
+        const unsubscribe = onGameCreated?.((data) => {
+          console.log(`[Cliente] Confirmación de creación de partida recibida. ID: ${data.partidaId}`);
+          onCreateSuccess(data.partidaId);
+          unsubscribe && unsubscribe(); // Desuscribirse después de recibir la confirmación
+          // Unirse automáticamente a la partida creada
+          joinGame?.(data.partidaId, currentUser?.nickname || 'JugadorAleatorio', currentUser?.idDB || 0);
+        });
 
-      if (response.ok) {
-        alert(`Partida creada! Código: ${data.codigo}`);
-        onCreateSuccess(data.codigo); // Notifica al padre con el código de la partida creada
-      } else {
-        setError(data.message || 'Error al crear la partida.');
+        } else {
+        setError('Error al crear la partida: Respuesta inesperada.');
       }
     } catch (e) {
-      setError('Fallo de conexión con el servidor backend.');
+      setError('Fallo de conexión o error del servidor backend.');
       console.error(e);
     } finally {
       setLoading(false);

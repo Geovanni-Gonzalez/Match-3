@@ -1,11 +1,10 @@
 // server/src/classes/Jugador.ts
-
-import { Coordenada } from '../Interfaces';
-import { DBManager } from '../db/dbManager';
+import { Coordenada } from '../interfaces';
 
 export class Jugador {
     public puntaje: number = 0;
     public celdasSeleccionadas: Coordenada[] = [];
+    public isReady: boolean = false; // Propiedad añadida para gestionar el estado de "listo" (REQ-022)
 
     constructor(
         public nickname: string,

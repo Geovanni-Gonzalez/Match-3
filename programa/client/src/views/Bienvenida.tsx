@@ -24,17 +24,14 @@ export const Bienvenida: React.FC<BienvenidaProps> = () => {
     setIsLoading(true);
 
     try {
-      const registerResponse = await axios.post(`${API_URL}/register`, { nickname });
+      const registerResponse = await axios.post(`${API_URL}/registrar_jugador`, { nickname });
       
       const { jugadorId } = registerResponse.data;
       console.log(`[Cliente] Jugador ID obtenido de la DB: ${jugadorId}`);
 
       // 2. PASO SOCKET: Iniciar la conexión Socket.IO y establecer la sesión
-      await login(nickname); // Esto conecta el socket y guarda el nickname
-
-      // 3. El componente padre ahora redirigirá porque isAuthenticated será true
-
-
+      await login(nickname, jugadorId); // Esto conecta el socket y guarda el nickname y el ID de la DB
+      console.log('[Cliente] Sesión iniciada con éxito.');
 
     } catch (e) {
       const errorMessage = axios.isAxiosError(e) 
