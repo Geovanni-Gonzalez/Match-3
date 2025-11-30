@@ -214,6 +214,57 @@ export class Partida {
     }
 
     /**
+     * limpiarTodasLasSelecciones - Desbloquea TODAS las selecciones de TODOS los jugadores
+     * Se usa cuando alguien hace match para evitar conflictos
+     */
+    private limpiarTodasLasSelecciones(): void {
+        console.log(`[Partida ${this.idPartida}] Limpiando TODAS las selecciones...`);
+        
+        // Limpiar selecciones de cada jugador
+        this.jugadores.forEach((jugador, nickname) => {
+            if (jugador.celdasSeleccionadas.length > 0) {
+                console.log(`[Partida ${this.idPartida}] - Liberando ${jugador.celdasSeleccionadas.length} celdas de ${nickname}`);
+                this.limpiarSeleccionJugador(nickname);
+            }
+        });
+        
+        console.log(`[Partida ${this.idPartida}] ✓ Todas las selecciones liberadas`);
+    }
+
+    /**
+     * limpiarSeleccionesAfectadas - Limpia selecciones de otros jugadores que incluyan celdas eliminadas
+     * @param celdasEliminadas - Coordenadas de las celdas que fueron eliminadas en el match
+     * @param nicknameQueHizoMatch - Jugador que hizo el match (se salta)
+     */
+    private limpiarSeleccionesAfectadas(celdasEliminadas: Coordenada[], nicknameQueHizoMatch: string): void {
+        console.log(`[Partida ${this.idPartida}] Verificando selecciones afectadas por el match...`);
+        
+        // Crear Set de celdas eliminadas para búsqueda rápida
+        const celdasEliminadasSet = new Set(
+            celdasEliminadas.map(c => `${c.r},${c.c}`)
+        );
+
+        // Revisar cada jugador (excepto el que hizo match)
+        this.jugadores.forEach((jugador, nickname) => {
+            if (nickname === nicknameQueHizoMatch) return;
+            
+            if (jugador.celdasSeleccionadas.length > 0) {
+                // Verificar si alguna celda seleccionada fue eliminada
+                const tieneAfectadas = jugador.celdasSeleccionadas.some(coord => 
+                    celdasEliminadasSet.has(`${coord.r},${coord.c}`)
+                );
+
+                if (tieneAfectadas) {
+                    console.log(`[Partida ${this.idPartida}] - ${nickname} tenía celdas afectadas, limpiando su selección`);
+                    this.limpiarSeleccionJugador(nickname);
+                }
+            }
+        });
+        
+        console.log(`[Partida ${this.idPartida}] ✓ Selecciones afectadas limpiadas`);
+    }
+
+    /**
      * confirmarMatch - Procesa el match seleccionado por un jugador
      * Calcula puntos, elimina celdas, aplica gravedad y rellena
      * @param nickname - Jugador que confirma su match
@@ -238,16 +289,22 @@ export class Partida {
             // 1. Calcular y asignar puntos (n²)
             jugador.calcularPuntaje(n);
 
-            // 2. Eliminar celdas, aplicar gravedad y rellenar
+            // 2. Guardar celdas eliminadas para limpiar selecciones afectadas
+            const celdasEliminadas = [...jugador.celdasSeleccionadas];
+
+            // 3. Eliminar celdas y rellenar
             this.tablero.procesarMatchesEnCascada(jugador.celdasSeleccionadas);
 
-            // 3. Limpiar selección
+            // 4. Limpiar solo la selección del jugador que hizo match
             this.limpiarSeleccionJugador(nickname);
 
-            // 4. Mostrar tabla de posiciones
+            // 5. Limpiar selecciones de otros jugadores SOLO si sus celdas fueron afectadas
+            this.limpiarSeleccionesAfectadas(celdasEliminadas, nickname);
+
+            // 6. Mostrar tabla de posiciones
             this.mostrarTablaPosiciones();
 
-            // 5. Notificar a todos
+            // 7. Notificar a todos
             this.enviarEstadoATodos();
 
             console.log(`[Partida ${this.idPartida}] ========================================\n`);

@@ -238,101 +238,62 @@ export class Tablero {
     }
 
     /**
-     * procesarMatchesEnCascada - Procesa eliminación, gravedad y detección de combos consecutivos
+     * procesarMatchesEnCascada - Procesa eliminación y relleno (SIN combos automáticos)
      * @param celdasInicialesEliminadas - Coordenadas del match inicial del jugador
      * @returns Objeto con totalCeldasEliminadas, comboMultiplicador e historialCombos
-     * @restricciones - Se detiene cuando no se detectan más matches automáticos
+     * @restricciones - Solo procesa el match del jugador, no busca combos adicionales
      */
     public procesarMatchesEnCascada(celdasInicialesEliminadas: Coordenada[]): {
         totalCeldasEliminadas: number;
         comboMultiplicador: number;
         historialCombos: Coordenada[][];
     } {
-        console.log('\n[TABLERO] ========== PROCESANDO MATCHES EN CASCADA ==========');
+        console.log('\n[TABLERO] ========== PROCESANDO MATCH DEL JUGADOR ==========');
+        console.log(`[TABLERO] 💥 ${celdasInicialesEliminadas.length} celdas a eliminar`);
         
-        let celdasAEliminar = celdasInicialesEliminadas;
-        let combo = 1;
-        let totalEliminadas = 0;
         const historialCombos: Coordenada[][] = [];
+        historialCombos.push([...celdasInicialesEliminadas]);
 
-        while (celdasAEliminar.length > 0) {
-            console.log(`[TABLERO] 💥 Combo ${combo}: ${celdasAEliminar.length} celdas a eliminar`);
-            
-            historialCombos.push([...celdasAEliminar]);
-            totalEliminadas += celdasAEliminar.length;
-
-            // Aplicar gravedad y generar nuevas celdas
-            const celdasModificadas = this.rellenarDespuesDeMatch(celdasAEliminar);
-            
-            // Buscar matches generados por la gravedad
-            celdasAEliminar = this.detectarMatches();
-            
-            if (celdasAEliminar.length > 0) {
-                combo++; // Incrementar multiplicador de combo
-                console.log(`[TABLERO] 🎉 ¡Match automático detectado! Continuando combo...`);
-            } else {
-                console.log(`[TABLERO] ✓ No hay más matches automáticos`);
-            }
-        }
-
+        // Rellenar las celdas eliminadas (sin gravedad)
+        const celdasModificadas = this.rellenarDespuesDeMatch(celdasInicialesEliminadas);
+        
         console.log(`[TABLERO] ========================================`);
-        console.log(`[TABLERO] Cascada finalizada:`);
-        console.log(`[TABLERO]   - Combos: ${combo}x`);
-        console.log(`[TABLERO]   - Total eliminadas: ${totalEliminadas} celdas`);
+        console.log(`[TABLERO] Match procesado:`);
+        console.log(`[TABLERO]   - Celdas eliminadas: ${celdasInicialesEliminadas.length}`);
+        console.log(`[TABLERO]   - Celdas rellenadas: ${celdasModificadas.length}`);
         console.log(`[TABLERO] ==========================================\n`);
 
         return {
-            totalCeldasEliminadas: totalEliminadas,
-            comboMultiplicador: combo,
+            totalCeldasEliminadas: celdasInicialesEliminadas.length,
+            comboMultiplicador: 1, // Sin combos en cascada, siempre 1x
             historialCombos
         };
     }
 
     /**
-     * rellenarDespuesDeMatch - Aplica gravedad y genera nuevas celdas después de eliminar matches
-     * REQ-018: Implementa caída de celdas y relleno desde arriba sin crear matches inmediatos
-     * @param celdasEliminadas - Coordenadas de las celdas a eliminar
-     * @returns Array de coordenadas de todas las celdas modificadas (por gravedad + nuevas)
+     * rellenarDespuesDeMatch - Rellena las celdas eliminadas con colores aleatorios (SIN gravedad)
+     * REQ-018: Genera nuevos colores en las posiciones exactas de las celdas eliminadas
+     * @param celdasEliminadas - Coordenadas de las celdas a rellenar
+     * @returns Array de coordenadas de las celdas modificadas
      * @restricciones - Nuevas celdas no deben formar matches de 3+ al generarse
      */
     public rellenarDespuesDeMatch(celdasEliminadas: Coordenada[]): Coordenada[] {
         console.log('[TABLERO] ========== RELLENO DESPUÉS DE MATCH ==========');
         console.log(`[TABLERO] Celdas a rellenar: ${celdasEliminadas.length}`);
         
-        const { TAMANIO_FILA: R, TAMANIO_COLUMNA: C, COLORES_VALIDOS } = this.config;
+        const { COLORES_VALIDOS } = this.config;
         const celdasModificadas: Coordenada[] = [];
 
-        // Agrupar celdas eliminadas por columna
-        const columnas = new Map<number, number[]>();
+        // Rellenar cada celda eliminada con un nuevo color aleatorio
         for (const { r, c } of celdasEliminadas) {
-            if (!columnas.has(c)) {
-                columnas.set(c, []);
-            }
-            columnas.get(c)!.push(r);
-        }
-
-        // Procesar cada columna independientemente
-        for (const [columna, filasEliminadas] of columnas.entries()) {
-            console.log(`[TABLERO] Procesando columna ${columna}: ${filasEliminadas.length} celdas eliminadas`);
+            // Generar color que no forme match inmediato
+            const colorValido = this.generarColorSinMatchEnPosicion(r, c, COLORES_VALIDOS);
             
-            filasEliminadas.sort((a, b) => b - a); // Ordenar de abajo hacia arriba
-
-            // Aplicar gravedad: desplazar celdas hacia abajo
-            for (let i = 0; i < filasEliminadas.length; i++) {
-                const filaVacia = filasEliminadas[i];
-                
-                // Mover todas las celdas superiores una posición abajo
-                for (let fila = filaVacia; fila > 0; fila--) {
-                    this.matriz[fila][columna] = this.matriz[fila - 1][columna];
-                    this.matriz[fila][columna].fila = fila; // Actualizar posición
-                    celdasModificadas.push({ r: fila, c: columna });
-                }
-
-                // Generar nueva celda en fila 0 (verificando matriz completa)
-                const colorValido = this.generarColorSinMatchEnPosicion(0, columna, COLORES_VALIDOS);
-                this.matriz[0][columna] = new Celda(0, columna, colorValido);
-                celdasModificadas.push({ r: 0, c: columna });
-            }
+            // Crear nueva celda en la misma posición
+            this.matriz[r][c] = new Celda(r, c, colorValido);
+            celdasModificadas.push({ r, c });
+            
+            console.log(`[TABLERO] Celda [${r},${c}] rellenada con color: ${colorValido}`);
         }
 
         console.log(`[TABLERO] ✓ Relleno completado. ${celdasModificadas.length} celdas modificadas`);

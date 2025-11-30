@@ -176,7 +176,8 @@ io.on('connection', (socket) => {
                 tablero: juego.partida.obtenerEstadoTablero(),
                 jugadores: juego.partida.obtenerJugadores(),
                 mensaje: resultado.mensaje,
-                puntos: resultado.puntos
+                puntos: resultado.puntos,
+                nicknameQueHizoMatch: nickname // Identificar quién hizo el match
             });
         } else {
             socket.emit('error_match', { mensaje: resultado.mensaje });

@@ -101,10 +101,26 @@ export const Juego: React.FC<JuegoProps> = ({
     // --- GAME UPDATE: Tablero actualizado después de un match ---
     socket.on('game_update', (data) => {
         console.log('[Client] Actualización recibida:', data);
+        
+        // Actualizar tablero y jugadores siempre
         setTablero(data.tablero);
         setJugadores(data.jugadores);
-        setGrupoSeleccionado([]);
         setMensajeError(null);
+        
+        // Verificar si las celdas seleccionadas aún existen con el mismo color
+        if (grupoSeleccionado.length > 0 && data.tablero) {
+            const grupoSigueValido = grupoSeleccionado.every(coord => {
+                const celdaAnterior = tablero[coord.fila]?.[coord.columna];
+                const celdaNueva = data.tablero[coord.fila]?.[coord.columna];
+                return celdaAnterior && celdaNueva && celdaAnterior.colorID === celdaNueva.colorID;
+            });
+            
+            // Solo limpiar si el grupo ya no es válido (celdas fueron eliminadas/cambiadas)
+            if (!grupoSigueValido) {
+                console.log('[Client] Grupo seleccionado ya no es válido, limpiando');
+                setGrupoSeleccionado([]);
+            }
+        }
     });
 
     // --- ERROR SELECCIÓN ---
@@ -185,6 +201,9 @@ export const Juego: React.FC<JuegoProps> = ({
       partidaId, 
       nickname: currentUserNickname 
     });
+    
+    // Limpiar inmediatamente la selección local después de confirmar
+    setGrupoSeleccionado([]);
   };
 
   const handleCancelar = () => {
@@ -295,12 +314,15 @@ export const Juego: React.FC<JuegoProps> = ({
                 onClick={handleConfirmar} 
                 style={{
                     ...styles.confirmButton,
-                    opacity: grupoSeleccionado.length > 0 ? 1 : 0.5,
-                    cursor: grupoSeleccionado.length > 0 ? 'pointer' : 'not-allowed'
+                    opacity: grupoSeleccionado.length > 0 ? 1 : 0.4,
+                    cursor: grupoSeleccionado.length > 0 ? 'pointer' : 'not-allowed',
+                    transform: grupoSeleccionado.length > 0 ? 'none' : 'translateY(0)',
+                    boxShadow: grupoSeleccionado.length > 0 ? '0 4px #00AA00' : '0 2px #006600',
+                    filter: grupoSeleccionado.length > 0 ? 'none' : 'grayscale(30%)'
                 }}
                 disabled={grupoSeleccionado.length === 0}
             >
-                Confirmar ({grupoSeleccionado.length} celdas)
+                Confirmar {grupoSeleccionado.length > 0 ? `(${grupoSeleccionado.length} celdas)` : '(0 celdas)'}
             </button>
             <button 
                 onClick={handleCancelar} 
