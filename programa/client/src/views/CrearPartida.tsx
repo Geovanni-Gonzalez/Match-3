@@ -16,8 +16,8 @@ interface CrearPartidaProps {
 }
 
 export const CrearPartida: React.FC<CrearPartidaProps> = ({ onBack, onCreateSuccess }) => {
-  const { createGame, onGameCreated, joinGame } = useGameEvents(); // 1. Obtenemos la función de conexión del hook
-  const { currentUser } = useAuth(); // Obtener el usuario actual para el nickname
+  const { createGame, onGameCreated, joinGame } = useGameEvents(); 
+  const { currentUser } = useAuth(); 
 
   // Estados del formulario         
   const [tipoJuego, setTipoJuego] = useState<'Match' | 'Tiempo'>('Match'); 

@@ -1,72 +1,78 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { useAuth } from '../context/AuthContext'; // Importamos el socket del AuthContext
-import { SocketService } from '../services/SocketService';
-// Tipos
-interface TableroData { /* ... */ } 
-interface JugadorData { /* ... */ }
+import { useEffect, useState, useMemo } from "react";
+import { useAuth } from "../context/AuthContext";
+import { SocketService } from "../services/SocketService";
 
-/**
- * Hook personalizado para manejar el estado de la partida y las interacciones
- * a través del SocketService.
- */
+interface JugadorData {
+    nickname: string;
+    socketID: string;
+    isReady: boolean;
+}
+
+interface TableroData {
+    filas: number;
+    columnas: number;
+    celdas: string[][];
+}
+
 export const useGameEvents = () => {
-    // Obtenemos el socket de la sesión del usuario
-    const { socket } = useAuth(); 
-    
-    // Estados que reflejan la información recibida del servidor
-    const [tablero, setTablero] = useState<TableroData | null>(null);
+    const { socket, currentUser } = useAuth();
+
+    // Estados del juego
     const [jugadores, setJugadores] = useState<JugadorData[]>([]);
-    const [gameStatus, setGameStatus] = useState<'loading' | 'active' | 'finished'>('loading');
+    const [gameStatus, setGameStatus] = useState<"loading" | "waiting" | "active">("loading");
+    const [tablero, setTablero] = useState<TableroData | null>(null);
 
-
-    // Inicializamos el repositorio una sola vez con la instancia del socket
+    // Crear servicio SOLO cuando haya socket
     const socketService = useMemo(() => {
-        if (socket) {
-            return new SocketService(socket);
-        }
-        return null;
-    }, [socket]); // Se recrea solo si la instancia del socket cambia
+        return socket ? new SocketService(socket) : null;
+    }, [socket]);
 
-    // =======================================================
-    // 1. GESTIÓN DE LISTENERS (El núcleo del hook)
-    // =======================================================
+    // ===============================
+    // LISTENERS PRINCIPALES
+    // ===============================
     useEffect(() => {
-        if (!socketService) return; // Solo suscribirse si el repositorio está listo
+        if (!socketService) return;
 
-        // 1. Suscripción a la actualización del tablero
-        const unsubscribeBoard = socketService.onBoardUpdate((data) => {
-            setTablero(data);
-            setGameStatus('active');
-        });
+        console.log("[useGameEvents] Configurando listeners...");
 
-        // 2. Suscripción a la actualización de jugadores
-        const unsubscribePlayers = socketService.onPlayersUpdate((players) => {
+        const unsubPlayers = socketService.onPlayersUpdate((players) => {
+            console.log("[useGameEvents] players_update recibido →", players.length);
             setJugadores(players);
+
+            if (players.length > 0 && gameStatus === "loading") {
+                setGameStatus("waiting");
+            }
         });
 
-        // FUNCIÓN DE LIMPIEZA: CRUCIAL para evitar fugas de memoria
-        return () => {
-            console.log("[useGameEvents] Limpiando listeners.");
-            unsubscribeBoard();
-            unsubscribePlayers();
-        };
-    }, [socketService]); // Se ejecuta cuando el socketService (y por ende el socket) está listo
+        const unsubGameStart = socketService.onGameStarted((data) => {
+            console.log("[useGameEvents] game_started recibido → Tablero inicial OK");
 
-    // =======================================================
-    // 2. RETORNO DE DATOS Y FUNCIONES (Para el Componente)
-    // =======================================================
+            setTablero(data.tablero);
+            setGameStatus("active");
+        });
+
+        return () => {
+            console.log("[useGameEvents] Limpiando listeners");
+            unsubPlayers();
+            unsubGameStart();
+        };
+    }, [socketService]);
 
     return {
-        // Datos reactivos del servidor
-        tablero,
         jugadores,
         gameStatus,
+        tablero,
 
-        // Funciones de acción (emitidas por el repositorio)
-        joinGame: socketService?.joinGame.bind(socketService), // bind(socketService) mantiene el contexto 'this'
-        sendMove: socketService?.sendMove.bind(socketService),
-        setReady: socketService?.setReady.bind(socketService),
+        // Acciones
+        joinGame: socketService?.joinGame.bind(socketService),
         createGame: socketService?.createGame.bind(socketService),
+        setReady: socketService?.setReady.bind(socketService),
+        startGame: socketService?.startGame.bind(socketService),
+        sendMove: socketService?.sendMove.bind(socketService),
+
+        // Eventos adicionales
         onGameCreated: socketService?.onGameCreated.bind(socketService),
+        onJoinedGame: socketService?.onJoinedGame.bind(socketService),
+        onStartGame: socketService?.onStartGame.bind(socketService),
     };
 };

@@ -5,6 +5,7 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import  apiRoutes  from './api.js';
 import  {ServidorPartidas}  from './classes/ServidorPartidas';
+import { DBManager } from './db/dbManager.js';
 
 const app = express();
 const PORT = 4000;
@@ -48,6 +49,7 @@ io.on('connection', (socket) => {
                 socket.data.isReady = false; 
                 // Notificar al jugador que se unió exitosamente
                 socket.emit('joined_game', { idPartida, nickname: nuevoJugador.nickname, socketID: socket.id });
+                
                 // 3. Obtener la lista de jugadores actualizada
                 const partida = servidorPartidas.partidasActivas.get(idPartida);
                 if (!partida) {
@@ -63,7 +65,7 @@ io.on('connection', (socket) => {
                 }));
 
                 // 4. Notificar a todos en la sala
-                io.to(idPartida).emit('update_players_list', currentPlayers);
+                io.to(idPartida).emit('players_update', currentPlayers);
     
             } catch (error: unknown) {
                 // Asegurarse de obtener un mensaje seguro desde un error de tipo unknown
