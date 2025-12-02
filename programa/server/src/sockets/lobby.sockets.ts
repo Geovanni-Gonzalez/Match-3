@@ -2,6 +2,7 @@
 import { Server, Socket } from 'socket.io';
 import { GameService } from '../core/services/GameService.js';
 import { ServidorPartidas } from '../core/manager/ServidorPartidas.js';
+import { Console } from 'console';
 
 export function registerLobbySockets(io: Server, gameService: GameService) {
   const servidor = ServidorPartidas.getInstance();
@@ -12,6 +13,7 @@ export function registerLobbySockets(io: Server, gameService: GameService) {
       try {
         const { idPartida, tipoJuego, tematica, numJugadoresMax } = data;
         gameService.crearPartida(idPartida, tipoJuego, tematica, numJugadoresMax);
+        console.log(`[Socket][lobby] Partida creada: ${idPartida} (${tipoJuego}, ${tematica}, max:${numJugadoresMax})`);
         socket.emit('game_created', { idPartida });
       } catch (err) {
         socket.emit('error_create', { message: (err as Error).message || 'Error creating game' });

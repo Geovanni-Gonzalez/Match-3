@@ -17,14 +17,7 @@ export class GameService {
    * Crear partida: persiste en BD y en memoria
    */
   public async crearPartida(idPartida: string, tipoJuego: 'Match' | 'Tiempo', tematica: string, max: number) {
-    // Persistir en BD (si falla, lanzar error)
-    try {
-      await PartidaRepo.crearPartida(idPartida, tipoJuego, tematica, max);
-    } catch (err) {
-      console.error('[GameService] Error persistir partida:', err);
-      throw err;
-    }
-
+    console.log('[GameService] Creando partida:', idPartida, tipoJuego, tematica, max);
     return this.servidor.crearPartida(idPartida, tipoJuego, tematica, max);
   }
 

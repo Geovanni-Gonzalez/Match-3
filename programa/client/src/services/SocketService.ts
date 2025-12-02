@@ -26,6 +26,7 @@ export class SocketService {
 
   // ---------- EMITS ----------
   public createGame(idPartida: string, tipoJuego: string, tematica: string, numJugadoresMax: number) {
+    console.log("[SocketService] Emitiendo create_game:", { idPartida, tipoJuego, tematica, numJugadoresMax });
     this.socket.emit("create_game", { idPartida, tipoJuego, tematica, numJugadoresMax });
   }
 
@@ -70,6 +71,7 @@ export class SocketService {
   }
 
   public onGameStarted(callback: (data: { tablero: TableroSerializedCell[][]; config?: any }) => void) {
+    console.log("[SocketService] Recibiendo game_started:", callback);
     this.socket.on("game_started", callback);
     return () => this.socket.off("game_started", callback);
   }
@@ -89,6 +91,7 @@ export class SocketService {
     return () => this.socket.off("all_players_ready", callback);
   }
     public onGameCreated(callback: (data: { idPartida: string }) => void) {
+    console.log("[SocketService] Recibiendo game_created:", callback);
     this.socket.on("game_created", callback);
     return () => this.socket.off("game_created", callback);
     }

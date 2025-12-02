@@ -1,26 +1,29 @@
-// server/src/api/jugador.api.ts
+// server/src/api/partida.api.ts
 import { Router, Request, Response } from 'express';
-import { PlayerRepo } from '../core/repositories/PlayerRepo.js';
+import { PartidaRepo } from '../core/repositories/PartidaRepo.js';
+import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
 /**
- * POST /api/jugador/registrar
- * Body: { nickname: string }
- * Respuesta: { jugadorId, nickname }
+ * POST /api/partida/crear_partida
+ * Body: { tipoJuego, tematica, numJugadoresMax }
+ * Respuesta: { partidaId, tipoJuego, tematica, numJugadoresMax }
  */
-router.post('/registrar', async (req: Request, res: Response) => {
-  const { nickname } = req.body;
-  if (!nickname || typeof nickname !== 'string' || nickname.trim().length < 1) {
-    return res.status(400).json({ message: 'Nickname inválido.' });
+router.post('/crear_partida', async (req: Request, res: Response) => {
+  const { tipoJuego, tematica, numJugadoresMax } = req.body;
+  if (!tipoJuego || !tematica || !numJugadoresMax) {
+    return res.status(400).json({ message: 'Datos de partida inválidos.' });
   }
-
   try {
-    const jugadorId = await PlayerRepo.findOrCreateByNickname(nickname.trim());
-    return res.status(200).json({ message: 'Registro exitoso', jugadorId, nickname: nickname.trim() });
+    // Generar código de partida único (6 caracteres alfanuméricos)
+    const codigoPartida = uuidv4().split('-')[0].toUpperCase(); // Usar los primeros 6 caracteres del UUID
+    const partidaId = await PartidaRepo.crearPartida(codigoPartida, tipoJuego, tematica, numJugadoresMax);
+    console.log('[API][Partida] Partida creada con ID:', partidaId);
+    return res.status(201).json({ message: 'Partida creada exitosamente', codigoPartida, tipoJuego, tematica, numJugadoresMax });
   } catch (err) {
-    console.error('[API][jugador] Error registrar:', err);
-    return res.status(500).json({ message: 'Error interno al registrar jugador.' });
+    console.error('[API][Partida] Error crear_partida:', err);
+    return res.status(500).json({ message: 'Error interno al crear partida.' });
   }
 });
 

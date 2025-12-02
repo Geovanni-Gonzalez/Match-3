@@ -58,20 +58,20 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({
 
     try {
       // 1. REST → Crear partida en BD
-      const response = await axios.post(`${API_URL}/crear_partida`, {
+      const response = await axios.post(`${API_URL}/partida/crear_partida`, {
         tipoJuego,
         tematica,
         numJugadoresMax: numJugadores
       });
 
-      if (response.status !== 201 || !response.data.partidaId) {
+      if (response.status !== 201 || !response.data.codigoPartida) {
         setError("Error al crear partida en backend.");
         setLoading(false);
         return;
       }
 
-      const partidaId = response.data.partidaId;
-      console.log("[CrearPartida] partidaId recibido →", partidaId);
+      const codigoPartida = response.data.codigoPartida;
+      console.log("[CrearPartida] partidaId recibido →", codigoPartida);
 
       // 2. SUSCRIBIRSE ANTES de enviar evento
             const unsubscribe = onGameCreated?.((data: { idPartida: string }) => {
@@ -91,7 +91,7 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({
             });
 
       // 3. Emitir creación por socket
-      createGame(partidaId, tipoJuego, tematica, numJugadores);
+      createGame(codigoPartida, tipoJuego, tematica, numJugadores);
 
     } catch (err) {
       console.error(err);
