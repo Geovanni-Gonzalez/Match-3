@@ -5,42 +5,44 @@ import { MenuPrincipal } from './views/MenuPrincipal';
 import { LobbyPartidas } from './views/LobbyPartidas';
 import { CrearPartida } from './views/CrearPartida';
 import { RankingHistorico } from './views/RankingHistorico';
-import { SalaDeEspera } from './views/SalaDeEspera'; 
+import { SalaDeEspera } from './views/SalaDeEspera';
 import { Juego } from './views/Juego';
 import { useAuth } from './context/AuthContext';
 
 // --- Tipos ---
-type AppView = 'welcome' | 'menu' | 'lobby' | 'ranking' | 'create_game' | 'waiting_room' | 'game';
+type AppView =
+  | 'welcome'
+  | 'menu'
+  | 'lobby'
+  | 'ranking'
+  | 'create_game'
+  | 'waiting_room'
+  | 'game';
 
-// Interfaz para las celdas del tablero
-interface Celda {
-  id: number;
-  color: string;
+// --- Tipo coherente con el backend ---
+export interface Celda {
+  tipo: number;
+  estado?: string;
 }
 
 const App: React.FC = () => {
   const { currentUser, login, logout } = useAuth();
-  
-  const [currentView, setCurrentView] = useState<AppView>('welcome'); 
-  const [currentGameId, setCurrentGameId] = useState<string | null>(null); 
-  
-  // Estado para guardar el tablero inicial que envía el servidor
+
+  const [currentView, setCurrentView] = useState<AppView>('welcome');
+  const [currentGameId, setCurrentGameId] = useState<string | null>(null);
+
+  // Tablero inicial que envía el servidor
   const [initialBoard, setInitialBoard] = useState<Celda[][]>([]);
 
   const handleNavigation = (view: AppView) => {
     setCurrentView(view);
   };
 
-  const handleLoginSuccess = async (nickname: string, idDB: number) => {
-    await login(nickname, idDB); 
-    setCurrentView('menu');
-  };
-
   const handleLogout = () => {
     logout();
     setCurrentView('welcome');
     setCurrentGameId(null);
-    setInitialBoard([]); // Limpiar tablero al salir
+    setInitialBoard([]);
   };
 
   const handleGoToWaitingRoom = (partidaId: string) => {
@@ -48,10 +50,10 @@ const App: React.FC = () => {
     handleNavigation('waiting_room');
   };
 
-  // --- MODIFICADO: Ahora recibe el tablero del servidor ---
-  const handleStartGame = (partidaId: string, tableroServidor: any[]) => {
+  // Recibe el tablero generado por el servidor vía sockets
+  const handleStartGame = (partidaId: string, tableroServidor: Celda[][]) => {
     setCurrentGameId(partidaId);
-    setInitialBoard(tableroServidor); // Guardamos la matriz recibida
+    setInitialBoard(tableroServidor);
     handleNavigation('game');
   };
 
@@ -59,80 +61,76 @@ const App: React.FC = () => {
 
   switch (currentView) {
     case 'welcome':
+      content = !currentUser ? <Bienvenida /> : null;
       if (currentUser) {
-          setCurrentView('menu'); 
-          content = null;
-      } else {
-          content = <Bienvenida />;
+        setTimeout(() => handleNavigation('menu'), 0);
       }
       break;
-      
+
     case 'menu':
-      if (!currentUser) {
-        content = <Bienvenida/>;
-      } else {
-        content = (
-            <MenuPrincipal 
-                currentUser={currentUser} 
-                onLogout={handleLogout} 
-                onNavigate={handleNavigation}
-            />
-        );
-      }
+      content = currentUser ? (
+        <MenuPrincipal
+          currentUser={currentUser}
+          onLogout={handleLogout}
+          onNavigate={handleNavigation}
+        />
+      ) : (
+        <Bienvenida />
+      );
       break;
 
     case 'lobby':
-        content = (
-            <LobbyPartidas 
-                onBack={() => handleNavigation('menu')} 
-                onJoinSuccess={handleGoToWaitingRoom} 
-            />
-        );
-        break;
+      content = (
+        <LobbyPartidas
+          onBack={() => handleNavigation('menu')}
+          onJoinSuccess={handleGoToWaitingRoom}
+        />
+      );
+      break;
 
     case 'create_game':
-        content = (
-            <CrearPartida 
-                onBack={() => handleNavigation('menu')} 
-                onCreateSuccess={handleGoToWaitingRoom} 
-            />
-        );
-        break;
+      content = (
+        <CrearPartida
+          onBack={() => handleNavigation('menu')}
+          onCreateSuccess={handleGoToWaitingRoom}
+        />
+      );
+      break;
 
     case 'ranking':
-        content = (
-            <RankingHistorico
-                onBack={() => handleNavigation('menu')} 
-            />
-        );
-        break;
+      content = <RankingHistorico onBack={() => handleNavigation('menu')} />;
+      break;
 
     case 'waiting_room':
-        if (!currentGameId || !currentUser) return null;
-        content = (
-            <SalaDeEspera 
-                partidaId={currentGameId}
-                currentUserNickname={currentUser.nickname}
-                onLeave={() => handleNavigation('menu')}
-                onStartGame={handleStartGame} // Pasamos la función que recibe el tablero
-            />
-        );
-        break;
+      if (!currentGameId || !currentUser) return null;
+      content = (
+        <SalaDeEspera
+          {...({
+            partidaId: currentGameId,
+            currentUserNickname: currentUser.nickname,
+            onLeave: () => handleNavigation('menu'),
+            onStartGame: handleStartGame,
+          } as any)}
+        />
+      );
+      break;
 
     case 'game':
       if (!currentGameId || !currentUser) return null;
       content = (
-          <Juego 
-            partidaId={currentGameId}
-            currentUserNickname={currentUser.nickname}
-            initialTablero={initialBoard} // <--- Enviamos el tablero al juego
-            onLeave={() => handleNavigation('menu')}
-          />
+        <Juego
+          {...({
+            partidaId: currentGameId,
+            currentUserNickname: currentUser.nickname,
+            initialTablero: initialBoard,
+            onLeave: () => handleNavigation('menu'),
+          } as any)}
+        />
       );
       break;
 
     default:
-      content = <Bienvenida/>;
+      content = <Bienvenida />;
   }
 
   return (
@@ -144,6 +142,7 @@ const App: React.FC = () => {
 
 export default App;
 
+// --- Estilos ---
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     fontFamily: 'Arial, sans-serif',

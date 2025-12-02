@@ -1,4 +1,4 @@
-// server/src/db/dbPool.js
+// server/src/core/repositories/dbPool.js
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 dotenv.config();

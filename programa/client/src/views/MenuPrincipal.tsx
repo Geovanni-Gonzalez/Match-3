@@ -1,3 +1,4 @@
+// programa/client/src/views/MenuPrincipal.tsx
 import React, { useState, useEffect } from 'react';
 // Definir los tipos de vista para el componente
 type MenuViews = 'menu' | 'lobby' | 'ranking' | 'create_game' | 'game';

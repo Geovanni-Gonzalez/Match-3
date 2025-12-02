@@ -1,7 +1,5 @@
-// server/src/worker/workerUtility.ts
-
-import { Coordenada } from '../interfaces';
-import { Celda } from '../classes/Celda';
+import { Coordenada } from '../../interfaces';
+import { Celda } from '../domain/Celda';
 
 export class WorkerThreadUtility {
 
