@@ -1,5 +1,5 @@
 // server/src/core/domain/Jugador.ts
-import { Coordenada } from '../../interfaces';
+import { Coordenada } from '../../interfaces.js';
 
 
 export class Jugador {

@@ -1,6 +1,6 @@
 // server/src/sockets/player.socket.ts
 import { Server, Socket } from 'socket.io';
-import { GameService } from '../core/services/GameService';
+import { GameService } from '../core/services/GameService.js';
 
 export function registerPlayerSockets(io: Server, gameService: GameService) {
   io.on('connection', (socket: Socket) => {

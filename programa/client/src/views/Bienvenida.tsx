@@ -23,7 +23,7 @@ export const Bienvenida: React.FC = () => {
     try {
       console.log("[Cliente] Registrando jugador...");
 
-      const res = await axios.post(`${API_URL}/registrar_jugador`, { nickname });
+      const res = await axios.post(`${API_URL}/jugador/registrar`, { nickname });
       const jugadorId = res.data.jugadorId;
 
       console.log(`[Cliente] Jugador registrado con ID DB: ${jugadorId}`);

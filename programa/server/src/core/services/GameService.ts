@@ -1,12 +1,12 @@
 // server/src/core/services/GameService.ts
 import { Server } from 'socket.io';
-import { ServidorPartidas } from '../manager/ServidorPartidas';
-import { Jugador } from '../domain/Jugador';
-import { MatchService } from './MatchService';
-import config from '../../config/config';
-import { Coordenada } from '../../interfaces';
-import { PlayerRepo } from '../repositories/PlayerRepo';
-import { PartidaRepo } from '../repositories/PartidaRepo';
+import { ServidorPartidas } from '../manager/ServidorPartidas.js';
+import { Jugador } from '../domain/Jugador.js';
+import { MatchService } from './MatchService.js';
+import config from '../../config/config.js';
+import { Coordenada } from '../../interfaces.js';
+import { PlayerRepo } from '../repositories/PlayerRepo.js';
+import { PartidaRepo } from '../repositories/PartidaRepo.js';
 
 export class GameService {
   private servidor = ServidorPartidas.getInstance();
@@ -62,8 +62,8 @@ export class GameService {
 
     this.io.to(partidaId).emit('player_status_changed', { socketID, isReady });
 
-    const jugadoresArr = Array.from(partida.jugadores.values());
-    const todosReady = jugadoresArr.length >= 2 && jugadoresArr.every(j => j.isReady);
+    const jugadoresArr = Array.from(partida.jugadores.values()) as Jugador[];
+    const todosReady = jugadoresArr.length >= 2 && jugadoresArr.every((j: Jugador) => j.isReady);
     if (todosReady) {
       this.io.to(partidaId).emit('all_players_ready', { partidaId });
     }
@@ -105,7 +105,7 @@ export class GameService {
       for (const [sock, other] of partida.jugadores.entries()) {
         if (sock !== socketID) {
           // Solo si otro no tiene esa celda seleccionada
-          const has = other.celdasSeleccionadas.some(s => s.r === r && s.c === c);
+          const has = other.celdasSeleccionadas.some((s: { r: number; c: number; }) => s.r === r && s.c === c);
           if (!has) {
             // marca la celda como ocupada por otro (esto será visible en la emisión)
             celda.establecerEstado('bloqueada'); // o 'seleccion_otro' según tu UI
@@ -173,14 +173,16 @@ export class GameService {
 
     partida.setEstado('finalizada');
 
-    const resultadosOrdenados = Array.from(partida.jugadores.values()).sort((a, b) => b.puntaje - a.puntaje);
+    // Asegurar el tipo correcto para que TypeScript reconozca las propiedades de Jugador
+    const resultadosOrdenados = Array.from(partida.jugadores.values()) as Jugador[];
+    resultadosOrdenados.sort((a, b) => b.puntaje - a.puntaje);
     const ganador = resultadosOrdenados[0];
 
     // Preparar resultados para persistir (idDB, puntaje, esGanador)
-    const resultadosForDb = resultadosOrdenados.map(j => ({
+    const resultadosForDb = resultadosOrdenados.map((j: Jugador) => ({
       idJugador: j.idDB,
       puntaje: j.puntaje,
-      esGanador: (ganador && ganador.puntaje > 0 && j.puntaje === ganador.puntaje)
+      esGanador: !!(ganador && ganador.puntaje > 0 && j.puntaje === ganador.puntaje)
     }));
 
     try {

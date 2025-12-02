@@ -1,5 +1,5 @@
 // server/src/core/repositories/PartidaRepo.ts
-import pool from './dbPool';
+import pool from './dbPool.js';
 
 export class PartidaRepo {
     static async crearPartida(codigo: string, tipo: string, tematica: string, maxJugadores: number) {

@@ -1,5 +1,5 @@
-import { Coordenada } from '../../interfaces';
-import { Celda } from '../domain/Celda';
+import { Coordenada } from '../../interfaces.js';
+import { Celda } from '../domain/Celda.js';
 
 export class WorkerThreadUtility {
 

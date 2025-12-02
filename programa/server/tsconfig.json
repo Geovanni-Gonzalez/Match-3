@@ -1,35 +1,35 @@
 {
-    "compilerOptions": {
-    /* Opciones del Proyecto */
-    "allowJs": true,          
-    "target": "ES2022",                                  /* Especifica la versión de JS de salida */
-    "module": "NodeNext",                                /* Usa el sistema de módulos de Node.js más reciente */
-    "moduleResolution": "NodeNext",                      /* Determina cómo Node resuelve las importaciones */
-    "rootDir": "./src",                                  /* Especifica el directorio que contiene los archivos fuente (.ts) */
-    "outDir": "./dist",                                  /* Especifica el directorio de salida para los archivos compilados (.js) */
-    "esModuleInterop": true,                             /* Permite la sintaxis 'import { x } from "y"' para CommonJS */
-    "forceConsistentCasingInFileNames": true,            /* Asegura que las mayúsculas/minúsculas de las rutas sean consistentes */
-    "strict": true,                                      /* Habilita todas las opciones estrictas de chequeo de tipos */
-    "skipLibCheck": true,                                /* Omite la verificación de tipos en archivos de declaración */
-    
-    /* Opciones de Salida y Directorios */
-    "sourceMap": true,                                   /* Genera archivos .map para el debugging */
-    "resolveJsonModule": true,                           /* Permite importar archivos .json */
+  "compilerOptions": {
+    /* ----- Output & Directories ----- */
+    "target": "ES2022",                     
+    "module": "NodeNext",                   
+    "moduleResolution": "NodeNext",       
+    "rootDir": "./src",                    
+    "outDir": "./dist",                    
 
-    /* Importaciones para ES Modules */
-    "allowSyntheticDefaultImports": true,                /* Permite importaciones de "default" */
-    
-    /* Módulos */
-    "types": ["node"],                                   /* Incluye las declaraciones de tipos de Node.js */
-    
-    /* JSX (si fuera necesario para React, etc., aquí se deja deshabilitado) */
-    "jsx": "react"
-    },
-    "include": [
-    "./src/**/*.ts"                                      /* Incluye todos los archivos .ts dentro de la carpeta src */
-    ],
-    "exclude": [
-    "node_modules",                                      /* Excluye la carpeta node_modules */
-    "**/*.spec.ts"                                       /* Excluye archivos de pruebas (ej: .test.ts o .spec.ts) */
-    ]
+    /* ----- Imports & Interop ----- */
+    "esModuleInterop": true,               
+    "allowSyntheticDefaultImports": true,  
+    "resolveJsonModule": true,             
+
+    /* ----- Strict Type Checking ----- */
+    "strict": true,                         
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,                   
+
+    /* ----- Debugging ----- */
+    "sourceMap": true,                      
+
+    /* ----- Node Types Support ----- */
+    "types": ["node"],                      
+
+    /* ----- Disable JSX (backend only) ----- */
+    "jsx": "react"                           
+  },
+
+  "include": ["src/**/*.ts"],
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts"
+  ]
 }

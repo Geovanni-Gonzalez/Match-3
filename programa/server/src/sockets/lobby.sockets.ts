@@ -1,7 +1,7 @@
 // src/sockets/lobby.socket.ts
 import { Server, Socket } from 'socket.io';
-import { GameService } from '../core/services/GameService';
-import { ServidorPartidas } from '../core/manager/ServidorPartidas';
+import { GameService } from '../core/services/GameService.js';
+import { ServidorPartidas } from '../core/manager/ServidorPartidas.js';
 
 export function registerLobbySockets(io: Server, gameService: GameService) {
   const servidor = ServidorPartidas.getInstance();

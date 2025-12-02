@@ -1,7 +1,7 @@
 // server/src/core/manager/ServidorPartidas.ts
-import { Partida } from '../domain/Partida';
-import { Jugador } from '../domain/Jugador';
-import config from '../../config/config';
+import { Partida } from '../domain/Partida.js';
+import { Jugador } from '../domain/Jugador.js';
+import config from '../../config/config.js';
 
 
 export class ServidorPartidas {

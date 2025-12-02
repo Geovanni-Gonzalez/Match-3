@@ -1,5 +1,5 @@
 // server/src/config/config.ts
-import defaults from './defaults.json';
+import defaults from "./defaults.json" with { type: "json" };
 
 
 export type Configuracion = typeof defaults;

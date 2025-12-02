@@ -1,6 +1,6 @@
 // server/src/api/jugador.api.ts
 import { Router, Request, Response } from 'express';
-import { PlayerRepo } from '../core/repositories/PlayerRepo';
+import { PlayerRepo } from '../core/repositories/PlayerRepo.js';
 
 const router = Router();
 

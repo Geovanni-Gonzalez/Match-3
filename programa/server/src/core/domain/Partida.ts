@@ -1,6 +1,6 @@
 // server/src/core/domain/Partida.ts
-import { Tablero } from './Tablero';
-import { Jugador } from './Jugador';
+import { Tablero } from './Tablero.js';
+import { Jugador } from './Jugador.js';
 
 export type EstadoPartida = 'espera' | 'jugando' | 'finalizada';
 

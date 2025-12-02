@@ -1,7 +1,7 @@
 // src/core/services/MatchService.ts
-import { WorkerThreadUtility } from '../workers/workerUtility';
-import { Coordenada } from '../../interfaces';
-import { Celda } from '../domain/Celda';
+import { WorkerThreadUtility } from '../workers/workerUtility.js';
+import { Coordenada } from '../../interfaces.js';
+import { Celda } from '../domain/Celda.js';
 
 export class MatchService {
   /**

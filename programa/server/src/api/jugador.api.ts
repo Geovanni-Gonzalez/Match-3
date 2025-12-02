@@ -1,6 +1,6 @@
 // server/src/api/jugador.api.ts
 import { Router, Request, Response } from 'express';
-import { PlayerRepo } from '../core/repositories/PlayerRepo';
+import { PlayerRepo } from '../core/repositories/PlayerRepo.js';
 
 const router = Router();
 
@@ -17,7 +17,7 @@ router.post('/registrar', async (req: Request, res: Response) => {
 
   try {
     const jugadorId = await PlayerRepo.findOrCreateByNickname(nickname.trim());
-    return res.status(200).json({ message: 'Registro exitoso', jugadorId, nickname: nickname.trim() });
+    return res.status(200).json({ message: 'Registro exitoso', jugadorId: jugadorId, nickname: nickname.trim() });
   } catch (err) {
     console.error('[API][jugador] Error registrar:', err);
     return res.status(500).json({ message: 'Error interno al registrar jugador.' });

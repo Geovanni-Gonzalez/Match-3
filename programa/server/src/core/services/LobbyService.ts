@@ -1,5 +1,5 @@
 // server/src/core/services/LobbyService.ts
-import { ServidorPartidas } from '../manager/ServidorPartidas';
+import { ServidorPartidas } from '../manager/ServidorPartidas.js';
 
 
 export class LobbyService {

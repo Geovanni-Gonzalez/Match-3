@@ -1,7 +1,7 @@
 // server/src/core/domain/Tablero.ts
-import { Celda } from './Celda';
-import config from '../../config/config';
-import { Coordenada } from '../../interfaces';
+import { Celda } from './Celda.js';
+import config from '../../config/config.js';
+import { Coordenada } from '../../interfaces.js';
 
 
 export class Tablero {

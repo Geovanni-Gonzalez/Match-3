@@ -1,7 +1,7 @@
 // server/src/api/index.ts
 import { Router } from 'express';
-import jugadorApi from './jugador.api';
-import partidaApi from './partida.api';
+import jugadorApi from './jugador.api.js';
+import partidaApi from './partida.api.js';
 
 const router = Router();
 
