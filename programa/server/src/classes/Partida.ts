@@ -212,36 +212,60 @@ export class Partida {
         if (this.cronometro) clearInterval(this.cronometro);
         
         const ranking = Array.from(this.jugadores.values()).sort((a, b) => b.puntaje - a.puntaje);
-        const ganador = ranking[0];
+        
+        // Detectar empate
+        const puntajeMaximo = ranking[0].puntaje;
+        const ganadores = ranking.filter(j => j.puntaje === puntajeMaximo);
+        const esEmpate = ganadores.length > 1;
         
         // Calcular tiempo invertido en segundos
         const tiempoInvertidoMs = Date.now() - this.fechaCreacion.getTime();
         const tiempoInvertidoSegundos = Math.floor(tiempoInvertidoMs / 1000);
         
         this.jugadores.forEach(jugador => {
-            jugador.guardarEstadisticas(this.idPartida, jugador === ganador && jugador.puntaje > 0);
+            // En caso de empate, todos los ganadores se marcan como ganadores
+            const esGanador = ganadores.some(g => g.nickname === jugador.nickname) && jugador.puntaje > 0;
+            jugador.guardarEstadisticas(this.idPartida, esGanador);
         });
         
         // Guardar estadísticas completas de la partida en JSON
         const { DBManager } = require('../db/dbManager');
+        const nombresGanadores = esEmpate 
+            ? ganadores.map(g => g.nickname).join(',')
+            : ganadores[0].nickname;
+            
         DBManager.guardarEstadisticasPartida(
             this.codigoVisual || this.idPartida, // Usar código visual si está disponible
-            ganador.nickname,
-            ganador.puntaje,
+            nombresGanadores,
+            puntajeMaximo,
             this.tematica,
             tiempoInvertidoSegundos
         );
         
         console.log(`[Partida ${this.idPartida}] ========== JUEGO FINALIZADO ==========`);
-        console.log(`[Partida ${this.idPartida}] Ganador: ${ganador.nickname} con ${ganador.puntaje} puntos`);
+        if (esEmpate) {
+            console.log(`[Partida ${this.idPartida}] ¡EMPATE! Ganadores: ${nombresGanadores} con ${puntajeMaximo} puntos`);
+        } else {
+            console.log(`[Partida ${this.idPartida}] Ganador: ${ganadores[0].nickname} con ${puntajeMaximo} puntos`);
+        }
         console.log(`[Partida ${this.idPartida}] Tiempo invertido: ${tiempoInvertidoSegundos}s`);
     }
 
     public obtenerGanador(): any {
         const ranking = Array.from(this.jugadores.values()).sort((a, b) => b.puntaje - a.puntaje);
+        
+        // Verificar si hay empate (múltiples jugadores con el puntaje más alto)
+        const puntajeMaximo = ranking[0].puntaje;
+        const ganadores = ranking.filter(j => j.puntaje === puntajeMaximo);
+        const esEmpate = ganadores.length > 1;
+        
         return {
-            nickname: ranking[0].nickname,
-            puntaje: ranking[0].puntaje,
+            nickname: esEmpate 
+                ? ganadores.map(g => g.nickname).join(',') 
+                : ranking[0].nickname,
+            puntaje: puntajeMaximo,
+            esEmpate: esEmpate,
+            ganadores: ganadores.map(g => ({ nickname: g.nickname, puntaje: g.puntaje })),
             ranking: ranking.map((j, index) => ({
                 posicion: index + 1,
                 nickname: j.nickname,

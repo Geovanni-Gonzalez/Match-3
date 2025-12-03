@@ -28,6 +28,8 @@ export const SalaDeEspera: React.FC<SalaDeEsperaProps> = ({
   const [esLider, setEsLider] = useState(false);
   const [maxJugadores, setMaxJugadores] = useState<number>(6);
   const [infoPartida, setInfoPartida] = useState<any>(null); // Guardar info completa
+  const [tiempoRestante, setTiempoRestante] = useState<number>(180); // 3 minutos en segundos
+  const [showTimeoutNotification, setShowTimeoutNotification] = useState(false);
 
   useEffect(() => {
     // Obtener info de la partida
@@ -80,12 +82,39 @@ export const SalaDeEspera: React.FC<SalaDeEsperaProps> = ({
         }); 
     });
 
+    // Manejar timeout de partida (3 minutos sin iniciar)
+    socket.on('game_timeout', (data: { mensaje: string }) => {
+        console.log('[Client] Partida cancelada por timeout:', data.mensaje);
+        setShowTimeoutNotification(true);
+        
+        // Esperar 3 segundos para que el usuario lea el mensaje antes de regresar
+        setTimeout(() => {
+            onLeave();
+        }, 3000);
+    });
+
     return () => {
         socket.off('update_players_list');
         socket.off('player_status_changed');
         socket.off('game_started');
+        socket.off('game_timeout');
     };
-  }, [socket, partidaId, currentUserNickname, onStartGame]);
+  }, [socket, partidaId, currentUserNickname, onStartGame, onLeave]);
+
+  // Cronómetro de tiempo restante
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTiempoRestante(prev => {
+        if (prev <= 0) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   const handleToggleReady = () => {
     if (!socket) return;
@@ -107,14 +136,62 @@ export const SalaDeEspera: React.FC<SalaDeEsperaProps> = ({
       });
   };
 
+  const handleLeaveRoom = () => {
+    if (!socket) return;
+    console.log('[Client] Abandonando sala de espera...');
+    
+    // Notificar al servidor que el jugador abandona la sala
+    socket.emit('leave_waiting_room', { partidaId, nickname: currentUserNickname });
+    
+    // Ejecutar callback para regresar al menú
+    onLeave();
+  };
+
   const allPlayersReady = jugadores.length >= 2 && jugadores.every(j => j.isReady);
   const puedeIniciar = esLider && allPlayersReady; // Solo el líder puede iniciar cuando todos estén listos
 
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const getTimeColor = () => {
+    if (tiempoRestante > 120) return '#4CAF50'; // Verde
+    if (tiempoRestante > 60) return '#FF9800'; // Naranja
+    return '#FF4444'; // Rojo
+  };
+
   return (
     <div style={styles.windowFrame}>
-      <div style={styles.backButton} onClick={onLeave}>&larr;</div>
+      {/* Notificación de timeout */}
+      {showTimeoutNotification && (
+        <div style={styles.notificationOverlay}>
+          <div style={styles.notificationBubble}>
+            <div style={styles.notificationIcon}>⏰</div>
+            <div style={styles.notificationContent}>
+              <h3 style={styles.notificationTitle}>Partida Cancelada</h3>
+              <p style={styles.notificationMessage}>
+                La partida ha sido cancelada por inactividad (3 minutos sin iniciar)
+              </p>
+              <p style={styles.notificationSubtext}>Redirigiendo al menú principal...</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div style={styles.backButton} onClick={handleLeaveRoom}>&larr;</div>
       
       <h1 style={styles.title}>Sala de Espera</h1>
+
+      {/* Indicador de tiempo restante */}
+      <div style={{
+        ...styles.timeoutWarning,
+        backgroundColor: getTimeColor()
+      }}>
+        ⏱️ Tiempo restante: {formatTime(tiempoRestante)}
+        {tiempoRestante <= 60 && <span style={styles.urgentWarning}> - ¡Apúrate!</span>}
+      </div>
 
       <div style={styles.infoBar}>
         <span style={styles.infoBox}>CÓDIGO: {partidaId.substring(0, 6).toUpperCase()}</span>
@@ -185,5 +262,71 @@ const styles: { [key: string]: React.CSSProperties } = {
   readyButton: { padding: '15px 40px', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '20px', fontWeight: 'bold', marginTop: '10px', transition: 'background-color 0.2s' },
   startButton: { padding: '15px 40px', backgroundColor: '#61dafb', color: '#282c34', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '20px', fontWeight: 'bold', marginTop: '10px', animation: 'pulse 1.5s infinite' },
   errorText: { color: '#ff6b6b' },
-  startMessage: { color: '#4CAF50', fontWeight: 'bold', marginTop: '5px' }
+  startMessage: { color: '#4CAF50', fontWeight: 'bold', marginTop: '5px' },
+  timeoutWarning: { 
+    padding: '12px 20px', 
+    borderRadius: '8px', 
+    marginBottom: '15px', 
+    fontWeight: 'bold', 
+    fontSize: '16px', 
+    color: '#FFF',
+    textAlign: 'center',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+    transition: 'background-color 0.3s'
+  },
+  urgentWarning: {
+    fontSize: '14px',
+    fontWeight: 'bold',
+    animation: 'blink 1s infinite'
+  },
+  notificationOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+    animation: 'fadeIn 0.3s ease-in'
+  },
+  notificationBubble: {
+    backgroundColor: '#2a2d3a',
+    borderRadius: '20px',
+    padding: '30px 40px',
+    maxWidth: '500px',
+    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '20px',
+    animation: 'slideDown 0.4s ease-out',
+    border: '3px solid #FF4444'
+  },
+  notificationIcon: {
+    fontSize: '60px',
+    animation: 'pulse 1s infinite'
+  },
+  notificationContent: {
+    flex: 1
+  },
+  notificationTitle: {
+    fontSize: '24px',
+    color: '#FF4444',
+    margin: '0 0 10px 0',
+    fontWeight: 'bold'
+  },
+  notificationMessage: {
+    fontSize: '16px',
+    color: '#FFF',
+    margin: '0 0 10px 0',
+    lineHeight: '1.5'
+  },
+  notificationSubtext: {
+    fontSize: '14px',
+    color: '#AAA',
+    margin: 0,
+    fontStyle: 'italic'
+  }
 };

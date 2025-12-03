@@ -39,8 +39,8 @@ export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) =>
       const data = await response.json();
       
       if (data.success && data.estadisticas) {
-        // Ordenar por puntaje descendente
-        const estadisticasOrdenadas = data.estadisticas.sort((a: EstadisticaPartida, b: EstadisticaPartida) => b.puntaje - a.puntaje);
+        // Ordenar por índice invertido (último agregado = más reciente)
+        const estadisticasOrdenadas = [...data.estadisticas].reverse();
         setEstadisticas(estadisticasOrdenadas);
       }
       

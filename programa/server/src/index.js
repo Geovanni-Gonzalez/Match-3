@@ -18,6 +18,10 @@ const COLORES = ['#1E90FF', '#FF8C00', '#FF4500', '#32CD32', '#FFD700', '#8A2BE2
 const partidasActivas = {}; 
 // Estructura: { partidaId: { tablero: [], jugadores: [{nickname, puntaje, socketID}] } }
 
+// Timers para partidas en espera (3 minutos de timeout)
+const partidasTimers = {};
+const TIMEOUT_ESPERA_MS = 3 * 60 * 1000; // 3 minutos
+
 app.use(cors());
 app.use(express.json());
 app.use('/api', apiRoutes);
@@ -38,6 +42,7 @@ io.on('connection', (socket) => {
         socket.join(partidaId);
         socket.data.nickname = nickname;
         socket.data.isReady = false; 
+        socket.data.partidaId = partidaId; // Guardar partidaId para cleanup
 
         const sockets = await io.in(partidaId).fetchSockets();
         const currentPlayers = sockets.map(s => ({
@@ -46,6 +51,33 @@ io.on('connection', (socket) => {
             isReady: s.data.isReady || false
         }));
         io.to(partidaId).emit('update_players_list', currentPlayers);
+        
+        // Si es el primer jugador (líder), iniciar timer de timeout
+        if (currentPlayers.length === 1) {
+            console.log(`[Timer] Iniciando timeout de 3 minutos para partida ${partidaId}`);
+            partidasTimers[partidaId] = setTimeout(() => {
+                console.log(`[Timer] ⏰ Timeout de partida ${partidaId} - Cancelando partida`);
+                
+                // Notificar a todos los jugadores
+                io.to(partidaId).emit('game_timeout', {
+                    mensaje: 'La partida ha sido cancelada por inactividad (3 minutos sin iniciar)'
+                });
+                
+                // Eliminar partida del API
+                const apiRouter = require('./api');
+                const index = apiRouter.partidas.findIndex(p => p.id === partidaId);
+                if (index !== -1) {
+                    apiRouter.partidas.splice(index, 1);
+                    console.log(`[Timer] Partida ${partidaId} eliminada del sistema`);
+                }
+                
+                // Limpiar timer
+                delete partidasTimers[partidaId];
+                
+                // Desconectar a todos los jugadores de la sala
+                io.in(partidaId).socketsLeave(partidaId);
+            }, TIMEOUT_ESPERA_MS);
+        }
     });
 
     socket.on('player_ready', (data) => {
@@ -54,12 +86,68 @@ io.on('connection', (socket) => {
         io.to(partidaId).emit('player_status_changed', { socketID: socket.id, isReady });
     });
 
+    // --- ABANDONAR SALA DE ESPERA ---
+    socket.on('leave_waiting_room', async (data) => {
+        const { partidaId, nickname } = data;
+        console.log(`[Socket] ${nickname} abandona sala de espera ${partidaId}`);
+        
+        try {
+            // Remover jugador de la partida en el API
+            const apiRouter = require('./api');
+            const partida = apiRouter.partidas.find(p => p.id === partidaId);
+            
+            if (partida) {
+                // Eliminar jugador del array
+                partida.jugadores = partida.jugadores.filter(j => j.nickname !== nickname);
+                console.log(`[API] ${nickname} removido de partida ${partidaId}. Jugadores restantes: ${partida.jugadores.length}`);
+                
+                // Si no quedan jugadores, eliminar la partida y cancelar timer
+                if (partida.jugadores.length === 0) {
+                    const index = apiRouter.partidas.findIndex(p => p.id === partidaId);
+                    if (index !== -1) {
+                        apiRouter.partidas.splice(index, 1);
+                        console.log(`[API] Partida ${partidaId} eliminada (sin jugadores)`);
+                    }
+                    
+                    // Cancelar timer si existe
+                    if (partidasTimers[partidaId]) {
+                        clearTimeout(partidasTimers[partidaId]);
+                        delete partidasTimers[partidaId];
+                        console.log(`[Timer] Timer cancelado para partida vacía ${partidaId}`);
+                    }
+                }
+            }
+            
+            // Salir de la sala de Socket.IO
+            socket.leave(partidaId);
+            
+            // Actualizar lista de jugadores para los que quedan
+            const sockets = await io.in(partidaId).fetchSockets();
+            const currentPlayers = sockets.map(s => ({
+                nickname: s.data.nickname,
+                socketID: s.id,
+                isReady: s.data.isReady || false
+            }));
+            io.to(partidaId).emit('update_players_list', currentPlayers);
+            
+        } catch (error) {
+            console.error(`[Socket] Error al abandonar sala: ${error.message}`);
+        }
+    });
+
     // --- INICIO DEL JUEGO ---
     socket.on('start_game', async (data) => {
         try {
             const { partidaId, tipoJuego, tematica, duracion } = data;
             
-            console.log(`[Socket] Iniciando partida ${partidaId}...`);
+            console.log(`[Socket] Preparando partida ${partidaId}...`);
+            
+            // CANCELAR TIMER DE TIMEOUT si existe
+            if (partidasTimers[partidaId]) {
+                clearTimeout(partidasTimers[partidaId]);
+                delete partidasTimers[partidaId];
+                console.log(`[Timer] ✅ Timer de timeout cancelado para partida ${partidaId}`);
+            }
             
             // Importar las clases TypeScript compiladas desde dist
             const { Partida } = require('../dist/classes/Partida');
@@ -102,12 +190,12 @@ io.on('connection', (socket) => {
                 partida.agregarJugador(jugador);
             });
 
-            // Inicializar estado en el servidor
+            // Guardar estado en el servidor
             partidasActivas[partidaId] = { partida };
 
-            console.log(`[Game] Partida ${partidaId} iniciada con ${sockets.length} jugadores`);
+            console.log(`[Game] Partida ${partidaId} preparada, enviando estado inicial bloqueado`);
 
-            // Enviar estado inicial completo con info de la partida
+            // Enviar estado inicial - JUEGO AÚN NO COMIENZA
             io.to(partidaId).emit('game_started', { 
                 tablero: partida.obtenerEstadoTablero(),
                 jugadores: partida.obtenerJugadores(),
@@ -120,6 +208,36 @@ io.on('connection', (socket) => {
             console.error('[Socket] Error al iniciar partida:', error);
             socket.emit('error_match', { mensaje: 'Error al iniciar la partida: ' + error.message });
         }
+    });
+
+    // --- LÍDER INICIA CUENTA REGRESIVA ---
+    socket.on('leader_start_countdown', async (data) => {
+        const { partidaId } = data;
+        console.log(`[Socket] Líder inició cuenta regresiva en partida ${partidaId}`);
+        
+        // Iniciar cuenta regresiva de 3 a 0
+        let count = 3;
+        
+        // Enviar inicio de cuenta
+        io.to(partidaId).emit('countdown_started', { count });
+        
+        const countdownInterval = setInterval(() => {
+            count--;
+            
+            if (count > 0) {
+                io.to(partidaId).emit('countdown_update', { count });
+            } else if (count === 0) {
+                io.to(partidaId).emit('countdown_update', { count: 0 });
+                
+                // Después de mostrar el 0, iniciar el juego
+                setTimeout(() => {
+                    io.to(partidaId).emit('game_actually_started');
+                    console.log(`[Socket] ¡Partida ${partidaId} iniciada!`);
+                }, 1000);
+                
+                clearInterval(countdownInterval);
+            }
+        }, 1000);
     });
 
     // --- SELECCIONAR CELDA: Detecta grupo y bloquea para el jugador ---
@@ -218,8 +336,29 @@ io.on('connection', (socket) => {
         });
     });
 
-    socket.on('disconnect', () => {
-        console.log('[Socket] Cliente desconectado');
+    socket.on('disconnect', async () => {
+        console.log(`[Socket] Cliente desconectado: ${socket.id}`);
+        
+        // Si el jugador estaba en una sala de espera, verificar si queda vacía
+        const partidaId = socket.data.partidaId;
+        if (partidaId) {
+            const sockets = await io.in(partidaId).fetchSockets();
+            
+            // Si no quedan jugadores, cancelar el timer
+            if (sockets.length === 0 && partidasTimers[partidaId]) {
+                console.log(`[Timer] Última persona salió de partida ${partidaId}, cancelando timer`);
+                clearTimeout(partidasTimers[partidaId]);
+                delete partidasTimers[partidaId];
+                
+                // Eliminar partida del API
+                const apiRouter = require('./api');
+                const index = apiRouter.partidas.findIndex(p => p.id === partidaId);
+                if (index !== -1) {
+                    apiRouter.partidas.splice(index, 1);
+                    console.log(`[Cleanup] Partida vacía ${partidaId} eliminada del sistema`);
+                }
+            }
+        }
     });
 });
 

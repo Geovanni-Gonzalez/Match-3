@@ -60,6 +60,12 @@ export const Juego: React.FC<JuegoProps> = ({
   const [viewState, setViewState] = useState<'playing' | 'winner'>('playing');
   const [winnerInfo, setWinnerInfo] = useState<any>(null);
   const [gameEndInfo, setGameEndInfo] = useState<{ tematica: string; partidaId: string } | null>(null);
+  
+  // Estados para el sistema de inicio
+  const [gameStarted, setGameStarted] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [isLeader, setIsLeader] = useState(false);
+  
   // Configurar según tipo de juego
   const [tiempoRestante, setTiempoRestante] = useState<number>(
     gameInfo.tipoJuego === 'Tiempo' && gameInfo.duracionMinutos 
@@ -67,8 +73,47 @@ export const Juego: React.FC<JuegoProps> = ({
       : 0
   );
 
+  // Detectar si el usuario es líder
+  useEffect(() => {
+    if (initialPlayers && initialPlayers.length > 0) {
+      setIsLeader(initialPlayers[0].nickname === currentUserNickname);
+    }
+  }, [initialPlayers, currentUserNickname]);
+
+  // Escuchar tecla U para iniciar cuenta regresiva (solo líder)
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 'u' && isLeader && !gameStarted && countdown === null) {
+        console.log('[Juego] Líder presionó U, iniciando cuenta regresiva');
+        socket?.emit('leader_start_countdown', { partidaId });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [socket, partidaId, isLeader, gameStarted, countdown]);
+
   useEffect(() => {
     if (!socket) return;
+
+    // Escuchar inicio de cuenta regresiva
+    socket.on('countdown_started', (data: { count: number }) => {
+      console.log('[Juego] Cuenta regresiva iniciada:', data.count);
+      setCountdown(data.count);
+    });
+
+    // Escuchar actualización de cuenta regresiva
+    socket.on('countdown_update', (data: { count: number }) => {
+      console.log('[Juego] Cuenta regresiva:', data.count);
+      setCountdown(data.count);
+    });
+
+    // Escuchar fin de cuenta regresiva e inicio real del juego
+    socket.on('game_actually_started', () => {
+      console.log('[Juego] ¡El juego ha comenzado!');
+      setCountdown(null);
+      setGameStarted(true);
+    });
 
     // --- GRUPO BLOQUEADO: Cuando alguien selecciona un grupo ---
     socket.on('grupo_bloqueado', (data) => {
@@ -153,6 +198,9 @@ export const Juego: React.FC<JuegoProps> = ({
     });
 
     return () => {
+        socket.off('countdown_started');
+        socket.off('countdown_update');
+        socket.off('game_actually_started');
         socket.off('grupo_bloqueado');
         socket.off('grupo_liberado');
         socket.off('game_update');
@@ -181,18 +229,39 @@ export const Juego: React.FC<JuegoProps> = ({
 
   // Pantalla del ganador
   if (viewState === 'winner' && winnerInfo && gameEndInfo) {
+    const esEmpate = winnerInfo.esEmpate || false;
+    
     return (
       <div style={styles.windowFrame}>
         <div style={styles.winnerContainer}>
-          <h1 style={styles.winnerTitle}>🏆 ¡JUEGO FINALIZADO! 🏆</h1>
+          <h1 style={styles.winnerTitle}>
+            {esEmpate ? '🤝 ¡EMPATE! 🤝' : '🏆 ¡JUEGO FINALIZADO! 🏆'}
+          </h1>
           
           <div style={styles.gameInfoSection}>
             <p style={styles.gameInfoItem}><strong>Partida:</strong> {gameEndInfo.partidaId}</p>
             <p style={styles.gameInfoItem}><strong>Temática:</strong> {gameEndInfo.tematica}</p>
           </div>
 
-          <h2 style={styles.winnerName}>Ganador: {winnerInfo.nickname}</h2>
-          <p style={styles.winnerScore}>Puntuación: {winnerInfo.puntaje} puntos</p>
+          {esEmpate ? (
+            <>
+              <h2 style={styles.winnerName}>Ganadores (Empate):</h2>
+              <div style={styles.tieWinners}>
+                {winnerInfo.ganadores.map((ganador: any) => (
+                  <div key={ganador.nickname} style={styles.tieWinnerItem}>
+                    <span style={styles.tieWinnerIcon}>👑</span>
+                    <span style={styles.tieWinnerName}>{ganador.nickname}</span>
+                  </div>
+                ))}
+              </div>
+              <p style={styles.winnerScore}>Puntuación: {winnerInfo.puntaje} puntos</p>
+            </>
+          ) : (
+            <>
+              <h2 style={styles.winnerName}>Ganador: {winnerInfo.nickname}</h2>
+              <p style={styles.winnerScore}>Puntuación: {winnerInfo.puntaje} puntos</p>
+            </>
+          )}
           
           <div style={styles.rankingContainer}>
             <h3 style={styles.rankingTitle}>Clasificación Final:</h3>
@@ -222,6 +291,9 @@ export const Juego: React.FC<JuegoProps> = ({
   const handleCellClick = (fila: number, columna: number) => {
     const celda = tablero[fila][columna];
     
+    // No permitir clics hasta que el juego inicie
+    if (!gameStarted) return;
+    
     // Si la celda está bloqueada por otro jugador, no hacer nada
     if (celda.bloqueadaPor && celda.bloqueadaPor !== currentUserNickname) {
       return;
@@ -237,7 +309,7 @@ export const Juego: React.FC<JuegoProps> = ({
   };
 
   const handleConfirmar = () => {
-    if (grupoSeleccionado.length === 0) {
+    if (!gameStarted || grupoSeleccionado.length === 0) {
       setMensajeError('Debes seleccionar un grupo primero');
       setTimeout(() => setMensajeError(null), 3000);
       return;
@@ -261,6 +333,46 @@ export const Juego: React.FC<JuegoProps> = ({
     });
     setGrupoSeleccionado([]);
   };
+
+  // Pantalla de espera y cuenta regresiva
+  if (!gameStarted) {
+    return (
+      <div style={styles.windowFrame}>
+        <div style={styles.waitingOverlay}>
+          <h1 style={styles.waitingTitle}>
+            {countdown !== null ? '¡PREPARADOS!' : 'Esperando inicio...'}
+          </h1>
+          
+          {countdown !== null && countdown > 0 && (
+            <div style={styles.countdownNumber}>{countdown}</div>
+          )}
+          
+          {countdown === 0 && (
+            <div style={styles.countdownNumber}>¡GO!</div>
+          )}
+          
+          {countdown === null && isLeader && (
+            <div style={styles.leaderInstructions}>
+              <p style={styles.instructionText}>
+                👑 Eres el líder de la partida
+              </p>
+              <p style={styles.instructionText}>
+                Presiona la tecla <span style={styles.keyHighlight}>U</span> para iniciar la cuenta regresiva
+              </p>
+            </div>
+          )}
+          
+          {countdown === null && !isLeader && (
+            <div style={styles.waitingMessage}>
+              <p style={styles.instructionText}>
+                Esperando a que el líder inicie la partida...
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div style={styles.windowFrame}>
@@ -447,5 +559,88 @@ const styles: { [key: string]: React.CSSProperties } = {
   rankingPosition: { fontSize: '18px', fontWeight: 'bold', color: '#FFD700', minWidth: '40px' },
   rankingNickname: { fontSize: '18px', color: '#FFF', flex: 1, textAlign: 'left', marginLeft: '15px' },
   rankingScore: { fontSize: '18px', color: '#00FF00', fontWeight: 'bold' },
-  returnButton: { padding: '15px 40px', backgroundColor: '#4A90E2', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '18px', fontWeight: 'bold', transition: 'all 0.2s' }
+  returnButton: { padding: '15px 40px', backgroundColor: '#4A90E2', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '18px', fontWeight: 'bold', transition: 'all 0.2s' },
+  
+  // Estilos para pantalla de espera y cuenta regresiva
+  waitingOverlay: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '400px',
+    minWidth: '500px',
+    padding: '50px'
+  },
+  waitingTitle: {
+    fontSize: '48px',
+    color: '#61dafb',
+    marginBottom: '40px',
+    textShadow: '0 0 20px rgba(97, 218, 251, 0.5)'
+  },
+  countdownNumber: {
+    fontSize: '120px',
+    fontWeight: 'bold',
+    color: '#FFD700',
+    textShadow: '0 0 40px rgba(255, 215, 0, 0.8)',
+    animation: 'pulse 0.5s ease-in-out'
+  },
+  leaderInstructions: {
+    textAlign: 'center',
+    padding: '30px',
+    backgroundColor: '#444857',
+    borderRadius: '15px',
+    border: '3px solid #FFD700'
+  },
+  waitingMessage: {
+    textAlign: 'center',
+    padding: '30px',
+    backgroundColor: '#444857',
+    borderRadius: '15px'
+  },
+  instructionText: {
+    fontSize: '20px',
+    color: '#FFF',
+    margin: '10px 0'
+  },
+  keyHighlight: {
+    display: 'inline-block',
+    padding: '5px 15px',
+    backgroundColor: '#FFD700',
+    color: '#000',
+    borderRadius: '5px',
+    fontWeight: 'bold',
+    fontSize: '24px',
+    margin: '0 5px',
+    boxShadow: '0 4px #CC9900'
+  },
+  
+  // Estilos para empate
+  tieWinners: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '15px',
+    marginBottom: '20px',
+    padding: '20px',
+    backgroundColor: '#2a2a2a',
+    borderRadius: '10px',
+    border: '2px solid #FFD700'
+  },
+  tieWinnerItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '15px',
+    padding: '12px 20px',
+    backgroundColor: '#333',
+    borderRadius: '8px',
+    border: '2px solid #FFD700'
+  },
+  tieWinnerIcon: {
+    fontSize: '28px'
+  },
+  tieWinnerName: {
+    fontSize: '22px',
+    color: '#FFD700',
+    fontWeight: 'bold',
+    flex: 1
+  }
 };

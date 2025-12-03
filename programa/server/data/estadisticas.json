@@ -22,5 +22,37 @@
     "tematica": "Gemas",
     "tiempoInvertidoSegundos": 60,
     "fecha": "03-12-2025"
+  },
+  {
+    "partidaId": "7FF2B6",
+    "ganador": "quiriat",
+    "puntaje": 128,
+    "tematica": "Gemas",
+    "tiempoInvertidoSegundos": 60,
+    "fecha": "03-12-2025"
+  },
+  {
+    "partidaId": "3CBAC3",
+    "ganador": "qui",
+    "puntaje": 25,
+    "tematica": "Gemas",
+    "tiempoInvertidoSegundos": 60,
+    "fecha": "03-12-2025"
+  },
+  {
+    "partidaId": "829AF0",
+    "ganador": "quiriat",
+    "puntaje": 9,
+    "tematica": "Gemas",
+    "tiempoInvertidoSegundos": 60,
+    "fecha": "03-12-2025"
+  },
+  {
+    "partidaId": "DD0845",
+    "ganador": "quiriat,kiki",
+    "puntaje": 9,
+    "tematica": "Gemas",
+    "tiempoInvertidoSegundos": 60,
+    "fecha": "03-12-2025"
   }
 ]
