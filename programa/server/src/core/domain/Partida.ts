@@ -15,7 +15,9 @@ export class Partida {
         public tematica: string,
         private numJugadoresMax: number,
         public tiempoRestanteMs: number = 0,
-        public intervalId: NodeJS.Timeout | null = null
+        public intervalId: NodeJS.Timeout | null = null,
+        public matchesRealizados: number = 0,
+        public duracionPartida: number = 0 // En minutos, para modo Vs Tiempo
     ) {
         this.tablero = new Tablero();
     }

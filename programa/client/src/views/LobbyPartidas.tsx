@@ -90,11 +90,12 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
     service.joinGame(selectedPartidaId, currentUser.nickname, currentUser.idDB);
 
     // Esperar confirmación
-    socket!.once("join_success", (data: { partidaId: string }) => {
-      onJoinSuccess(data.partidaId);
+    socket!.once("joined_game", (data: { idPartida: string; nickname: string; socketID: string }) => {
+      console.log('[LobbyPartidas] joined_game received, navigating...');
+      onJoinSuccess(data.idPartida);
     });
 
-    socket!.once("join_error", (data: { message: string }) => {
+    socket!.once("error_join", (data: { message: string }) => {
       alert("No se pudo entrar: " + data.message);
     });
   };

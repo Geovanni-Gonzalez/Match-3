@@ -21,6 +21,11 @@ export const Juego: React.FC<JuegoProps> = ({
     error,
     selectCell,
     activateMatch,
+    startGame,
+    countdown,
+    matchesLeft,
+    gameConfig,
+    timer
   } = useGameEvents(partidaId);
 
   // ---- CALLBACKS ----
@@ -32,6 +37,16 @@ export const Juego: React.FC<JuegoProps> = ({
   const handleMatch = () => {
     activateMatch?.(partidaId);
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 'u') {
+        startGame?.(partidaId);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [startGame, partidaId]);
 
   // ---- RENDER ----
   if (error) {
@@ -55,6 +70,23 @@ export const Juego: React.FC<JuegoProps> = ({
   return (
     <div style={styles.windowFrame}>
       <h1 style={styles.title}>Juego: {partidaId}</h1>
+
+      {/* Game Info Bar */}
+      <div style={styles.infoBar}>
+        {gameConfig?.tipoJuego === 'Tiempo' && (
+          <span>Tiempo: {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}</span>
+        )}
+        {gameConfig?.tipoJuego === 'Match' && (
+          <span>Matches Restantes: {matchesLeft ?? gameConfig?.limit}</span>
+        )}
+      </div>
+
+      {/* Countdown Overlay */}
+      {countdown !== null && (
+        <div style={styles.overlay}>
+          <h1 style={styles.countdownText}>{countdown}</h1>
+        </div>
+      )}
 
       {/* Scoreboard */}
       <div style={styles.gameArea}>
@@ -104,8 +136,8 @@ export const Juego: React.FC<JuegoProps> = ({
                       border: isPropia
                         ? "3px solid #FFD700"
                         : isOtro
-                        ? "3px solid #FF4500"
-                        : "1px solid #333",
+                          ? "3px solid #FF4500"
+                          : "1px solid #333",
                       opacity: isOtro ? 0.7 : 1,
                       cursor: gameStatus === "active" ? "pointer" : "default"
                     }}
@@ -142,6 +174,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     flexDirection: "column",
     alignItems: "center",
     color: "white",
+    position: 'relative', // Needed for overlay
   },
   title: {
     fontSize: "24px",
@@ -211,5 +244,31 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: "#ccc",
     border: "none",
     cursor: "pointer",
+  },
+  infoBar: {
+    display: 'flex',
+    gap: '20px',
+    fontSize: '20px',
+    fontWeight: 'bold',
+    color: '#FFD700',
+    marginBottom: '10px',
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+    borderRadius: '10px',
+  },
+  countdownText: {
+    fontSize: '80px',
+    color: '#fff',
+    fontWeight: 'bold',
   }
 };

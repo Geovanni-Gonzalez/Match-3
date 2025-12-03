@@ -7,10 +7,6 @@ interface JugadorRanking {
   rank: number;
   user: string;
   victorias: number;
-  // Propiedades adicionales que podríamos obtener del API:
-  // tematicaMasJugada: string;
-  // tiempoTotal: string; 
-  // etc.
 }
 
 interface RankingHistoricoProps {
@@ -30,32 +26,21 @@ export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) =>
     setLoading(true);
     setError(null);
     try {
-      // Simulación de la llamada al API: GET /api/ranking
-      // En un proyecto real, se consultaría la base de datos para obtener los datos históricos.
-      // const response = await fetch('http://localhost:4000/api/ranking'); 
-      // const data = await response.json();
+      const response = await fetch('http://localhost:4000/api/partida/ranking');
+      const data = await response.json();
 
-      // Datos de simulación basados en la imagen y los requisitos del proyecto (ganadores históricos)
-      const mockData: JugadorRanking[] = [
-        { rank: 1, user: 'Mbappé', victorias: 7777777 },
-        { rank: 2, user: 'Verstappen', victorias: 133 },
-        { rank: 3, user: 'Benzema', victorias: 15 },
-        { rank: 4, user: 'Federer', victorias: 12 },
-        { rank: 5, user: 'Nadal', victorias: 10 },
-        { rank: 6, user: 'Hamilton', victorias: 8 },
-        { rank: 7, user: 'Perez', victorias: 5 },
-      ];
-
-      setTimeout(() => { // Simular latencia de red
-        setDatosRanking(mockData);
-        setLoading(false);
-      }, 500);
+      if (data.ranking) {
+        setDatosRanking(data.ranking);
+      } else {
+        setDatosRanking([]);
+      }
+      setLoading(false);
 
     } catch (e) {
       setError('Fallo de conexión con el servidor de Ranking.');
       console.error(e);
       setLoading(false);
-    } 
+    }
   };
 
   return (
@@ -64,13 +49,13 @@ export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) =>
       <div style={styles.backButton} onClick={onBack}>
         &larr;
       </div>
-      
+
       <div style={styles.header}>
         <h1 style={styles.title}>Ranking</h1>
       </div>
 
       <div style={styles.content}>
-        
+
         {loading && <p style={styles.loadingText}>Cargando ranking...</p>}
         {error && <p style={styles.errorText}>Error: {error}</p>}
 
@@ -90,8 +75,8 @@ export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) =>
               </thead>
               <tbody>
                 {datosRanking.map((jugador) => (
-                  <tr 
-                    key={jugador.rank} 
+                  <tr
+                    key={jugador.rank}
                     style={styles.tableRow}
                   >
                     <td style={{ ...styles.tableCell, ...styles.rankCell }}>{jugador.rank}</td>
@@ -176,7 +161,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: 'white',
     padding: '10px',
     textAlign: 'center',
-    position: 'sticky', 
+    position: 'sticky',
     top: 0,
     zIndex: 1,
   },

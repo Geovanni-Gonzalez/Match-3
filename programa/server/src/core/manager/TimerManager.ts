@@ -30,35 +30,34 @@ export class TimerManager {
 
         const expiresAt = Date.now() + seconds * 1000;
 
-        // Timeout principal
         const timeout = setTimeout(() => {
+        try {
             onExpire();
+        } catch (err) {
+            console.error("[TimerManager] onExpire error:", err);
+        } finally {
             this.clearTimer(partidaId);
+        }
         }, seconds * 1000);
 
-        // Intervalo opcional para enviar “ticks” cada segundo
         const interval = setInterval(() => {
             if (!this.io) return;
-
             const secondsLeft = Math.max(0, Math.round((expiresAt - Date.now()) / 1000));
-
             this.io.to(partidaId).emit("game:timer_tick", {
                 secondsLeft
             });
+            this.io.to("lobby").emit("game:timer_tick", { secondsLeft, partidaId });
 
             if (secondsLeft <= 0) clearInterval(interval);
         }, 1000);
-
         this.timers.set(partidaId, { timeout, interval, expiresAt });
     }
 
     clearTimer(partidaId: string) {
         const t = this.timers.get(partidaId);
         if (!t) return;
-
         clearTimeout(t.timeout);
         if (t.interval) clearInterval(t.interval);
-
         this.timers.delete(partidaId);
     }
 

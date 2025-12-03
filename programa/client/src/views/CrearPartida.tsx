@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useGameEvents } from '../hooks/useGameEvents';
+import { join } from 'path';
 
 const API_URL = 'http://localhost:4000/api';
 
@@ -21,9 +22,8 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({
 
   // Hook en modo general SIN partidaId
   const {
-    createGame,
     joinGame,
-    onGameCreated
+
   } = useGameEvents(null as any);
 
   const { currentUser } = useAuth();
@@ -34,6 +34,7 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({
   const [tipoJuego, setTipoJuego] = useState<'Match' | 'Tiempo'>('Match');
   const [tematica, setTematica] = useState<string>('Gemas');
   const [numJugadores, setNumJugadores] = useState<number>(2);
+  const [duracion, setDuracion] = useState<number>(5); // Default 5 mins
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,18 +51,14 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({
     setError(null);
     setLoading(true);
 
-    if (!createGame) {
-      setError("Servicio de socket no disponible.");
-      setLoading(false);
-      return;
-    }
+
 
     try {
-      // 1. REST → Crear partida en BD
       const response = await axios.post(`${API_URL}/partida/crear_partida`, {
         tipoJuego,
         tematica,
-        numJugadoresMax: numJugadores
+        numJugadoresMax: numJugadores,
+        duracionMinutos: tipoJuego === 'Tiempo' ? duracion : 0
       });
 
       if (response.status !== 201 || !response.data.codigoPartida) {
@@ -73,25 +70,12 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({
       const codigoPartida = response.data.codigoPartida;
       console.log("[CrearPartida] partidaId recibido →", codigoPartida);
 
-      // 2. SUSCRIBIRSE ANTES de enviar evento
-            const unsubscribe = onGameCreated?.((data: { idPartida: string }) => {
-              console.log("[CrearPartida] Confirmación por socket:", data);
-      
-              unsubscribe && unsubscribe(); // limpiar listener
-      
-              // Unirse con el socket una vez confirmada la creación
-              joinGame?.(
-                data.idPartida,
-                currentUser?.nickname || "Jugador",
-                currentUser?.idDB ?? 0
-              );
-      
-              // Ir a sala de espera
-              onCreateSuccess(data.idPartida);
-            });
-
-      // 3. Emitir creación por socket
-      createGame(codigoPartida, tipoJuego, tematica, numJugadores);
+      joinGame?.(
+        codigoPartida,
+        currentUser?.nickname || "Jugador",
+        currentUser?.idDB ?? 0
+      );
+      onCreateSuccess(codigoPartida);
 
     } catch (err) {
       console.error(err);
@@ -127,6 +111,21 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({
             ))}
           </select>
         </div>
+
+        {/* Duración (Solo si es Tiempo) */}
+        {tipoJuego === 'Tiempo' && (
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Duración (min):</label>
+            <input
+              type="number"
+              min={1}
+              max={60}
+              value={duracion}
+              onChange={(e) => setDuracion(Math.max(1, Number(e.target.value)))}
+              style={styles.numberInput}
+            />
+          </div>
+        )}
 
         {/* Temática */}
         <div style={styles.formGroup}>
@@ -166,7 +165,7 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({
         </button>
 
       </div>
-    </div>
+    </div >
   );
 };
 

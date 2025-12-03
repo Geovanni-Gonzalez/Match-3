@@ -3,6 +3,7 @@ import { Server, Socket } from 'socket.io';
 import { GameService } from '../core/services/GameService.js';
 import { ServidorPartidas } from '../core/manager/ServidorPartidas.js';
 import { TimerManager } from '../core/manager/TimerManager.js';
+import { Console } from 'console';
 
 export function registerLobbySockets(io: Server, gameService: GameService) {
   const servidor = ServidorPartidas.getInstance();
@@ -10,20 +11,21 @@ export function registerLobbySockets(io: Server, gameService: GameService) {
   timerManager.setSocketServer(io);
 
   io.on('connection', (socket: Socket) => {
-    // create_game
-    socket.on('create_game', (data) => {
-      try {
-        const { idPartida, tipoJuego, tematica, numJugadoresMax } = data;
-        gameService.crearPartida(idPartida, tipoJuego, tematica, numJugadoresMax);
-        console.log(`[Socket][lobby] Partida creada: ${idPartida} (${tipoJuego}, ${tematica}, max:${numJugadoresMax})`);
-        socket.emit('game_created', { idPartida });
-      } catch (err) {
-        socket.emit('error_create', { message: (err as Error).message || 'Error creating game' });
-      }
+    socket.join("lobby");
+    // send current list immediately - get from ServidorPartidas directly
+    const partidasDisponibles = gameService.listarPartidasDisponibles();
+    socket.emit('partidas:list', partidasDisponibles);
+
+
+    // client asks for explicit list
+    socket.on('partidas:get', () => {
+      const partidas = gameService.listarPartidasDisponibles();
+      socket.emit('partidas:list', partidas);
     });
 
+
     // join_game
-     socket.on('join_game', async (data) => {
+    socket.on('join_game', async (data) => {
       try {
         const { idPartida, nickName, jugadorDBId } = data;
         const nuevoJugador = gameService.unirseAPartida(idPartida, nickName, socket.id, jugadorDBId);
@@ -42,8 +44,13 @@ export function registerLobbySockets(io: Server, gameService: GameService) {
           io.to(idPartida).emit('players_update', partida.getJugadoresResumen());
         }
       } catch (err) {
+        console.log('[Socket][lobby] Error joining game:', err);
         socket.emit('error_join', { message: (err as Error).message || 'Error joining' });
       }
+    });
+
+    socket.on('disconnect', () => {
+      // nothing here; GameService handles per-socket disconnection elsewhere
     });
   });
 }

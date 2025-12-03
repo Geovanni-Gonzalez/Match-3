@@ -2,7 +2,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { SocketService, JugadorData } from "../services/SocketService";
-import { on } from "events";
 
 export interface TableroCell {
   r: number;
@@ -18,6 +17,9 @@ export const useGameEvents = (partidaId: string) => {
   const [tablero, setTablero] = useState<TableroCell[][] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [timer, setTimer] = useState<number>(0);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [matchesLeft, setMatchesLeft] = useState<number | null>(null);
+  const [gameConfig, setGameConfig] = useState<any>(null);
 
 
   const service = useMemo(() => (socket ? new SocketService(socket) : null), [socket]);
@@ -59,11 +61,7 @@ export const useGameEvents = (partidaId: string) => {
       setTablero(normalizeMatrix(data.tablero));
     });
 
-    // game_started
-    const unsubStarted = service.onGameStarted((data) => {
-      setTablero(normalizeMatrix(data.tablero));
-      setGameStatus("active");
-    });
+
 
     // match_result
     const unsubMatch = service.onMatchResult((data) => {
@@ -81,14 +79,49 @@ export const useGameEvents = (partidaId: string) => {
       setTimer(secondsLeft);
     });
 
+    const unsubCountdown = service.onGameCountdown(({ seconds }) => {
+      setCountdown(seconds);
+    });
+
+    const unsubGameStarted = service.onGameStarted(({ tablero, config }) => {
+      setTablero(normalizeMatrix(tablero));
+      setGameConfig(config);
+      setGameStatus("active");
+      setCountdown(null); // Clear countdown
+    });
+
+    const unsubMatchUpdate = service.onMatchUpdate(({ matchesLeft }) => {
+      setMatchesLeft(matchesLeft);
+    });
+
+    const unsubGameFinished = service.onGameFinished(({ resultados }) => {
+      // Handle finish (maybe redirect or show modal)
+      console.log("Game Finished", resultados);
+      setGameStatus("errored"); // Or a new status "finished"
+    });
+
     return () => {
       unsubPlayers();
       unsubBoard();
-      unsubStarted();
       unsubMatch();
       unsubError();
       unsubTimer();
+      unsubCountdown();
+      unsubGameStarted();
+      unsubMatchUpdate();
+      unsubGameFinished();
     };
+  }, [service, partidaId]);
+
+  // subscribe to room-level timer tick (useful for lobby if needed)
+  useEffect(() => {
+    if (!service || !partidaId) return;
+    const unsub = service.onTimerTick((data) => {
+      if (data.partidaId === partidaId) {
+        setTimer(data.secondsLeft);
+      }
+    });
+    return () => { unsub(); };
   }, [service, partidaId]);
 
   return {
@@ -97,10 +130,12 @@ export const useGameEvents = (partidaId: string) => {
     tablero,
     error,
     timer,
+    countdown,
+    matchesLeft,
+    gameConfig,
 
     // acciones expuestas
     joinGame: service?.joinGame.bind(service),
-    createGame: service?.createGame.bind(service),
     leaveGame: service?.leaveGame.bind(service),
     setReady: (pid: string, ready: boolean) => service?.setReady(pid, ready),
     startGame: (pid: string) => service?.startGame(pid),
@@ -108,6 +143,5 @@ export const useGameEvents = (partidaId: string) => {
     activateMatch: (pid: string) => service?.activateMatch(pid),
     rawSocket: () => service?.rawSocket(),
     onAllPlayersReady: service?.onAllPlayersReady.bind(service),
-    onGameCreated: service?.onGameCreated.bind(service),
   };
 };

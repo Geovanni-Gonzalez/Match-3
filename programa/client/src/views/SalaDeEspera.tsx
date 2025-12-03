@@ -28,7 +28,7 @@ export const SalaDeEspera: React.FC<Props> = ({
   } = useGameEvents(partidaId);
 
   const [isReadyLocal, setIsReadyLocal] = useState(false);
-  
+
   // ----------------------------
   // TIMER LOCAL (ANIMACIÓN)
   // ----------------------------
@@ -83,7 +83,7 @@ export const SalaDeEspera: React.FC<Props> = ({
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
-  
+
   const handleStart = () => {
     startGame?.(partidaId);
   };

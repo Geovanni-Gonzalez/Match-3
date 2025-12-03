@@ -23,19 +23,31 @@ export class GameService {
     const players = this.servidor.obtenerPartida(matchId)?.getJugadores() || [];
 
     if (players.length >= 2) {
-        this.iniciarPartida(matchId);
+      this.iniciarPartida(matchId);
     } else {
-        this.eliminarPartida(matchId);    }
-}
+      this.eliminarPartida(matchId);
+    }
+  }
 
   /**
    * Crear partida: persiste en BD y en memoria
    */
   public async crearPartida(idPartida: string, tipoJuego: 'Match' | 'Tiempo', tematica: string, max: number) {
     console.log('[GameService] Creando partida:', idPartida, tipoJuego, tematica, max);
+
     // Crear en memoria
     const partida = this.servidor.crearPartida(idPartida, tipoJuego, tematica, max);
-    TimerManager.getInstance().startTimer(idPartida, config.TIEMPO_VIDA_PARTIDA_MIN * 60, () => 
+
+    // Persistir en base de datos
+    try {
+      await PartidaRepo.crearPartida(idPartida, tipoJuego, tematica, max);
+      console.log('[GameService] Partida persistida en BD:', idPartida);
+    } catch (err) {
+      console.warn('[GameService] Warning: no se pudo persistir partida en BD:', err);
+    }
+
+    // Configurar timer de expiración
+    TimerManager.getInstance().startTimer(idPartida, config.TIEMPO_VIDA_PARTIDA_MIN * 60, () =>
       this.eliminarPartida(idPartida)
     );
 
@@ -285,5 +297,17 @@ export class GameService {
       }
       return null;
     }
+  }
+
+  public listarPartidasDisponibles() {
+    return Array.from(this.servidor.partidasActivas.values())
+      .filter(p => p.estado === 'espera')
+      .map(p => ({
+        id: p.idPartida,
+        tipo: p.tipoJuego,
+        tematica: p.tematica,
+        jugadores: p.jugadores.size,
+        maxJugadores: p.jugadores.size
+      }));
   }
 }

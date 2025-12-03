@@ -16,6 +16,15 @@ export interface TableroSerializedCell {
   estado: string;
 }
 
+export interface PartidaListItem {
+  id: string;
+  tipo: string;
+  tematica: string;
+  jugadores: number;
+  maxJugadores: number;
+  tiempoRestante: number;
+}
+
 export class SocketService {
   private socket: Socket;
 
@@ -25,9 +34,10 @@ export class SocketService {
   }
 
   // ---------- EMITS ----------
-  public createGame(idPartida: string, tipoJuego: string, tematica: string, numJugadoresMax: number) {
-    console.log("[SocketService] Emitiendo create_game:", { idPartida, tipoJuego, tematica, numJugadoresMax });
-    this.socket.emit("create_game", { idPartida, tipoJuego, tematica, numJugadoresMax });
+
+  public getPartidas() {
+    console.log("[SocketService] Emitiendo partidas:get");
+    this.socket.emit("partidas:get");
   }
 
   public joinGame(idPartida: string, nickName: string, jugadorDBId: number) {
@@ -62,7 +72,28 @@ export class SocketService {
 
   // ---------- ON con auto-unsubscribe ----------
 
-  public onTimerTick(callback: (data: { secondsLeft: number }) => void) {
+  public onPartidasList(callback: (lista: PartidaListItem[]) => void) {
+    this.socket.on("partidas:list", callback);
+    return () => this.socket.off("partidas:list", callback);
+  }
+
+  public onPartidaCreated(callback: (p: PartidaListItem) => void) {
+    this.socket.on("partida:created", callback);
+    return () => this.socket.off("partida:created", callback);
+  }
+
+  public onPartidaUpdated(callback: (p: PartidaListItem) => void) {
+    this.socket.on("partida:updated", callback);
+    return () => this.socket.off("partida:updated", callback);
+  }
+
+
+  public onPartidaDeleted(callback: (data: { partidaId: string }) => void) {
+    this.socket.on("partida:deleted_due_timeout", callback);
+    return () => this.socket.off("partida:deleted_due_timeout", callback);
+  }
+
+  public onTimerTick(callback: (data: { secondsLeft: number, partidaId: string }) => void) {
     this.socket.on("game:timer_tick", callback);
     return () => this.socket.off("game:timer_tick", callback);
   }
@@ -78,11 +109,6 @@ export class SocketService {
     return () => this.socket.off("board_update", callback);
   }
 
-  public onGameStarted(callback: (data: { tablero: TableroSerializedCell[][]; config?: any }) => void) {
-    console.log("[SocketService] Recibiendo game_started:", callback);
-    this.socket.on("game_started", callback);
-    return () => this.socket.off("game_started", callback);
-  }
 
   public onMatchResult(callback: (data: any) => void) {
     this.socket.on("match_result", callback);
@@ -98,11 +124,31 @@ export class SocketService {
     this.socket.on("all_players_ready", callback);
     return () => this.socket.off("all_players_ready", callback);
   }
-    public onGameCreated(callback: (data: { idPartida: string }) => void) {
+  public onGameCreated(callback: (data: { idPartida: string }) => void) {
     console.log("[SocketService] Recibiendo game_created:", callback);
     this.socket.on("game_created", callback);
     return () => this.socket.off("game_created", callback);
-    }
+  }
+
+  public onGameCountdown(callback: (data: { seconds: number }) => void) {
+    this.socket.on("game:countdown", callback);
+    return () => this.socket.off("game:countdown", callback);
+  }
+
+  public onGameStarted(callback: (data: { tablero: TableroSerializedCell[][], config: any }) => void) {
+    this.socket.on("game_started", callback);
+    return () => this.socket.off("game_started", callback);
+  }
+
+  public onMatchUpdate(callback: (data: { matchesLeft: number }) => void) {
+    this.socket.on("game:match_update", callback);
+    return () => this.socket.off("game:match_update", callback);
+  }
+
+  public onGameFinished(callback: (data: { resultados: any[] }) => void) {
+    this.socket.on("game_finished", callback);
+    return () => this.socket.off("game_finished", callback);
+  }
   public onError(callback: (data: any) => void) {
     this.socket.on("error_create", callback);
     this.socket.on("error_join", callback);
