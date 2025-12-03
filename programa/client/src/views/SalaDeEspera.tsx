@@ -1,4 +1,3 @@
-// client/src/views/SalaDeEspera.tsx
 import React, { useEffect, useState, useRef } from "react";
 import { useGameEvents } from "../hooks/useGameEvents";
 import { useAuth } from "../context/AuthContext";
@@ -16,7 +15,6 @@ export const SalaDeEspera: React.FC<Props> = ({
 }) => {
   const { currentUser } = useAuth();
 
-  // üî• IMPORTANTE: El hook requiere el ID de la partida
   const {
     jugadores,
     gameStatus,
@@ -27,18 +25,26 @@ export const SalaDeEspera: React.FC<Props> = ({
     onAllPlayersReady,
     maxPlayers,
     countdown,
-    gameConfig
+    gameConfig,
+    requestEnterGame,
+    onForceNavigateGame
   } = useGameEvents(partidaId);
 
   const [isReadyLocal, setIsReadyLocal] = useState(false);
 
   // ----------------------------
-  // TIMER LOCAL (ANIMACI√ìN)
+  // TIMER LOCAL (ANIMACI”N)
   // ----------------------------
   const [timeLeft, setTimeLeft] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Sincronizar estado local de "listo" con la informaci√≥n del servidor
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
+  // Sincronizar estado local de "listo" con la informaciÛn del servidor
   useEffect(() => {
     const me = jugadores.find(j => j.nickname === currentUser?.nickname);
     if (me) {
@@ -54,19 +60,20 @@ export const SalaDeEspera: React.FC<Props> = ({
     });
     return () => {
       if (typeof unsub === "function") {
-        // Llamar y descartar cualquier valor de retorno para asegurar que el destructor devuelva void
         void unsub();
       }
     };
   }, [onAllPlayersReady]);
 
-  // Cuando el hook indica que la partida ya inici√≥
+  // Cuando el servidor fuerza la navegaciÛn al tablero
   useEffect(() => {
-    if (gameStatus === "active") {
-      console.log("[SalaDeEspera] gameStatus = active ‚Üí navegar al juego");
-      onStartGame(partidaId, tablero, gameConfig);
-    }
-  }, [gameStatus, tablero, partidaId, onStartGame, gameConfig]);
+    if (!onForceNavigateGame) return;
+    const unsub = onForceNavigateGame(({ tablero, config }) => {
+      console.log("[SalaDeEspera] Navegando al tablero...");
+      onStartGame(partidaId, tablero, config);
+    });
+    return () => { unsub(); };
+  }, [onForceNavigateGame, onStartGame, partidaId]);
 
   const toggleReady = () => {
     const next = !isReadyLocal;
@@ -75,7 +82,7 @@ export const SalaDeEspera: React.FC<Props> = ({
     setReady?.(partidaId, next);
   };
 
-  // Cuando recibimos tiempo del server ‚Üí sincronizamos
+  // Cuando recibimos tiempo del server  sincronizamos
   useEffect(() => {
     if (timer <= 0) return;
 
@@ -100,7 +107,7 @@ export const SalaDeEspera: React.FC<Props> = ({
   }, []);
 
   const handleStart = () => {
-    startGame?.(partidaId);
+    requestEnterGame?.(partidaId);
   };
 
   const allReady =
@@ -119,21 +126,21 @@ export const SalaDeEspera: React.FC<Props> = ({
       )}
 
       <div style={styles.backButton} onClick={onLeave}>
-        ‚Üê
+        
       </div>
 
       <h1 style={styles.title}>Sala de Espera</h1>
 
       <div style={styles.timerBox}>
-        <div>‚è≥ Tiempo para iniciar:</div>
+        <div> Tiempo para iniciar:</div>
         <strong style={{ fontSize: 32, color: "#61dafb" }}>
-          {timeLeft}s
+          {formatTime(timeLeft)}
         </strong>
       </div>
 
       <div style={styles.infoBar}>
         <span style={styles.infoBox}>
-          C√ìDIGO: {partidaId.substring(0, 6).toUpperCase()}
+          C”DIGO: {partidaId.substring(0, 6).toUpperCase()}
         </span>
         <span style={styles.infoBox}>
           Jugadores: {jugadores.length}/{maxPlayers}
@@ -154,10 +161,10 @@ export const SalaDeEspera: React.FC<Props> = ({
             }}
           >
             {j.nickname}
-            {currentUser?.nickname === j.nickname ? " (T√∫)" : ""}
-            {j.isHost && <span style={{ marginLeft: "5px", color: "#FFD700" }}>üëë</span>}
+            {currentUser?.nickname === j.nickname ? " (T˙)" : ""}
+            {j.isHost && <span style={{ marginLeft: "5px", color: "#FFD700" }}></span>}
             <span style={styles.readyStatus}>
-              {j.isReady ? "‚úÖ LISTO" : "‚è≥ Esperando"}
+              {j.isReady ? " LISTO" : " Esperando"}
             </span>
           </div>
         ))}
@@ -171,7 +178,7 @@ export const SalaDeEspera: React.FC<Props> = ({
           ))}
       </div>
 
-      {/* Bot√≥n listo/no listo */}
+      {/* BotÛn listo/no listo */}
       <button
         onClick={toggleReady}
         style={{
@@ -182,19 +189,19 @@ export const SalaDeEspera: React.FC<Props> = ({
         {isReadyLocal ? "YA ESTOY LISTO" : "MARCAR LISTO"}
       </button>
 
-      {/* Mostrar bot√≥n de iniciar si todos est√°n listos */}
+      {/* Mostrar botÛn de iniciar si todos est·n listos */}
       {allReady && (
         <div style={{ marginTop: 20 }}>
           <p style={styles.startMessage}>
-            ¬°Todos listos! La partida puede comenzar.
+            °Todos listos! La partida puede comenzar.
           </p>
           {isHost ? (
             <button onClick={handleStart} style={styles.startButton}>
-              INICIAR JUEGO (HOST)
+              IR AL TABLERO (HOST)
             </button>
           ) : (
             <p style={{ color: "#ccc", fontStyle: "italic" }}>
-              Esperando a que el anfitri√≥n inicie la partida...
+              Esperando a que el anfitriÛn inicie la partida...
             </p>
           )}
         </div>
@@ -293,21 +300,29 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontWeight: "bold"
   },
   overlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.85)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.85)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 100,
-    borderRadius: '10px',
+    borderRadius: "10px",
   },
   countdownText: {
-    fontSize: '60px',
-    color: '#61dafb',
-    fontWeight: 'bold',
+    fontSize: "60px",
+    color: "#61dafb",
+    fontWeight: "bold",
+  },
+  timerBox: {
+    textAlign: "center",
+    marginBottom: "20px",
+    backgroundColor: "#282c34",
+    padding: "10px",
+    borderRadius: "8px",
+    border: "1px solid #444"
   }
 };

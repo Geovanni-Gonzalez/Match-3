@@ -11,6 +11,18 @@ export function registerGameSockets(io: Server, gameService: GameService) {
       gameService.setReady(partidaId, socket.id, Boolean(isReady));
     });
 
+    // request_enter_game (host)
+    socket.on('request_enter_game', (data) => {
+      const { partidaId } = data || {};
+      try {
+        if (!partidaId) return socket.emit('game:error', { message: 'partidaId required' });
+        // Lógica movida a GameService
+        gameService.prepararPartida(partidaId, socket.id);
+      } catch (err) {
+        socket.emit('game:error', { message: (err as Error).message });
+      }
+    });
+
     // start_game (host)
     socket.on('start_game', (data) => {
       const { partidaId } = data || {};

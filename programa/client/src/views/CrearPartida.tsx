@@ -33,7 +33,6 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({
   const [tipoJuego, setTipoJuego] = useState<'Match' | 'Tiempo'>('Match');
   const [tematica, setTematica] = useState<string>('Gemas');
   const [numJugadores, setNumJugadores] = useState<number>(2);
-  const [duracion, setDuracion] = useState<number>(5); // Default 5 mins
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,8 +55,7 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({
       const response = await axios.post(`${API_URL}/partida/crear_partida`, {
         tipoJuego,
         tematica,
-        numJugadoresMax: numJugadores,
-        duracionMinutos: tipoJuego === 'Tiempo' ? duracion : 0
+        numJugadoresMax: numJugadores
       });
 
       if (response.status !== 201 || !response.data.codigoPartida) {
@@ -110,21 +108,6 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({
             ))}
           </select>
         </div>
-
-        {/* Duración (Solo si es Tiempo) */}
-        {tipoJuego === 'Tiempo' && (
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Duración (min):</label>
-            <input
-              type="number"
-              min={1}
-              max={60}
-              value={duracion}
-              onChange={(e) => setDuracion(Math.max(1, Number(e.target.value)))}
-              style={styles.numberInput}
-            />
-          </div>
-        )}
 
         {/* Temática */}
         <div style={styles.formGroup}>

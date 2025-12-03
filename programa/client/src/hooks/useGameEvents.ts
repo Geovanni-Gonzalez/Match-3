@@ -14,8 +14,8 @@ export interface TableroCell {
 export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][], initialConfig?: any) => {
   const { socket } = useAuth();
   const [jugadores, setJugadores] = useState<JugadorData[]>([]);
-  const [gameStatus, setGameStatus] = useState<"loading" | "waiting" | "active" | "errored" | "finished">(
-    initialTablero ? "active" : "loading"
+  const [gameStatus, setGameStatus] = useState<"loading" | "waiting" | "ready_to_start" | "active" | "errored" | "finished">(
+    initialTablero ? "ready_to_start" : "loading"
   );
   const [tablero, setTablero] = useState<TableroCell[][] | null>(initialTablero || null);
   const [error, setError] = useState<string | null>(null);
@@ -108,7 +108,9 @@ export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][
     });
 
     const unsubGameStarted = service.onGameStarted(({ tablero, config }) => {
-      setTablero(normalizeMatrix(tablero));
+      if (tablero) {
+        setTablero(normalizeMatrix(tablero));
+      }
       setGameConfig(config);
       setGameStatus("active");
       setCountdown(null); // Clear countdown
@@ -144,6 +146,12 @@ export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][
       ));
     });
 
+    const unsubForceNavigate = service.onForceNavigateGame(({ tablero, config }) => {
+      setTablero(normalizeMatrix(tablero));
+      setGameConfig(config);
+      setGameStatus("ready_to_start");
+    });
+
     // Request initial game info when mounting/connecting
     service.requestGameInfo(partidaId);
 
@@ -162,6 +170,7 @@ export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][
       unsubGameInfo();
       unsubPartidaDeleted();
       unsubPlayerStatus();
+      unsubForceNavigate();
     };
   }, [service, partidaId, gameStatus]);
 
@@ -198,5 +207,7 @@ export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][
     activateMatch: (pid: string) => service?.activateMatch(pid),
     rawSocket: () => service?.rawSocket(),
     onAllPlayersReady: service?.onAllPlayersReady.bind(service),
+    requestEnterGame: (pid: string) => service?.requestEnterGame(pid),
+    onForceNavigateGame: service?.onForceNavigateGame.bind(service),
   };
 };

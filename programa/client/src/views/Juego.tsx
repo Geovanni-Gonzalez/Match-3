@@ -11,6 +11,22 @@ interface JuegoProps {
   onLeave: () => void;
 }
 
+// Mapeo de temáticas a iconos/emojis
+const THEME_ICONS: Record<string, Record<string, string>> = {
+  'Gemas': {
+    red: '🔴', blue: '🔵', green: '🟢', yellow: '🟡', purple: '🟣', orange: '🟠'
+  },
+  'Animales': {
+    red: '🐞', blue: '🐳', green: '🐸', yellow: '🐝', purple: '🦄', orange: '🦊'
+  },
+  'Frutas': {
+    red: '🍎', blue: '🫐', green: '🥝', yellow: '🍌', purple: '🍇', orange: '🍊'
+  },
+  'Monstruos': {
+    red: '👹', blue: '👾', green: '🧟', yellow: '💀', purple: '👿', orange: '🎃'
+  }
+};
+
 export const Juego: React.FC<JuegoProps> = ({
   partidaId,
   currentUserNickname,
@@ -35,6 +51,8 @@ export const Juego: React.FC<JuegoProps> = ({
     rawSocket,
     notification
   } = useGameEvents(partidaId, initialTablero, initialConfig);
+
+  const isHost = jugadores.find(j => j.nickname === currentUserNickname)?.isHost;
 
   // ---- CALLBACKS ----
   const handleCellClick = (r: number, c: number) => {
@@ -61,20 +79,20 @@ export const Juego: React.FC<JuegoProps> = ({
     const timerId = setTimeout(() => {
       console.log("[Juego] Auto-match por inactividad");
       handleMatch();
-    }, 2000);
+    }, 2000); // Requerimiento: 2 segundos de inactividad
 
     return () => clearTimeout(timerId);
   }, [tablero, gameStatus, partidaId, rawSocket]); // Se reinicia cada vez que cambia el tablero (selección)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === 'u') {
+      if (e.key.toLowerCase() === 'u' && isHost && gameStatus === 'ready_to_start') {
         startGame?.(partidaId);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [startGame, partidaId]);
+  }, [startGame, partidaId, isHost, gameStatus]);
 
   // ---- RENDER ----
   if (gameStatus === "finished" && results) {
@@ -94,6 +112,7 @@ export const Juego: React.FC<JuegoProps> = ({
         partidaId={partidaId}
         resultados={formattedResults}
         onContinue={onLeave}
+        tematica={gameConfig?.tematica}
       />
     );
   }
@@ -108,7 +127,7 @@ export const Juego: React.FC<JuegoProps> = ({
     );
   }
 
-  if (!tablero) {
+  if (!tablero || tablero.length === 0) {
     return (
       <div style={styles.windowFrame}>
         <h1 style={styles.title}>Cargando partida...</h1>
@@ -131,6 +150,7 @@ export const Juego: React.FC<JuegoProps> = ({
 
       {/* Game Info Bar */}
       <div style={styles.infoBar}>
+        <span style={{ marginRight: '20px', color: '#fff' }}>Tema: {gameConfig?.tematica || 'Gemas'}</span>
         {gameConfig?.tipoJuego === 'Tiempo' && (
           <span>Tiempo: {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}</span>
         )}
@@ -144,6 +164,20 @@ export const Juego: React.FC<JuegoProps> = ({
         <div style={styles.overlay}>
           <h1 style={styles.countdownText}>{countdown}</h1>
         </div>
+      )}
+
+      {/* Waiting for start Overlay */}
+      {gameStatus === 'ready_to_start' && countdown === null && (
+         <div style={styles.overlay}>
+            <div style={{textAlign: 'center'}}>
+              <h1 style={{color: 'white'}}>Partida Lista</h1>
+              {isHost ? (
+                 <p style={{color: '#61dafb', fontSize: '24px'}}>Presiona 'u' para iniciar</p>
+              ) : (
+                 <p style={{color: '#ccc', fontSize: '20px'}}>Esperando al anfitrión...</p>
+              )}
+            </div>
+         </div>
       )}
 
       {/* Scoreboard */}
@@ -185,22 +219,33 @@ export const Juego: React.FC<JuegoProps> = ({
                 const isPropia = celda.seleccionadoPor === mySocketId;
                 const isOtro = celda.seleccionadoPor && celda.seleccionadoPor !== mySocketId;
 
+                // Determinar icono según temática
+                const currentTheme = gameConfig?.tematica || 'Gemas';
+                const iconSet = THEME_ICONS[currentTheme] || THEME_ICONS['Gemas'];
+                const icon = iconSet[celda.colorID] || celda.colorID;
+
                 return (
                   <div
                     key={`${r}-${c}`}
                     style={{
                       ...styles.cell,
-                      backgroundColor: celda.colorID,
+                      backgroundColor: '#282c34', // Fondo neutro para resaltar el icono
                       border: isPropia
                         ? "3px solid #FFD700"
                         : isOtro
                           ? "3px solid #FF4500"
-                          : "1px solid #333",
-                      opacity: isOtro ? 0.7 : 1,
-                      cursor: gameStatus === "active" ? "pointer" : "default"
+                          : "1px solid #444",
+                      opacity: isOtro ? 0.5 : 1,
+                      cursor: gameStatus === "active" ? "pointer" : "default",
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      fontSize: '24px'
                     }}
                     onClick={() => handleCellClick(r, c)}
-                  />
+                  >
+                    {icon}
+                  </div>
                 );
               })
             )}

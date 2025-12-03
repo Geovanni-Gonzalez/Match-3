@@ -2,13 +2,14 @@
 import { Tablero } from './Tablero.js';
 import { Jugador } from './Jugador.js';
 
-export type EstadoPartida = 'espera' | 'jugando' | 'finalizada';
+export type EstadoPartida = 'espera' | 'ready_to_start' | 'jugando' | 'finalizada';
 
 export class Partida {
     public estado: EstadoPartida = 'espera';
     public jugadores: Map<string, Jugador> = new Map(); // key = socketID
     public tablero: Tablero;
     public hostSocketID: string | null = null;
+    public startTime: number | null = null;
 
     constructor(
         public idPartida: string,

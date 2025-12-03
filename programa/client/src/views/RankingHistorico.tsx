@@ -6,7 +6,10 @@ import React, { useState, useEffect } from 'react';
 interface JugadorRanking {
   rank: number;
   user: string;
-  victorias: number;
+  puntaje: number;
+  tematica: string;
+  tiempo: number;
+  gameId: string;
 }
 
 interface RankingHistoricoProps {
@@ -43,6 +46,13 @@ export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) =>
     }
   };
 
+  const formatTime = (seconds: number) => {
+    if (!seconds) return 'N/A';
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
   return (
     <div style={styles.windowFrame}>
       {/* Botón de retroceso */}
@@ -51,7 +61,7 @@ export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) =>
       </div>
 
       <div style={styles.header}>
-        <h1 style={styles.title}>Ranking</h1>
+        <h1 style={styles.title}>Ranking Histórico</h1>
       </div>
 
       <div style={styles.content}>
@@ -68,9 +78,12 @@ export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) =>
             <table style={styles.table}>
               <thead>
                 <tr>
-                  <th style={styles.tableHeader}>RANK</th>
+                  <th style={styles.tableHeader}>#</th>
                   <th style={styles.tableHeader}>User</th>
-                  <th style={styles.tableHeader}>N° Victorias</th>
+                  <th style={styles.tableHeader}>Puntaje</th>
+                  <th style={styles.tableHeader}>Tema</th>
+                  <th style={styles.tableHeader}>Tiempo</th>
+                  <th style={styles.tableHeader}>ID</th>
                 </tr>
               </thead>
               <tbody>
@@ -81,7 +94,10 @@ export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) =>
                   >
                     <td style={{ ...styles.tableCell, ...styles.rankCell }}>{jugador.rank}</td>
                     <td style={styles.tableCell}>{jugador.user}</td>
-                    <td style={styles.tableCell}>{jugador.victorias}</td>
+                    <td style={styles.tableCell}>{jugador.puntaje}</td>
+                    <td style={styles.tableCell}>{jugador.tematica}</td>
+                    <td style={styles.tableCell}>{formatTime(jugador.tiempo)}</td>
+                    <td style={{ ...styles.tableCell, fontSize: '12px' }}>{jugador.gameId}</td>
                   </tr>
                 ))}
               </tbody>
@@ -99,7 +115,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '10px',
     backgroundColor: '#333744',
     boxShadow: '0 8px 16px rgba(0, 0, 0, 0.5)',
-    width: '450px', // Ancho ajustado para la tabla
+    width: '700px', // Ancho aumentado para más columnas
     position: 'relative',
     display: 'flex',
     flexDirection: 'column',

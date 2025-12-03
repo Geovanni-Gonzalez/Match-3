@@ -23,6 +23,12 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
 
   const service = useMemo(() => (socket ? new SocketService(socket) : null), [socket]);
 
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
   // ============================
   // 1) Cargar y actualizar partidas por WebSocket
   // ============================
@@ -146,7 +152,7 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
                   <td style={styles.td}>
                     {p.jugadores}/{p.maxJugadores}
                   </td>
-                  <td style={styles.td}>{p.tiempoRestante}</td>
+                  <td style={styles.td}>{formatTime(p.tiempoRestante)}</td>
                 </tr>
               ))}
             </tbody>

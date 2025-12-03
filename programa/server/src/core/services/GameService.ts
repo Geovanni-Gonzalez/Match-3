@@ -16,6 +16,12 @@ export class GameService {
     TimerManager.getInstance().setSocketServer(io);
   }
 
+  /**
+   * Maneja la expiración del tiempo de espera de una partida en el lobby.
+   * Si hay suficientes jugadores (>=2), inicia la partida automáticamente.
+   * Si no, la elimina.
+   * @param matchId ID de la partida
+   */
   async handleMatchExpiration(matchId: string) {
     try {
       const match = this.servidor.obtenerPartida(matchId);
@@ -43,7 +49,14 @@ export class GameService {
   }
 
   /**
-   * Crear partida: persiste en BD y en memoria
+   * Crea una nueva partida, la almacena en memoria y la persiste en la base de datos.
+   * Configura el temporizador de vida útil de la partida.
+   * 
+   * @param idPartida Código único de la partida
+   * @param tipoJuego 'Match' o 'Tiempo'
+   * @param tematica Temática visual del juego
+   * @param max Número máximo de jugadores
+   * @returns La instancia de la partida creada
    */
   public async crearPartida(idPartida: string, tipoJuego: 'Match' | 'Tiempo', tematica: string, max: number) {
     console.log('[GameService] Creando partida:', idPartida, tipoJuego, tematica, max);
@@ -64,6 +77,8 @@ export class GameService {
       this.handleMatchExpiration(idPartida)
     );
 
+    this.emitirListaPartidas(); // Notificar al lobby
+
     return partida;
   }
 
@@ -72,7 +87,14 @@ export class GameService {
   }
 
   /**
-   * Unirse a partida: crea Jugador domain y lo agrega; persiste relación jugador-partida.
+   * Permite a un jugador unirse a una partida existente.
+   * Crea la instancia del jugador y persiste la relación en la BD.
+   * 
+   * @param idPartida ID de la partida
+   * @param nickname Nombre del jugador
+   * @param socketID ID del socket de conexión
+   * @param jugadorDBId ID del jugador en la base de datos
+   * @returns La instancia del nuevo jugador
    */
   public async unirseAPartida(idPartida: string, nickname: string, socketID: string, jugadorDBId: number) {
     const partida = this.servidor.obtenerPartida(idPartida);
@@ -89,16 +111,27 @@ export class GameService {
       console.warn('[GameService] Warning: no se pudo persistir unión a partida:', err);
     }
 
+    this.emitirListaPartidas(); // Actualizar contador de jugadores en lobby
+
     return nuevoJugador;
   }
+
   /**
-   *  Eliminar partida
+   * Elimina una partida de la memoria del servidor.
+   * @param idPartida ID de la partida a eliminar
    */
   public eliminarPartida(idPartida: string) {
     this.servidor.eliminarPartida(idPartida);
+    this.emitirListaPartidas(); // Notificar eliminación
   }
+
   /**
-   * Set ready / not ready  
+   * Actualiza el estado de "listo" de un jugador.
+   * Si todos los jugadores están listos, emite el evento 'all_players_ready'.
+   * 
+   * @param partidaId ID de la partida
+   * @param socketID ID del socket del jugador
+   * @param isReady Nuevo estado de listo
    */
   public setReady(partidaId: string, socketID: string, isReady: boolean) {
     const partida = this.servidor.obtenerPartida(partidaId);
@@ -116,10 +149,54 @@ export class GameService {
     }
   }
 
+  /**
+   * Prepara la partida para ser mostrada en el cliente, cambiando su estado a 'ready_to_start'.
+   * Esto envía el tablero inicial a los clientes para que puedan renderizarlo, pero sin iniciar el juego.
+   * Solo el anfitrión puede solicitar esto.
+   *
+   * @param partidaId ID de la partida
+   * @param requestedBySocketID Socket ID de quien solicita preparar la partida (debe ser el host)
+   */
+  public prepararPartida(partidaId: string, requestedBySocketID: string) {
+    const partida = this.servidor.obtenerPartida(partidaId);
+    if (!partida) throw new Error('Partida no encontrada');
+    if (partida.estado !== 'espera') throw new Error('La partida no está en espera para ser preparada.');
+
+    // Verificar que quien solicita sea el host
+    if (partida.hostSocketID !== requestedBySocketID) {
+      throw new Error('Solo el anfitrión puede preparar la partida.');
+    }
+
+    partida.setEstado('ready_to_start');
+    const tableroSerializado = partida.tablero.matriz.map((row: any[]) => row.map((c: any) => ({ colorID: c.colorID, estado: c.estado })));
+    const gameConfig = {
+      ...config,
+      limit: partida.tipoJuego === 'Match' ? config.MATCH_FINITO_LIMITE : (config.TIEMPO_VIDA_PARTIDA_MIN * 60),
+      tipoJuego: partida.tipoJuego,
+      tematica: partida.tematica
+    };
+
+    // Emitir para que los clientes naveguen a la vista de juego y carguen el tablero
+    this.io.to(partidaId).emit('force_navigate_game', { tablero: tableroSerializado, config: gameConfig });
+    this.io.to(partidaId).emit('players_update', partida.getJugadoresResumen());
+
+    this.emitirListaPartidas(); // La partida ya no está en 'espera', actualizar lobby
+
+    console.log(`[GameService] Partida ${partidaId} preparada para iniciar.`);
+  }
+
+  /**
+   * Inicia la secuencia de arranque de la partida (cuenta regresiva).
+   * Valida que la partida esté en espera y que quien la inicia sea el host (si aplica).
+   * 
+   * @param partidaId ID de la partida
+   * @param requestedBySocketID (Opcional) Socket ID de quien solicita iniciar
+   */
   public iniciarPartida(partidaId: string, requestedBySocketID?: string) {
     const partida = this.servidor.obtenerPartida(partidaId);
     if (!partida) throw new Error('Partida no encontrada');
-    if (partida.estado !== 'espera') throw new Error('Partida ya iniciada');
+    // Ahora solo se puede iniciar desde el estado 'ready_to_start'
+    if (partida.estado !== 'ready_to_start') throw new Error('La partida no está lista para iniciar.');
 
     // Si se solicita por un socket específico, verificar que sea el host
     if (requestedBySocketID) {
@@ -144,20 +221,26 @@ export class GameService {
     }, 1000);
   }
 
+  /**
+   * Transición interna al estado 'jugando'.
+   * Inicializa el tablero, envía configuración a clientes e inicia timers de juego si aplica.
+   * @param partida Instancia de la partida
+   */
   private comenzarJuegoReal(partida: any) {
     const partidaId = partida.idPartida;
     partida.setEstado('jugando');
+    partida.startTime = Date.now();
 
-    const tableroSerializado = partida.tablero.matriz.map((row: any[]) => row.map((c: any) => ({ colorID: c.colorID, estado: c.estado })));
-    
-    // Enviar configuración específica según el modo
+    // La configuración y el tablero ya deberían haber sido enviados por 'prepararPartida'
     const gameConfig = {
       ...config,
-      limit: partida.tipoJuego === 'Match' ? config.MATCH_FINITO_LIMITE : (config.TIEMPO_VIDA_PARTIDA_MIN * 60), // Ajustar según config real de tiempo de juego
-      tipoJuego: partida.tipoJuego
+      limit: partida.tipoJuego === 'Match' ? config.MATCH_FINITO_LIMITE : (config.TIEMPO_VIDA_PARTIDA_MIN * 60),
+      tipoJuego: partida.tipoJuego,
+      tematica: partida.tematica
     };
 
-    this.io.to(partidaId).emit('game_started', { tablero: tableroSerializado, config: gameConfig });
+    // Emitir el inicio real del juego, sin tablero ya que ya se envió
+    this.io.to(partidaId).emit('game_started', { config: gameConfig });
     this.io.to(partidaId).emit('players_update', partida.getJugadoresResumen());
 
     // Iniciar condiciones de fin de juego
@@ -171,6 +254,15 @@ export class GameService {
     }
   }
 
+  /**
+   * Procesa la selección de una celda por parte de un jugador.
+   * Valida turno, estado de celda y bloqueos por otros jugadores.
+   * 
+   * @param partidaId ID de la partida
+   * @param socketID ID del jugador
+   * @param r Fila seleccionada
+   * @param c Columna seleccionada
+   */
   public manejarSeleccion(partidaId: string, socketID: string, r: number, c: number) {
     const partida = this.servidor.obtenerPartida(partidaId);
     if (!partida) return;
@@ -203,6 +295,14 @@ export class GameService {
     this.emitirEstadoPartida(partidaId);
   }
 
+  /**
+   * Intenta validar y ejecutar un match con las celdas seleccionadas por el jugador.
+   * Si es válido: suma puntos, actualiza tablero y notifica.
+   * Si es inválido: limpia selección y notifica error.
+   * 
+   * @param partidaId ID de la partida
+   * @param socketID ID del jugador
+   */
   public async activarMatch(partidaId: string, socketID: string) {
     const partida = this.servidor.obtenerPartida(partidaId);
     if (!partida) return;
@@ -281,6 +381,9 @@ export class GameService {
 
     partida.setEstado('finalizada');
 
+    const endTime = Date.now();
+    const durationSeconds = partida.startTime ? Math.floor((endTime - partida.startTime) / 1000) : 0;
+
     // Asegurar el tipo correcto para que TypeScript reconozca las propiedades de Jugador
     const resultadosOrdenados = Array.from(partida.jugadores.values()) as Jugador[];
     resultadosOrdenados.sort((a, b) => b.puntaje - a.puntaje);
@@ -290,7 +393,8 @@ export class GameService {
     const resultadosForDb = resultadosOrdenados.map((j: Jugador) => ({
       idJugador: j.idDB,
       puntaje: j.puntaje,
-      esGanador: !!(ganador && ganador.puntaje > 0 && j.puntaje === ganador.puntaje)
+      esGanador: !!(ganador && ganador.puntaje > 0 && j.puntaje === ganador.puntaje),
+      tiempoInvertido: durationSeconds
     }));
 
     try {
@@ -317,9 +421,11 @@ export class GameService {
         partida.removerJugador(socketID);
 
         this.io.to(id).emit('players_update', partida.getJugadoresResumen());
+        this.emitirListaPartidas(); // Actualizar lobby si alguien se desconecta de una partida en espera
 
         if (partida.jugadores.size === 0) {
           this.servidor.eliminarPartida(id);
+          this.emitirListaPartidas(); // Actualizar lobby si se elimina
         }
         break;
       }
@@ -384,5 +490,13 @@ export class GameService {
         maxJugadores: p.numJugadoresMax,
         tiempoRestante: TimerManager.getInstance().getRemainingTime(p.idPartida)
       }));
+  }
+
+  /**
+   * Emite la lista actualizada de partidas a todos los clientes en el lobby.
+   */
+  private emitirListaPartidas() {
+    const partidas = this.listarPartidasDisponibles();
+    this.io.to('lobby').emit('partidas:list', partidas);
   }
 }

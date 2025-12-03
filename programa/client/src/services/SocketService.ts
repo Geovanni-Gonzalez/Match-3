@@ -71,6 +71,10 @@ export class SocketService {
     this.socket.emit("request_game_info", { partidaId });
   }
 
+  public requestEnterGame(partidaId: string) {
+    this.socket.emit("request_enter_game", { partidaId });
+  }
+
   // Fallback legacy
   public sendMoveFallback(partidaId: string, moves: { r: number; c: number }[]) {
     this.socket.emit("make_move", { partidaId, moves });
@@ -140,6 +144,12 @@ export class SocketService {
     this.socket.on("all_players_ready", callback);
     return () => this.socket.off("all_players_ready", callback);
   }
+
+  public onForceNavigateGame(callback: (data: { partidaId: string, tablero: TableroSerializedCell[][], config: any }) => void) {
+    this.socket.on("force_navigate_game", callback);
+    return () => this.socket.off("force_navigate_game", callback);
+  }
+
   public onGameCreated(callback: (data: { idPartida: string }) => void) {
     console.log("[SocketService] Recibiendo game_created:", callback);
     this.socket.on("game_created", callback);

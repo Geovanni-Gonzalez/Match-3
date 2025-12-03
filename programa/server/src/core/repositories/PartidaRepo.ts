@@ -60,9 +60,9 @@ export class PartidaRepo {
 
 
     /**
-     * Guarda resultados finales para la partida (lista de objetos { idJugador, puntaje, esGanador })
+     * Guarda resultados finales para la partida (lista de objetos { idJugador, puntaje, esGanador, tiempoInvertido })
      */
-    static async guardarResultadosFinales(idPartidaCodigo: string, resultados: { idJugador: number, puntaje: number, esGanador: boolean }[]) {
+    static async guardarResultadosFinales(idPartidaCodigo: string, resultados: { idJugador: number, puntaje: number, esGanador: boolean, tiempoInvertido: number }[]) {
         const conn = await pool.getConnection();
         try {
             const [rows] = await conn.execute('SELECT id_partida FROM partida WHERE codigo_partida = ? LIMIT 1', [idPartidaCodigo]);
@@ -71,8 +71,8 @@ export class PartidaRepo {
 
             const updatePromises = resultados.map(r => {
                 return conn.execute(
-                    'UPDATE partida_jugador SET puntaje_final = ?, es_ganador = ? WHERE id_partida = ? AND id_jugador = ?',
-                    [r.puntaje, r.esGanador ? 1 : 0, idPartida, r.idJugador]
+                    'UPDATE partida_jugador SET puntaje_final = ?, es_ganador = ?, tiempo_invertido = ? WHERE id_partida = ? AND id_jugador = ?',
+                    [r.puntaje, r.esGanador ? 1 : 0, r.tiempoInvertido, idPartida, r.idJugador]
                 );
             });
 
@@ -85,36 +85,29 @@ export class PartidaRepo {
     static async obtenerRankingHistorico() {
         const conn = await pool.getConnection();
         try {
-            // Query para obtener los usuarios con más victorias
-            // Asumiendo que tenemos una tabla de usuarios o que el nickname está en otra parte.
-            // Pero espera, el modelo actual parece no tener tabla de usuarios centralizada con nickname, 
-            // el nickname se guarda en memoria o en partida_jugador?
-            // Revisando Jugador.ts: idDB, nickname.
-            // Revisando unirseAPartida: se pasa nickname y jugadorDBId.
-            // Si no hay tabla de usuarios, el ranking se basa en id_jugador de partida_jugador.
-            // Necesitamos saber de dónde viene el nickname.
-            // Asumiré que hay una tabla 'jugador' o similar, o haré un join si el nickname se guarda en partida_jugador (que no parece).
-
-            // Revisando PartidaRepo.agregarJugadorAPartida: INSERT INTO partida_jugador (id_partida, id_jugador...
-            // No guarda nickname.
-            // El nickname debe venir de una tabla 'jugador'.
-
-            // Voy a asumir una tabla `jugador` con `id_jugador` y `nombre` (o `nickname`).
-
+            // Ranking detallado: Nombre, Puntaje, Temática, Tiempo, ID Partida
             const query = `
-                SELECT j.nombre as user, COUNT(pj.id_partida) as victorias
+                SELECT 
+                    j.nombre as user, 
+                    pj.puntaje_final as puntaje, 
+                    p.tematica, 
+                    pj.tiempo_invertido, 
+                    p.codigo_partida as gameId
                 FROM partida_jugador pj
                 JOIN jugador j ON pj.id_jugador = j.id_jugador
+                JOIN partida p ON pj.id_partida = p.id_partida
                 WHERE pj.es_ganador = 1
-                GROUP BY j.id_jugador, j.nombre
-                ORDER BY victorias DESC
-                LIMIT 10
+                ORDER BY pj.puntaje_final DESC
+                LIMIT 20
             `;
             const [rows] = await conn.execute(query);
             return (rows as any[]).map((r, i) => ({
                 rank: i + 1,
                 user: r.user,
-                victorias: r.victorias
+                puntaje: r.puntaje,
+                tematica: r.tematica,
+                tiempo: r.tiempo_invertido,
+                gameId: r.gameId
             }));
         } catch (err) {
             Logger.error('Error obteniendo ranking', { error: err });
