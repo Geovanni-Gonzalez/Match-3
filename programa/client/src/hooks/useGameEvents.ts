@@ -116,6 +116,12 @@ export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][
       }
     });
 
+    const unsubPlayerStatus = service.onPlayerStatusChanged(({ socketID, isReady }) => {
+      setJugadores(prev => prev.map(j => 
+        j.socketID === socketID ? { ...j, isReady } : j
+      ));
+    });
+
     // Request initial game info when mounting/connecting
     service.requestGameInfo(partidaId);
 
@@ -131,6 +137,7 @@ export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][
       unsubGameFinished();
       unsubGameInfo();
       unsubPartidaDeleted();
+      unsubPlayerStatus();
     };
   }, [service, partidaId, gameStatus]);
 

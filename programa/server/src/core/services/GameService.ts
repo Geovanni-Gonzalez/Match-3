@@ -358,7 +358,7 @@ export class GameService {
 
   public listarPartidasDisponibles() {
     return Array.from(this.servidor.partidasActivas.values())
-      .filter(p => p.estado === 'espera')
+      .filter(p => p.estado === 'espera' && !p.estaLlena())
       .map(p => ({
         id: p.idPartida,
         tipo: p.tipoJuego,
