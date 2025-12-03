@@ -144,7 +144,7 @@ export const Juego: React.FC<JuegoProps> = ({
         socket.off('error_seleccion');
         socket.off('error_match');
     };
-  }, [socket, currentUserNickname]);
+  }, [socket, currentUserNickname, grupoSeleccionado, tablero]);
 
   // Cronómetro (solo para tipo Tiempo)
   useEffect(() => {
@@ -169,18 +169,12 @@ export const Juego: React.FC<JuegoProps> = ({
   const handleCellClick = (fila: number, columna: number) => {
     const celda = tablero[fila][columna];
     
-    // No permitir click si está bloqueada por otro
+    // Si la celda está bloqueada por otro jugador, no hacer nada
     if (celda.bloqueadaPor && celda.bloqueadaPor !== currentUserNickname) {
       return;
     }
 
-    // Si ya tengo un grupo seleccionado, cancelar primero
-    if (grupoSeleccionado.length > 0) {
-      handleCancelar();
-    }
-
-    // Enviar selección al servidor
-    console.log('[Client] Seleccionando celda:', fila, columna);
+    console.log('[Client] Enviando selección:', fila, columna);
     socket?.emit('select_cell', { 
       partidaId, 
       fila, 
