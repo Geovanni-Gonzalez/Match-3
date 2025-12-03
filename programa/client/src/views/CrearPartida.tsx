@@ -3,7 +3,6 @@ import { useAuth } from '../context/AuthContext';
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useGameEvents } from '../hooks/useGameEvents';
-import { join } from 'path';
 
 const API_URL = 'http://localhost:4000/api';
 

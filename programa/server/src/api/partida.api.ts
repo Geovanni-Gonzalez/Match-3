@@ -2,8 +2,15 @@
 import { Router, Request, Response } from 'express';
 import { PartidaRepo } from '../core/repositories/PartidaRepo.js';
 import { v4 as uuidv4 } from 'uuid';
+import { GameService } from '../core/services/GameService.js';
 
 const router = Router();
+let gameService: GameService; // Variable para mantener la instancia de GameService
+
+// Función para inyectar GameService
+export function setGameService(serviceInstance: GameService) {
+  gameService = serviceInstance;
+}
 
 /**
  * POST /api/partida/crear_partida
@@ -18,8 +25,14 @@ router.post('/crear_partida', async (req: Request, res: Response) => {
   try {
     // Generar código de partida único (6 caracteres alfanuméricos)
     const codigoPartida = uuidv4().split('-')[0].toUpperCase(); // Usar los primeros 6 caracteres del UUID
-    const partidaId = await PartidaRepo.crearPartida(codigoPartida, tipoJuego, tematica, numJugadoresMax);
-    console.log('[API][Partida] Partida creada con ID:', partidaId);
+    
+    // Usar GameService para crear en memoria Y persistir en BD
+    if (!gameService) {
+       throw new Error('GameService no inicializado en API');
+    }
+    await gameService.crearPartida(codigoPartida, tipoJuego, tematica, numJugadoresMax);
+    
+    console.log('[API][Partida] Partida creada con ID:', codigoPartida);
     return res.status(201).json({ message: 'Partida creada exitosamente', codigoPartida, tipoJuego, tematica, numJugadoresMax });
   } catch (err) {
     console.error('[API][Partida] Error crear_partida:', err);
@@ -58,6 +71,20 @@ router.get('/partidas', async (req: Request, res: Response) => {
   catch (err) {
     console.error('[API][Partida] Error obtener partidas:', err);
     return res.status(500).json({ message: 'Error interno al obtener partidas.' });
+  }
+});
+
+/**
+ * GET /api/partida/ranking
+ * Respuesta: { ranking: [...] }
+ */
+router.get('/ranking', async (req: Request, res: Response) => {
+  try {
+    const ranking = await PartidaRepo.obtenerRankingHistorico();
+    return res.status(200).json({ ranking });
+  } catch (err) {
+    console.error('[API][Partida] Error obtener ranking:', err);
+    return res.status(500).json({ message: 'Error interno al obtener ranking.' });
   }
 });
 

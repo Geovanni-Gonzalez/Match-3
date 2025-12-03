@@ -26,7 +26,7 @@ export interface Celda {
 }
 
 const App: React.FC = () => {
-  const { currentUser, login, logout } = useAuth();
+  const { currentUser, logout } = useAuth();
 
   const [currentView, setCurrentView] = useState<AppView>('welcome');
   const [currentGameId, setCurrentGameId] = useState<string | null>(null);

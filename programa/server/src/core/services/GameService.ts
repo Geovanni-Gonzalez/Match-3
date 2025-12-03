@@ -23,9 +23,15 @@ export class GameService {
     const players = this.servidor.obtenerPartida(matchId)?.getJugadores() || [];
 
     if (players.length >= 2) {
+      // Si hay suficientes jugadores, iniciar la partida automáticamente
+      console.log(`[GameService] Tiempo de espera agotado para partida ${matchId}. Iniciando con ${players.length} jugadores.`);
       this.iniciarPartida(matchId);
     } else {
+      // Si no hay suficientes jugadores, eliminar la partida
+      console.log(`[GameService] Tiempo de espera agotado para partida ${matchId}. Eliminando por falta de jugadores.`);
       this.eliminarPartida(matchId);
+      // Notificar a los clientes (opcional, pero buena práctica)
+      this.io.to(matchId).emit('partida:deleted_due_timeout', { partidaId: matchId });
     }
   }
 
@@ -48,7 +54,7 @@ export class GameService {
 
     // Configurar timer de expiración
     TimerManager.getInstance().startTimer(idPartida, config.TIEMPO_VIDA_PARTIDA_MIN * 60, () =>
-      this.eliminarPartida(idPartida)
+      this.handleMatchExpiration(idPartida)
     );
 
     return partida;
@@ -108,11 +114,50 @@ export class GameService {
     if (!partida) throw new Error('Partida no encontrada');
     if (partida.estado !== 'espera') throw new Error('Partida ya iniciada');
 
+    // Si se solicita por un socket específico, verificar que sea el host
+    if (requestedBySocketID) {
+      if (partida.hostSocketID !== requestedBySocketID) {
+        throw new Error('Solo el anfitrión puede iniciar la partida');
+      }
+    }
+
+    // Iniciar secuencia de cuenta regresiva
+    let countdown = 3;
+    const countdownInterval = setInterval(() => {
+      if (countdown > 0) {
+        this.io.to(partidaId).emit('game:countdown', { seconds: countdown });
+        countdown--;
+      } else {
+        clearInterval(countdownInterval);
+        this.comenzarJuegoReal(partida);
+      }
+    }, 1000);
+  }
+
+  private comenzarJuegoReal(partida: any) {
+    const partidaId = partida.idPartida;
     partida.setEstado('jugando');
 
     const tableroSerializado = partida.tablero.matriz.map((row: any[]) => row.map((c: any) => ({ colorID: c.colorID, estado: c.estado })));
-    this.io.to(partidaId).emit('game_started', { tablero: tableroSerializado, config });
+    
+    // Enviar configuración específica según el modo
+    const gameConfig = {
+      ...config,
+      limit: partida.tipoJuego === 'Match' ? config.MATCH_FINITO_LIMITE : (config.TIEMPO_VIDA_PARTIDA_MIN * 60) // Ajustar según config real de tiempo de juego
+    };
+
+    this.io.to(partidaId).emit('game_started', { tablero: tableroSerializado, config: gameConfig });
     this.io.to(partidaId).emit('players_update', partida.getJugadoresResumen());
+
+    // Iniciar condiciones de fin de juego
+    if (partida.tipoJuego === 'Tiempo') {
+      // Usar un tiempo de juego por defecto (ej. 3 minutos) o el configurado
+      const duracionSegundos = 3 * 60; 
+      TimerManager.getInstance().startTimer(partidaId, duracionSegundos, () => {
+        console.log(`[GameService] Tiempo de juego agotado para ${partidaId}`);
+        this.finalizarPartida(partidaId);
+      });
+    }
   }
 
   public manejarSeleccion(partidaId: string, socketID: string, r: number, c: number) {
@@ -175,6 +220,7 @@ export class GameService {
     // Válido: actualizar puntaje y tablero
     jugador.calcularPuntaje(resultado.n);
     partida.tablero.actualizarCeldas(resultado.celdas);
+    partida.matchesRealizados = (partida.matchesRealizados || 0) + 1;
 
     jugador.limpiarSelecciones();
     partida.tablero.matriz.forEach((row: any[]) => row.forEach((c: any) => c.establecerEstado('libre')));
@@ -182,7 +228,18 @@ export class GameService {
     this.emitirEstadoPartida(partidaId);
     this.io.to(partidaId).emit('match_result', { valid: true, jugador: jugador.obtenerInfoBasica() });
 
-    // NOTA: aquí podrías evaluar condiciones de fin de juego y llamar finalizarPartida()
+    // Verificar condición de fin de juego por Matches
+    if (partida.tipoJuego === 'Match') {
+      const limite = config.MATCH_FINITO_LIMITE || 100;
+      const matchesRestantes = Math.max(0, limite - partida.matchesRealizados);
+      
+      this.io.to(partidaId).emit('game:match_update', { matchesLeft: matchesRestantes });
+
+      if (partida.matchesRealizados >= limite) {
+        console.log(`[GameService] Límite de matches alcanzado para ${partidaId}`);
+        this.finalizarPartida(partidaId);
+      }
+    }
   }
 
   private emitirEstadoPartida(partidaId: string) {
@@ -307,7 +364,8 @@ export class GameService {
         tipo: p.tipoJuego,
         tematica: p.tematica,
         jugadores: p.jugadores.size,
-        maxJugadores: p.jugadores.size
+        maxJugadores: p.numJugadoresMax,
+        tiempoRestante: TimerManager.getInstance().getRemainingTime(p.idPartida)
       }));
   }
 }

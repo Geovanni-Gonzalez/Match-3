@@ -8,9 +8,9 @@ export class PlayerRepo {
         const conn = await pool.getConnection();
         try {
             Logger.info('[PlayerRepo] Buscando o creando jugador', { nickname });
-            const [rows] = await conn.execute('SELECT id_jugador FROM jugador WHERE nickname = ?', [nickname]);
+            const [rows] = await conn.execute('SELECT id_jugador FROM jugador WHERE nombre = ?', [nickname]);
             if ((rows as any).length > 0) return (rows as any)[0].id_jugador;
-            const [res] = await conn.execute('INSERT INTO jugador (nickname, fecha_registro) VALUES (?, NOW())', [nickname]);
+            const [res] = await conn.execute('INSERT INTO jugador (nombre, fecha_registro) VALUES (?, NOW())', [nickname]);
             Logger.info('[PlayerRepo] Jugador creado', { id: (res as any).insertId });
             return (res as any).insertId;
         } finally {

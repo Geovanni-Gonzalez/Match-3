@@ -7,7 +7,9 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "nodemon --watch src --exec node --loader ts-node/esm --require tsconfig-paths/register src/index.ts"
+    "dev": "nodemon --watch src --exec node --loader ts-node/esm --require tsconfig-paths/register src/index.ts",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write src/**/*.ts"
   },
   "keywords": [],
   "author": "",
@@ -27,7 +29,13 @@
     "@types/express": "^5.0.5",
     "@types/node": "^20.12.7",
     "@types/uuid": "^9.0.6",
+    "@typescript-eslint/eslint-plugin": "^8.48.1",
+    "@typescript-eslint/parser": "^8.48.1",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
     "nodemon": "^3.0.1",
+    "prettier": "^3.7.4",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }

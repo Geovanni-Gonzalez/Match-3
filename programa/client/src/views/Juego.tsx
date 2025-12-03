@@ -1,16 +1,19 @@
 // client/src/views/Juego.tsx
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect } from "react";
 import { useGameEvents } from "../hooks/useGameEvents";
+import { ResultadoPartida } from "./ResultadoPartida";
 
 interface JuegoProps {
   partidaId: string;
   currentUserNickname: string;
+  initialTablero?: any[][];
   onLeave: () => void;
 }
 
 export const Juego: React.FC<JuegoProps> = ({
   partidaId,
   currentUserNickname,
+  initialTablero,
   onLeave
 }) => {
 
@@ -25,8 +28,9 @@ export const Juego: React.FC<JuegoProps> = ({
     countdown,
     matchesLeft,
     gameConfig,
-    timer
-  } = useGameEvents(partidaId);
+    timer,
+    results
+  } = useGameEvents(partidaId, initialTablero);
 
   // ---- CALLBACKS ----
   const handleCellClick = (r: number, c: number) => {
@@ -37,6 +41,25 @@ export const Juego: React.FC<JuegoProps> = ({
   const handleMatch = () => {
     activateMatch?.(partidaId);
   };
+
+  // Auto-match por inactividad (2 segundos)
+  useEffect(() => {
+    if (gameStatus !== "active" || !tablero) return;
+
+    // Verificar si el usuario actual tiene celdas seleccionadas
+    const hasSelection = tablero.some(row => 
+      row.some(cell => cell.estado === "seleccion_propia")
+    );
+
+    if (!hasSelection) return;
+
+    const timerId = setTimeout(() => {
+      console.log("[Juego] Auto-match por inactividad");
+      handleMatch();
+    }, 2000);
+
+    return () => clearTimeout(timerId);
+  }, [tablero, gameStatus, partidaId]); // Se reinicia cada vez que cambia el tablero (selección)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -49,6 +72,27 @@ export const Juego: React.FC<JuegoProps> = ({
   }, [startGame, partidaId]);
 
   // ---- RENDER ----
+  if (gameStatus === "finished" && results) {
+    // Mapear resultados al formato esperado por ResultadoPartida
+    // Asumimos que results trae { nickname, puntaje, ... }
+    const sortedResults = [...results].sort((a: any, b: any) => b.puntaje - a.puntaje);
+    
+    const formattedResults = sortedResults.map((r: any, index: number) => ({
+      posicion: index + 1,
+      nickname: r.nickname,
+      puntaje: r.puntaje,
+      isCurrentUser: r.nickname === currentUserNickname
+    }));
+
+    return (
+      <ResultadoPartida
+        partidaId={partidaId}
+        resultados={formattedResults}
+        onContinue={onLeave}
+      />
+    );
+  }
+
   if (error) {
     return (
       <div style={styles.windowFrame}>
@@ -125,7 +169,6 @@ export const Juego: React.FC<JuegoProps> = ({
               row.map((celda, c) => {
                 const isPropia = celda.estado === "seleccion_propia";
                 const isOtro = celda.estado === "seleccion_otro";
-                const isLibre = celda.estado === "libre";
 
                 return (
                   <div

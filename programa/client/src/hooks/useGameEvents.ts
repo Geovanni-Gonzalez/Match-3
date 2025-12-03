@@ -10,16 +10,18 @@ export interface TableroCell {
   estado: string;
 }
 
-export const useGameEvents = (partidaId: string) => {
-  const { socket, currentUser } = useAuth();
+export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][]) => {
+  const { socket } = useAuth();
   const [jugadores, setJugadores] = useState<JugadorData[]>([]);
-  const [gameStatus, setGameStatus] = useState<"loading" | "waiting" | "active" | "errored">("loading");
-  const [tablero, setTablero] = useState<TableroCell[][] | null>(null);
+  const [gameStatus, setGameStatus] = useState<"loading" | "waiting" | "active" | "errored" | "finished">("loading");
+  const [tablero, setTablero] = useState<TableroCell[][] | null>(initialTablero || null);
   const [error, setError] = useState<string | null>(null);
   const [timer, setTimer] = useState<number>(0);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [matchesLeft, setMatchesLeft] = useState<number | null>(null);
   const [gameConfig, setGameConfig] = useState<any>(null);
+  const [results, setResults] = useState<any[] | null>(null);
+  const [maxPlayers, setMaxPlayers] = useState<number>(6); // Default fallback
 
 
   const service = useMemo(() => (socket ? new SocketService(socket) : null), [socket]);
@@ -94,11 +96,28 @@ export const useGameEvents = (partidaId: string) => {
       setMatchesLeft(matchesLeft);
     });
 
+    const unsubGameInfo = service.onGameInfo((info) => {
+      if (info.maxJugadores) {
+        setMaxPlayers(info.maxJugadores);
+      }
+    });
+
     const unsubGameFinished = service.onGameFinished(({ resultados }) => {
       // Handle finish (maybe redirect or show modal)
       console.log("Game Finished", resultados);
-      setGameStatus("errored"); // Or a new status "finished"
+      setResults(resultados);
+      setGameStatus("finished");
     });
+
+    const unsubPartidaDeleted = service.onPartidaDeleted(({ partidaId: deletedId }) => {
+      if (deletedId === partidaId) {
+        setError("La partida ha sido cancelada por inactividad o falta de jugadores.");
+        setGameStatus("errored");
+      }
+    });
+
+    // Request initial game info when mounting/connecting
+    service.requestGameInfo(partidaId);
 
     return () => {
       unsubPlayers();
@@ -110,8 +129,10 @@ export const useGameEvents = (partidaId: string) => {
       unsubGameStarted();
       unsubMatchUpdate();
       unsubGameFinished();
+      unsubGameInfo();
+      unsubPartidaDeleted();
     };
-  }, [service, partidaId]);
+  }, [service, partidaId, gameStatus]);
 
   // subscribe to room-level timer tick (useful for lobby if needed)
   useEffect(() => {
@@ -133,6 +154,8 @@ export const useGameEvents = (partidaId: string) => {
     countdown,
     matchesLeft,
     gameConfig,
+    results,
+    maxPlayers,
 
     // acciones expuestas
     joinGame: service?.joinGame.bind(service),

@@ -7,6 +7,7 @@ export interface JugadorData {
   isReady: boolean;
   puntaje?: number;
   conectado?: boolean;
+  isHost?: boolean;
 }
 
 export interface TableroSerializedCell {
@@ -63,6 +64,10 @@ export class SocketService {
 
   public activateMatch(partidaId: string) {
     this.socket.emit("activate_match", { partidaId });
+  }
+
+  public requestGameInfo(partidaId: string) {
+    this.socket.emit("request_game_info", { partidaId });
   }
 
   // Fallback legacy
@@ -128,6 +133,11 @@ export class SocketService {
     console.log("[SocketService] Recibiendo game_created:", callback);
     this.socket.on("game_created", callback);
     return () => this.socket.off("game_created", callback);
+  }
+
+  public onGameInfo(callback: (data: { maxJugadores: number, tematica: string, tipoJuego: string }) => void) {
+    this.socket.on("game_info", callback);
+    return () => this.socket.off("game_info", callback);
   }
 
   public onGameCountdown(callback: (data: { seconds: number }) => void) {

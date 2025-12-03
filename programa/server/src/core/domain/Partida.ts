@@ -8,12 +8,13 @@ export class Partida {
     public estado: EstadoPartida = 'espera';
     public jugadores: Map<string, Jugador> = new Map(); // key = socketID
     public tablero: Tablero;
+    public hostSocketID: string | null = null;
 
     constructor(
         public idPartida: string,
         public tipoJuego: 'Match' | 'Tiempo',
         public tematica: string,
-        private numJugadoresMax: number,
+        public numJugadoresMax: number,
         public tiempoRestanteMs: number = 0,
         public intervalId: NodeJS.Timeout | null = null,
         public matchesRealizados: number = 0,
@@ -25,11 +26,23 @@ export class Partida {
     public agregarJugador(jugador: Jugador) {
         if (this.estado !== 'espera') throw new Error('No se puede unir: partida ya iniciada');
         if (this.jugadores.size >= this.numJugadoresMax) throw new Error('Sala llena');
+        
+        if (this.jugadores.size === 0) {
+            this.hostSocketID = jugador.socketID;
+        }
+        
         this.jugadores.set(jugador.socketID, jugador);
     }
 
     public removerJugador(socketID: string) {
         this.jugadores.delete(socketID);
+        if (this.hostSocketID === socketID) {
+            if (this.jugadores.size > 0) {
+                this.hostSocketID = this.jugadores.keys().next().value || null;
+            } else {
+                this.hostSocketID = null;
+            }
+        }
     }
 
     public obtenerJugador(socketID: string): Jugador | undefined {
@@ -57,7 +70,8 @@ export class Partida {
         nickname: j.nickname,
         socketID: j.socketID,
         isReady: j.isReady,
-        puntaje: j.puntaje
+        puntaje: j.puntaje,
+        isHost: j.socketID === this.hostSocketID
         }));
     }
 }

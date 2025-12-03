@@ -1,5 +1,5 @@
 // programa/client/src/views/MenuPrincipal.tsx
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 // Definir los tipos de vista para el componente
 type MenuViews = 'menu' | 'lobby' | 'ranking' | 'create_game' | 'game';
 
@@ -16,8 +16,6 @@ interface MenuPrincipalProps {
 }
 
 export const MenuPrincipal: React.FC<MenuPrincipalProps> = ({ currentUser, onLogout, onNavigate }) => { // ⬅️ Recibir la nueva prop
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   // ... (el resto del estado y la lógica)
 

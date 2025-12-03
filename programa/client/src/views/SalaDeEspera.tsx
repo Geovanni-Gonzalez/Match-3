@@ -24,7 +24,9 @@ export const SalaDeEspera: React.FC<Props> = ({
     timer,
     setReady,
     startGame,
-    onAllPlayersReady
+    onAllPlayersReady,
+    maxPlayers,
+    countdown
   } = useGameEvents(partidaId);
 
   const [isReadyLocal, setIsReadyLocal] = useState(false);
@@ -34,6 +36,14 @@ export const SalaDeEspera: React.FC<Props> = ({
   // ----------------------------
   const [timeLeft, setTimeLeft] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sincronizar estado local de "listo" con la información del servidor
+  useEffect(() => {
+    const me = jugadores.find(j => j.nickname === currentUser?.nickname);
+    if (me) {
+      setIsReadyLocal(me.isReady);
+    }
+  }, [jugadores, currentUser]);
 
   // Log opcional para cuando el servidor dice "todos listos"
   useEffect(() => {
@@ -59,6 +69,7 @@ export const SalaDeEspera: React.FC<Props> = ({
 
   const toggleReady = () => {
     const next = !isReadyLocal;
+    // Optimistic update
     setIsReadyLocal(next);
     setReady?.(partidaId, next);
   };
@@ -73,7 +84,10 @@ export const SalaDeEspera: React.FC<Props> = ({
     setTimeLeft(timer);
 
     intervalRef.current = setInterval(() => {
-      setTimeLeft(prev => (prev > 0 ? prev - 1 : 0));
+      setTimeLeft(prev => {
+        const newVal = prev > 0 ? prev - 1 : 0;
+        return newVal;
+      });
     }, 1000);
   }, [timer]);
 
@@ -91,8 +105,18 @@ export const SalaDeEspera: React.FC<Props> = ({
   const allReady =
     jugadores.length >= 2 && jugadores.every((j) => j.isReady === true);
 
+  // Identificar si el usuario actual es el host
+  const isHost = jugadores.find(j => j.nickname === currentUser?.nickname)?.isHost;
+
   return (
     <div style={styles.windowFrame}>
+      {/* Countdown Overlay */}
+      {countdown !== null && (
+        <div style={styles.overlay}>
+          <h1 style={styles.countdownText}>Iniciando en {countdown}...</h1>
+        </div>
+      )}
+
       <div style={styles.backButton} onClick={onLeave}>
         ←
       </div>
@@ -111,7 +135,7 @@ export const SalaDeEspera: React.FC<Props> = ({
           CÓDIGO: {partidaId.substring(0, 6).toUpperCase()}
         </span>
         <span style={styles.infoBox}>
-          Jugadores: {jugadores.length}/6
+          Jugadores: {jugadores.length}/{maxPlayers}
         </span>
       </div>
 
@@ -130,13 +154,14 @@ export const SalaDeEspera: React.FC<Props> = ({
           >
             {j.nickname}
             {currentUser?.nickname === j.nickname ? " (Tú)" : ""}
+            {j.isHost && <span style={{ marginLeft: "5px", color: "#FFD700" }}>👑</span>}
             <span style={styles.readyStatus}>
               {j.isReady ? "✅ LISTO" : "⏳ Esperando"}
             </span>
           </div>
         ))}
 
-        {Array(Math.max(0, 6 - jugadores.length))
+        {Array(Math.max(0, maxPlayers - jugadores.length))
           .fill(0)
           .map((_, i) => (
             <div key={`empty-${i}`} style={styles.emptyPlayerItem}>
@@ -162,9 +187,15 @@ export const SalaDeEspera: React.FC<Props> = ({
           <p style={styles.startMessage}>
             ¡Todos listos! La partida puede comenzar.
           </p>
-          <button onClick={handleStart} style={styles.startButton}>
-            INICIAR JUEGO
-          </button>
+          {isHost ? (
+            <button onClick={handleStart} style={styles.startButton}>
+              INICIAR JUEGO (HOST)
+            </button>
+          ) : (
+            <p style={{ color: "#ccc", fontStyle: "italic" }}>
+              Esperando a que el anfitrión inicie la partida...
+            </p>
+          )}
         </div>
       )}
     </div>
@@ -259,5 +290,23 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: "#4CAF50",
     marginBottom: "10px",
     fontWeight: "bold"
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+    borderRadius: '10px',
+  },
+  countdownText: {
+    fontSize: '60px',
+    color: '#61dafb',
+    fontWeight: 'bold',
   }
 };

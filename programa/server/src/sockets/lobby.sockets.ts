@@ -41,11 +41,29 @@ export function registerLobbySockets(io: Server, gameService: GameService) {
         // Emitir lista actualizada
         const partida = servidor.obtenerPartida(idPartida);
         if (partida) {
+          socket.emit('game_info', { 
+            maxJugadores: partida.numJugadoresMax, 
+            tematica: partida.tematica, 
+            tipoJuego: partida.tipoJuego 
+          });
           io.to(idPartida).emit('players_update', partida.getJugadoresResumen());
         }
       } catch (err) {
         console.log('[Socket][lobby] Error joining game:', err);
         socket.emit('error_join', { message: (err as Error).message || 'Error joining' });
+      }
+    });
+
+    socket.on('request_game_info', (data) => {
+      const { partidaId } = data;
+      const partida = servidor.obtenerPartida(partidaId);
+      if (partida) {
+        socket.emit('game_info', {
+          maxJugadores: partida.numJugadoresMax,
+          tematica: partida.tematica,
+          tipoJuego: partida.tipoJuego
+        });
+        socket.emit('players_update', partida.getJugadoresResumen());
       }
     });
 
