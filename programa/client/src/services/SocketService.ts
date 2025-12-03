@@ -31,6 +31,7 @@ export class SocketService {
   }
 
   public joinGame(idPartida: string, nickName: string, jugadorDBId: number) {
+    console.log("[SocketService] Emitiendo join_game:", { idPartida, nickName, jugadorDBId });
     this.socket.emit("join_game", { idPartida, nickName, jugadorDBId });
   }
 
@@ -60,6 +61,13 @@ export class SocketService {
   }
 
   // ---------- ON con auto-unsubscribe ----------
+
+  public onTimerTick(callback: (data: { secondsLeft: number }) => void) {
+    this.socket.on("game:timer_tick", callback);
+    return () => this.socket.off("game:timer_tick", callback);
+  }
+
+
   public onPlayersUpdate(callback: (players: JugadorData[]) => void) {
     this.socket.on("players_update", callback);
     return () => this.socket.off("players_update", callback);

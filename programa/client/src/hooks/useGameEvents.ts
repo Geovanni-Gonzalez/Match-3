@@ -17,6 +17,8 @@ export const useGameEvents = (partidaId: string) => {
   const [gameStatus, setGameStatus] = useState<"loading" | "waiting" | "active" | "errored">("loading");
   const [tablero, setTablero] = useState<TableroCell[][] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [timer, setTimer] = useState<number>(0);
+
 
   const service = useMemo(() => (socket ? new SocketService(socket) : null), [socket]);
 
@@ -75,12 +77,17 @@ export const useGameEvents = (partidaId: string) => {
       setGameStatus("errored");
     });
 
+    const unsubTimer = service.onTimerTick(({ secondsLeft }) => {
+      setTimer(secondsLeft);
+    });
+
     return () => {
       unsubPlayers();
       unsubBoard();
       unsubStarted();
       unsubMatch();
       unsubError();
+      unsubTimer();
     };
   }, [service, partidaId]);
 
@@ -89,6 +96,7 @@ export const useGameEvents = (partidaId: string) => {
     gameStatus,
     tablero,
     error,
+    timer,
 
     // acciones expuestas
     joinGame: service?.joinGame.bind(service),

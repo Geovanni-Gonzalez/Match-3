@@ -1,5 +1,5 @@
 // client/src/views/SalaDeEspera.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useGameEvents } from "../hooks/useGameEvents";
 import { useAuth } from "../context/AuthContext";
 
@@ -21,12 +21,19 @@ export const SalaDeEspera: React.FC<Props> = ({
     jugadores,
     gameStatus,
     tablero,
+    timer,
     setReady,
     startGame,
     onAllPlayersReady
   } = useGameEvents(partidaId);
 
   const [isReadyLocal, setIsReadyLocal] = useState(false);
+  
+  // ----------------------------
+  // TIMER LOCAL (ANIMACIÓN)
+  // ----------------------------
+  const [timeLeft, setTimeLeft] = useState(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Log opcional para cuando el servidor dice "todos listos"
   useEffect(() => {
@@ -56,6 +63,27 @@ export const SalaDeEspera: React.FC<Props> = ({
     setReady?.(partidaId, next);
   };
 
+  // Cuando recibimos tiempo del server → sincronizamos
+  useEffect(() => {
+    if (timer <= 0) return;
+
+    // Reiniciar loop local
+    if (intervalRef.current) clearInterval(intervalRef.current);
+
+    setTimeLeft(timer);
+
+    intervalRef.current = setInterval(() => {
+      setTimeLeft(prev => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+  }, [timer]);
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+  
   const handleStart = () => {
     startGame?.(partidaId);
   };
@@ -70,6 +98,13 @@ export const SalaDeEspera: React.FC<Props> = ({
       </div>
 
       <h1 style={styles.title}>Sala de Espera</h1>
+
+      <div style={styles.timerBox}>
+        <div>⏳ Tiempo para iniciar:</div>
+        <strong style={{ fontSize: 32, color: "#61dafb" }}>
+          {timeLeft}s
+        </strong>
+      </div>
 
       <div style={styles.infoBar}>
         <span style={styles.infoBox}>

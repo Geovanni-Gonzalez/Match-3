@@ -27,4 +27,39 @@ router.post('/crear_partida', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /api/partida/agregar_jugador
+ * Body: { codigoPartida, jugadorId }
+ * Respuesta: { message }
+ */
+router.post('/agregar_jugador', async (req: Request, res: Response) => {
+  const { codigoPartida, jugadorId } = req.body;
+  if (!codigoPartida || !jugadorId) {
+    return res.status(400).json({ message: 'Datos inválidos para agregar jugador a partida.' });
+  }
+  try {
+    await PartidaRepo.agregarJugadorAPartida(codigoPartida, jugadorId);
+    return res.status(200).json({ message: 'Jugador agregado a la partida exitosamente' });
+  } catch (err) {
+    console.error('[API][Partida] Error agregar_jugador:', err);
+    return res.status(500).json({ message: 'Error interno al agregar jugador a la partida.' });
+  }
+});
+
+/**
+ * GET /api/partida/partidas
+ * Respuesta: { partidas: [...] }
+ */
+router.get('/partidas', async (req: Request, res: Response) => {
+  try {
+    const partidas = []; 
+    return res.status(200).json({ partidas: [] });
+  }
+  catch (err) {
+    console.error('[API][Partida] Error obtener partidas:', err);
+    return res.status(500).json({ message: 'Error interno al obtener partidas.' });
+  }
+});
+
+
 export default router;

@@ -7,18 +7,39 @@ import config from '../../config/config.js';
 import { Coordenada } from '../../interfaces.js';
 import { PlayerRepo } from '../repositories/PlayerRepo.js';
 import { PartidaRepo } from '../repositories/PartidaRepo.js';
+import { TimerManager } from '../manager/TimerManager.js';
 
 export class GameService {
   private servidor = ServidorPartidas.getInstance();
 
-  constructor(private io: Server) {}
+  constructor(private io: Server) {
+    TimerManager.getInstance().setSocketServer(io);
+  }
+
+  async handleMatchExpiration(matchId: string) {
+    const match = this.servidor.obtenerPartida(matchId);
+    if (!match) return;
+
+    const players = this.servidor.obtenerPartida(matchId)?.getJugadores() || [];
+
+    if (players.length >= 2) {
+        this.iniciarPartida(matchId);
+    } else {
+        this.eliminarPartida(matchId);    }
+}
 
   /**
    * Crear partida: persiste en BD y en memoria
    */
   public async crearPartida(idPartida: string, tipoJuego: 'Match' | 'Tiempo', tematica: string, max: number) {
     console.log('[GameService] Creando partida:', idPartida, tipoJuego, tematica, max);
-    return this.servidor.crearPartida(idPartida, tipoJuego, tematica, max);
+    // Crear en memoria
+    const partida = this.servidor.crearPartida(idPartida, tipoJuego, tematica, max);
+    TimerManager.getInstance().startTimer(idPartida, config.TIEMPO_VIDA_PARTIDA_MIN * 60, () => 
+      this.eliminarPartida(idPartida)
+    );
+
+    return partida;
   }
 
   public obtenerPartida(idPartida: string) {
@@ -45,7 +66,15 @@ export class GameService {
 
     return nuevoJugador;
   }
-
+  /**
+   *  Eliminar partida
+   */
+  public eliminarPartida(idPartida: string) {
+    this.servidor.eliminarPartida(idPartida);
+  }
+  /**
+   * Set ready / not ready  
+   */
   public setReady(partidaId: string, socketID: string, isReady: boolean) {
     const partida = this.servidor.obtenerPartida(partidaId);
     if (!partida) return;

@@ -13,7 +13,9 @@ export class Partida {
         public idPartida: string,
         public tipoJuego: 'Match' | 'Tiempo',
         public tematica: string,
-        private numJugadoresMax: number
+        private numJugadoresMax: number,
+        public tiempoRestanteMs: number = 0,
+        public intervalId: NodeJS.Timeout | null = null
     ) {
         this.tablero = new Tablero();
     }
@@ -40,6 +42,14 @@ export class Partida {
         this.estado = estado;
     }
 
+    //Obtener jugadores de una partida
+    public getJugadores() {
+        return Array.from(this.jugadores.values());
+    }
+
+
+
+    // Obtener jugadores resumen
     public getJugadoresResumen() {
         return Array.from(this.jugadores.values()).map(j => ({
         nickname: j.nickname,

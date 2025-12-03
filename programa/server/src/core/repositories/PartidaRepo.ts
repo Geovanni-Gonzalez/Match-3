@@ -28,6 +28,7 @@ export class PartidaRepo {
         }
     }
 
+
     /**
      * Guarda resultados finales para la partida (lista de objetos { idJugador, puntaje, esGanador })
      */
