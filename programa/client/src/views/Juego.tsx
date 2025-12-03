@@ -7,6 +7,7 @@ interface JuegoProps {
   partidaId: string;
   currentUserNickname: string;
   initialTablero?: any[][];
+  initialConfig?: any;
   onLeave: () => void;
 }
 
@@ -14,6 +15,7 @@ export const Juego: React.FC<JuegoProps> = ({
   partidaId,
   currentUserNickname,
   initialTablero,
+  initialConfig,
   onLeave
 }) => {
 
@@ -29,8 +31,10 @@ export const Juego: React.FC<JuegoProps> = ({
     matchesLeft,
     gameConfig,
     timer,
-    results
-  } = useGameEvents(partidaId, initialTablero);
+    results,
+    rawSocket,
+    notification
+  } = useGameEvents(partidaId, initialTablero, initialConfig);
 
   // ---- CALLBACKS ----
   const handleCellClick = (r: number, c: number) => {
@@ -47,8 +51,9 @@ export const Juego: React.FC<JuegoProps> = ({
     if (gameStatus !== "active" || !tablero) return;
 
     // Verificar si el usuario actual tiene celdas seleccionadas
+    const mySocketId = rawSocket?.()?.id;
     const hasSelection = tablero.some(row => 
-      row.some(cell => cell.estado === "seleccion_propia")
+      row.some(cell => cell.seleccionadoPor === mySocketId)
     );
 
     if (!hasSelection) return;
@@ -59,7 +64,7 @@ export const Juego: React.FC<JuegoProps> = ({
     }, 2000);
 
     return () => clearTimeout(timerId);
-  }, [tablero, gameStatus, partidaId]); // Se reinicia cada vez que cambia el tablero (selección)
+  }, [tablero, gameStatus, partidaId, rawSocket]); // Se reinicia cada vez que cambia el tablero (selección)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -113,6 +118,15 @@ export const Juego: React.FC<JuegoProps> = ({
 
   return (
     <div style={styles.windowFrame}>
+      {notification && (
+        <div style={{
+          ...styles.notification,
+          backgroundColor: notification.type === 'error' ? '#ff4444' : '#00C851',
+        }}>
+          {notification.message}
+        </div>
+      )}
+
       <h1 style={styles.title}>Juego: {partidaId}</h1>
 
       {/* Game Info Bar */}
@@ -167,8 +181,9 @@ export const Juego: React.FC<JuegoProps> = ({
           >
             {tablero.map((row, r) =>
               row.map((celda, c) => {
-                const isPropia = celda.estado === "seleccion_propia";
-                const isOtro = celda.estado === "seleccion_otro";
+                const mySocketId = rawSocket?.()?.id;
+                const isPropia = celda.seleccionadoPor === mySocketId;
+                const isOtro = celda.seleccionadoPor && celda.seleccionadoPor !== mySocketId;
 
                 return (
                   <div
@@ -313,5 +328,17 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontSize: '80px',
     color: '#fff',
     fontWeight: 'bold',
+  },
+  notification: {
+    position: 'absolute',
+    top: '10px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    padding: '10px 20px',
+    borderRadius: '5px',
+    color: 'white',
+    fontWeight: 'bold',
+    zIndex: 200,
+    boxShadow: '0 2px 5px rgba(0,0,0,0.3)',
   }
 };

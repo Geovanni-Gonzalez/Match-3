@@ -33,6 +33,7 @@ const App: React.FC = () => {
 
   // Tablero inicial que envía el servidor
   const [initialBoard, setInitialBoard] = useState<Celda[][]>([]);
+  const [initialConfig, setInitialConfig] = useState<any>(null);
 
   const handleNavigation = (view: AppView) => {
     setCurrentView(view);
@@ -43,6 +44,7 @@ const App: React.FC = () => {
     setCurrentView('welcome');
     setCurrentGameId(null);
     setInitialBoard([]);
+    setInitialConfig(null);
   };
 
   const handleGoToWaitingRoom = (partidaId: string) => {
@@ -51,9 +53,10 @@ const App: React.FC = () => {
   };
 
   // Recibe el tablero generado por el servidor vía sockets
-  const handleStartGame = (partidaId: string, tableroServidor: Celda[][]) => {
+  const handleStartGame = (partidaId: string, tableroServidor: Celda[][], config: any) => {
     setCurrentGameId(partidaId);
     setInitialBoard(tableroServidor);
+    setInitialConfig(config);
     handleNavigation('game');
   };
 
@@ -123,6 +126,7 @@ const App: React.FC = () => {
             partidaId: currentGameId,
             currentUserNickname: currentUser.nickname,
             initialTablero: initialBoard,
+            initialConfig: initialConfig,
             onLeave: () => handleNavigation('menu'),
           } as any)}
         />

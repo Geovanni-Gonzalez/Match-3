@@ -6,7 +6,7 @@ import { useAuth } from "../context/AuthContext";
 interface Props {
   partidaId: string;
   onLeave: () => void;
-  onStartGame: (partidaId: string, tablero: any) => void;
+  onStartGame: (partidaId: string, tablero: any, config: any) => void;
 }
 
 export const SalaDeEspera: React.FC<Props> = ({
@@ -26,7 +26,8 @@ export const SalaDeEspera: React.FC<Props> = ({
     startGame,
     onAllPlayersReady,
     maxPlayers,
-    countdown
+    countdown,
+    gameConfig
   } = useGameEvents(partidaId);
 
   const [isReadyLocal, setIsReadyLocal] = useState(false);
@@ -63,9 +64,9 @@ export const SalaDeEspera: React.FC<Props> = ({
   useEffect(() => {
     if (gameStatus === "active") {
       console.log("[SalaDeEspera] gameStatus = active → navegar al juego");
-      onStartGame(partidaId, tablero);
+      onStartGame(partidaId, tablero, gameConfig);
     }
-  }, [gameStatus, tablero, partidaId, onStartGame]);
+  }, [gameStatus, tablero, partidaId, onStartGame, gameConfig]);
 
   const toggleReady = () => {
     const next = !isReadyLocal;

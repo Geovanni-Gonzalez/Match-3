@@ -17,21 +17,28 @@ export class GameService {
   }
 
   async handleMatchExpiration(matchId: string) {
-    const match = this.servidor.obtenerPartida(matchId);
-    if (!match) return;
+    try {
+      const match = this.servidor.obtenerPartida(matchId);
+      if (!match) return;
 
-    const players = this.servidor.obtenerPartida(matchId)?.getJugadores() || [];
+      // Si la partida ya inició o finalizó, no hacer nada
+      if (match.estado !== 'espera') return;
 
-    if (players.length >= 2) {
-      // Si hay suficientes jugadores, iniciar la partida automáticamente
-      console.log(`[GameService] Tiempo de espera agotado para partida ${matchId}. Iniciando con ${players.length} jugadores.`);
-      this.iniciarPartida(matchId);
-    } else {
-      // Si no hay suficientes jugadores, eliminar la partida
-      console.log(`[GameService] Tiempo de espera agotado para partida ${matchId}. Eliminando por falta de jugadores.`);
-      this.eliminarPartida(matchId);
-      // Notificar a los clientes (opcional, pero buena práctica)
-      this.io.to(matchId).emit('partida:deleted_due_timeout', { partidaId: matchId });
+      const players = this.servidor.obtenerPartida(matchId)?.getJugadores() || [];
+
+      if (players.length >= 2) {
+        // Si hay suficientes jugadores, iniciar la partida automáticamente
+        console.log(`[GameService] Tiempo de espera agotado para partida ${matchId}. Iniciando con ${players.length} jugadores.`);
+        this.iniciarPartida(matchId);
+      } else {
+        // Si no hay suficientes jugadores, eliminar la partida
+        console.log(`[GameService] Tiempo de espera agotado para partida ${matchId}. Eliminando por falta de jugadores.`);
+        this.eliminarPartida(matchId);
+        // Notificar a los clientes (opcional, pero buena práctica)
+        this.io.to(matchId).emit('partida:deleted_due_timeout', { partidaId: matchId });
+      }
+    } catch (error) {
+      console.error(`[GameService] Error en handleMatchExpiration para ${matchId}:`, error);
     }
   }
 
@@ -121,6 +128,9 @@ export class GameService {
       }
     }
 
+    // Limpiar timer de lobby para evitar doble inicio (si se inicia manualmente)
+    TimerManager.getInstance().clearTimer(partidaId);
+
     // Iniciar secuencia de cuenta regresiva
     let countdown = 3;
     const countdownInterval = setInterval(() => {
@@ -143,7 +153,8 @@ export class GameService {
     // Enviar configuración específica según el modo
     const gameConfig = {
       ...config,
-      limit: partida.tipoJuego === 'Match' ? config.MATCH_FINITO_LIMITE : (config.TIEMPO_VIDA_PARTIDA_MIN * 60) // Ajustar según config real de tiempo de juego
+      limit: partida.tipoJuego === 'Match' ? config.MATCH_FINITO_LIMITE : (config.TIEMPO_VIDA_PARTIDA_MIN * 60), // Ajustar según config real de tiempo de juego
+      tipoJuego: partida.tipoJuego
     };
 
     this.io.to(partidaId).emit('game_started', { tablero: tableroSerializado, config: gameConfig });
@@ -171,26 +182,22 @@ export class GameService {
     const celda = partida.tablero.obtenerCelda(r, c);
     if (!celda) return;
 
+    // Verificar si la celda está bloqueada por otro jugador
+    if (celda.seleccionadoPor && celda.seleccionadoPor !== socketID) {
+      this.io.to(socketID).emit('cell_blocked', { r, c, by: celda.seleccionadoPor });
+      return;
+    }
+
     const yaSeleccionada = jugador.celdasSeleccionadas.some((s: Coordenada) => s.r === r && s.c === c);
     if (yaSeleccionada) {
       jugador.agregarCelda(r, c);
       celda.establecerEstado('libre');
+      celda.seleccionadoPor = null;
     } else {
       if (jugador.celdasSeleccionadas.length >= config.MATCH_FINITO_LIMITE) return;
       jugador.agregarCelda(r, c);
       celda.establecerEstado('seleccion_propia');
-
-      // marcar para otros: por cada otro jugador marcar 'seleccion_otro' en esa celda
-      for (const [sock, other] of partida.jugadores.entries()) {
-        if (sock !== socketID) {
-          // Solo si otro no tiene esa celda seleccionada
-          const has = other.celdasSeleccionadas.some((s: { r: number; c: number; }) => s.r === r && s.c === c);
-          if (!has) {
-            // marca la celda como ocupada por otro (esto será visible en la emisión)
-            celda.establecerEstado('bloqueada'); // o 'seleccion_otro' según tu UI
-          }
-        }
-      }
+      celda.seleccionadoPor = socketID;
     }
 
     this.emitirEstadoPartida(partidaId);
@@ -211,7 +218,12 @@ export class GameService {
     const resultado = await MatchService.validarCadena(lista as Coordenada[], partida.tablero.matriz);
     if (!resultado.valido) {
       jugador.limpiarSelecciones();
-      partida.tablero.matriz.forEach((row: any[]) => row.forEach((c: any) => c.establecerEstado('libre')));
+      partida.tablero.matriz.forEach((row: any[]) => row.forEach((c: any) => {
+        if (c.seleccionadoPor === socketID) {
+          c.establecerEstado('libre');
+          c.seleccionadoPor = null;
+        }
+      }));
       this.emitirEstadoPartida(partidaId);
       this.io.to(socketID).emit('match_result', { valido: false });
       return;
@@ -223,7 +235,12 @@ export class GameService {
     partida.matchesRealizados = (partida.matchesRealizados || 0) + 1;
 
     jugador.limpiarSelecciones();
-    partida.tablero.matriz.forEach((row: any[]) => row.forEach((c: any) => c.establecerEstado('libre')));
+    partida.tablero.matriz.forEach((row: any[]) => row.forEach((c: any) => {
+      if (c.seleccionadoPor === socketID) {
+        c.establecerEstado('libre');
+        c.seleccionadoPor = null;
+      }
+    }));
 
     this.emitirEstadoPartida(partidaId);
     this.io.to(partidaId).emit('match_result', { valid: true, jugador: jugador.obtenerInfoBasica() });
@@ -247,7 +264,7 @@ export class GameService {
     if (!partida) return;
 
     const tableroSerializado = partida.tablero.matriz.map((row: any[]) => row.map((c: any) => ({
-      r: c.fila, c: c.columna, colorID: c.colorID, estado: c.estado
+      r: c.fila, c: c.columna, colorID: c.colorID, estado: c.estado, seleccionadoPor: c.seleccionadoPor
     })));
 
     this.io.to(partidaId).emit('players_update', partida.getJugadoresResumen());

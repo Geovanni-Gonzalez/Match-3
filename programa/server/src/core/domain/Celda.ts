@@ -4,6 +4,7 @@ import { Coordenada } from '../../interfaces.js';
 export class Celda {
     public colorID: string;
     public estado: 'libre' | 'seleccion_propia' | 'seleccion_otro' | 'bloqueada' = 'libre';
+    public seleccionadoPor: string | null = null;
 
 
     constructor(

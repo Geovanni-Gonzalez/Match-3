@@ -15,6 +15,7 @@ export interface TableroSerializedCell {
   c: number;
   colorID: string;
   estado: string;
+  seleccionadoPor?: string | null;
 }
 
 export interface PartidaListItem {
@@ -118,6 +119,16 @@ export class SocketService {
   public onMatchResult(callback: (data: any) => void) {
     this.socket.on("match_result", callback);
     return () => this.socket.off("match_result", callback);
+  }
+
+  public onMatchInvalid(callback: (data: { reason: string }) => void) {
+    this.socket.on("match_invalid", callback);
+    return () => this.socket.off("match_invalid", callback);
+  }
+
+  public onCellBlocked(callback: (data: { r: number, c: number, by: string }) => void) {
+    this.socket.on("cell_blocked", callback);
+    return () => this.socket.off("cell_blocked", callback);
   }
 
   public onPlayerStatusChanged(callback: (data: { socketID: string; isReady: boolean }) => void) {

@@ -8,20 +8,24 @@ export interface TableroCell {
   c: number;
   colorID: string;
   estado: string;
+  seleccionadoPor?: string | null;
 }
 
-export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][]) => {
+export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][], initialConfig?: any) => {
   const { socket } = useAuth();
   const [jugadores, setJugadores] = useState<JugadorData[]>([]);
-  const [gameStatus, setGameStatus] = useState<"loading" | "waiting" | "active" | "errored" | "finished">("loading");
+  const [gameStatus, setGameStatus] = useState<"loading" | "waiting" | "active" | "errored" | "finished">(
+    initialTablero ? "active" : "loading"
+  );
   const [tablero, setTablero] = useState<TableroCell[][] | null>(initialTablero || null);
   const [error, setError] = useState<string | null>(null);
   const [timer, setTimer] = useState<number>(0);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [matchesLeft, setMatchesLeft] = useState<number | null>(null);
-  const [gameConfig, setGameConfig] = useState<any>(null);
+  const [gameConfig, setGameConfig] = useState<any>(initialConfig || null);
   const [results, setResults] = useState<any[] | null>(null);
   const [maxPlayers, setMaxPlayers] = useState<number>(6); // Default fallback
+  const [notification, setNotification] = useState<{ message: string, type: 'error' | 'info' | 'success' } | null>(null);
 
 
   const service = useMemo(() => (socket ? new SocketService(socket) : null), [socket]);
@@ -68,6 +72,24 @@ export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][
     // match_result
     const unsubMatch = service.onMatchResult((data) => {
       console.log("match_result:", data);
+      if (data.valido === false) {
+        setNotification({ message: "Match incorrecto", type: "error" });
+        setTimeout(() => setNotification(null), 2000);
+      } else if (data.valid === true) {
+        // Opcional: mensaje de éxito
+        // setNotification({ message: "¡Match correcto!", type: "success" });
+        // setTimeout(() => setNotification(null), 1000);
+      }
+    });
+
+    const unsubMatchInvalid = service.onMatchInvalid(({ reason }) => {
+      setNotification({ message: `Match inválido: ${reason}`, type: "error" });
+      setTimeout(() => setNotification(null), 3000);
+    });
+
+    const unsubCellBlocked = service.onCellBlocked(({ by }) => {
+      setNotification({ message: "Celda bloqueada por otro jugador", type: "error" });
+      setTimeout(() => setNotification(null), 2000);
     });
 
     // errores
@@ -129,6 +151,8 @@ export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][
       unsubPlayers();
       unsubBoard();
       unsubMatch();
+      unsubMatchInvalid();
+      unsubCellBlocked();
       unsubError();
       unsubTimer();
       unsubCountdown();
@@ -163,6 +187,7 @@ export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][
     gameConfig,
     results,
     maxPlayers,
+    notification,
 
     // acciones expuestas
     joinGame: service?.joinGame.bind(service),
