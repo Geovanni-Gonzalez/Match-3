@@ -6,7 +6,8 @@ import { getSocket } from '../api/socket';
 
 // --- Interfaces de Tipos ---
 interface PartidaDisponible {
-  codigo: string; // Código identificador de la partida
+  id: string; // UUID interno para operaciones
+  codigo: string; // Código visual de 6 caracteres
   tipo: 'Match' | 'Tiempo';
   tematica: string;
   jugadores: number; // Número actual de jugadores
@@ -28,6 +29,7 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({ onBack, onJoinSucc
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedPartidaId, setSelectedPartidaId] = useState<string | null>(null);
+    const [selectedPartida, setSelectedPartida] = useState<any>(null);
 
     useEffect(() => {
         fetchPartidas();
@@ -53,7 +55,8 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({ onBack, onJoinSucc
       if (response.ok && data.success) {
         // La API devuelve { success, total, partidas }
         const partidas: PartidaDisponible[] = data.partidas.map((p: any) => ({
-          codigo: p.codigo,
+          id: p.id, // UUID interno para operaciones
+          codigo: p.codigo, // Código visual
           tipo: p.tipo,
           tematica: p.tematica,
           jugadores: p.jugadores,
@@ -77,7 +80,7 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({ onBack, onJoinSucc
   };
 
   const handleUnirseClick = async () => {
-    if (!selectedPartidaId) {
+    if (!selectedPartidaId || !selectedPartida) {
       alert('Por favor, selecciona una partida para unirte.');
       return;
     }
@@ -87,12 +90,12 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({ onBack, onJoinSucc
       return;
     }
 
-    console.log(`[LOBBY] Intentando unirse a la partida: ${selectedPartidaId}`);
+    console.log(`[LOBBY] Intentando unirse a la partida: ${selectedPartidaId} (ID: ${selectedPartida.id})`);
     
     try {
-      // Primero llamar a la API REST para unirse
+      // Primero llamar a la API REST para unirse (usando el ID interno)
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:4000';
-      const response = await fetch(`${backendUrl}/api/partidas/${selectedPartidaId}/unirse`, {
+      const response = await fetch(`${backendUrl}/api/partidas/${selectedPartida.id}/unirse`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -111,7 +114,7 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({ onBack, onJoinSucc
         const socket = getSocket();
         if (socket) {
           socket.emit('unirse_partida', { 
-            codigo: selectedPartidaId, 
+            codigo: selectedPartida.id, // Usar ID interno para sockets
             nickname: currentUser.nickname 
           });
 
@@ -126,7 +129,7 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({ onBack, onJoinSucc
         }
 
         alert(`¡Te has unido a la partida ${selectedPartidaId}!`);
-        onJoinSuccess(selectedPartidaId);
+        onJoinSuccess(selectedPartida.id); // Pasar ID interno
       } else {
         alert(`Error al unirse: ${data.message}`);
       }
@@ -183,7 +186,10 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({ onBack, onJoinSucc
                   <tr 
                     key={partida.codigo} 
                     style={selectedPartidaId === partida.codigo ? styles.tableRowSelected : styles.tableRow}
-                    onClick={() => setSelectedPartidaId(partida.codigo)}
+                    onClick={() => {
+                      setSelectedPartidaId(partida.codigo);
+                      setSelectedPartida(partida);
+                    }}
                   >
                     <td style={styles.tableCell}>{partida.codigo}</td>
                     <td style={styles.tableCell}>{partida.tematica}</td>

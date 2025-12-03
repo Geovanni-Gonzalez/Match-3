@@ -1,7 +1,19 @@
 // server/src/api.js
 const express = require('express');
 const router = express.Router();
-const { v4: uuidv4 } = require('uuid'); 
+const { v4: uuidv4 } = require('uuid');
+
+// Importar DBManager desde el archivo TypeScript compilado
+// Nota: api.js está en src/, el archivo compilado está en dist/db/
+let DBManager;
+try {
+    // Usar require con ruta relativa: desde src/ subir a raíz con ../
+    DBManager = require('../dist/db/dbManager').DBManager;
+    console.log('[API] ✅ DBManager cargado correctamente');
+} catch (error) {
+    console.error('[API] ❌ Error al cargar DBManager:', error.message);
+    console.error('[API] Stack:', error.stack);
+}
 
 // Simulación de Base de Datos en Memoria (Array temporal)
 const partidas = [];
@@ -13,7 +25,8 @@ router.get('/partidas', (req, res) => {
     
     // Mapeamos para enviar solo la info necesaria al lobby
     const partidasFormateadas = disponibles.map(p => ({
-        codigo: p.id,
+        codigo: p.codigo, // Código visual de 6 caracteres
+        id: p.id, // UUID interno para identificación
         tipo: p.tipoJuego,
         tematica: p.tematica,
         jugadores: p.jugadores.length,
@@ -135,4 +148,36 @@ router.get('/partidas/:id', (req, res) => {
     });
 });
 
+// Endpoint: Obtener estadísticas (Ranking)
+router.get('/estadisticas', async (req, res) => {
+    try {
+        console.log('[API] 🔍 Iniciando obtención de estadísticas...');
+        
+        if (!DBManager) {
+            console.error('[API] ❌ DBManager no está disponible');
+            return res.status(500).json({
+                success: false,
+                message: 'DBManager no inicializado'
+            });
+        }
+        
+        const estadisticas = await DBManager.obtenerEstadisticas();
+        console.log('[API] ✅ Estadísticas obtenidas:', estadisticas.length);
+        
+        res.json({
+            success: true,
+            total: estadisticas.length,
+            estadisticas: estadisticas
+        });
+    } catch (error) {
+        console.error('[API] ❌ Error al obtener estadísticas:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al obtener estadísticas'
+        });
+    }
+});
+
 module.exports = router;
+module.exports.partidas = partidas;
+

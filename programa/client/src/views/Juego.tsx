@@ -57,6 +57,9 @@ export const Juego: React.FC<JuegoProps> = ({
   const [jugadores, setJugadores] = useState<JugadorPartida[]>(initialPlayers || []);
   const [grupoSeleccionado, setGrupoSeleccionado] = useState<{fila: number, columna: number}[]>([]);
   const [mensajeError, setMensajeError] = useState<string | null>(null);
+  const [viewState, setViewState] = useState<'playing' | 'winner'>('playing');
+  const [winnerInfo, setWinnerInfo] = useState<any>(null);
+  const [gameEndInfo, setGameEndInfo] = useState<{ tematica: string; partidaId: string } | null>(null);
   // Configurar según tipo de juego
   const [tiempoRestante, setTiempoRestante] = useState<number>(
     gameInfo.tipoJuego === 'Tiempo' && gameInfo.duracionMinutos 
@@ -123,6 +126,18 @@ export const Juego: React.FC<JuegoProps> = ({
         }
     });
 
+    // --- JUEGO FINALIZADO ---
+    socket.on('game_finished', (data) => {
+        console.log('[Client] Juego finalizado:', data);
+        // Navegar a la pantalla del ganador
+        setViewState('winner');
+        setWinnerInfo(data.ganador);
+        setGameEndInfo({
+            tematica: data.tematica,
+            partidaId: data.partidaId
+        });
+    });
+
     // --- ERROR SELECCIÓN ---
     socket.on('error_seleccion', (data) => {
         console.log('[Client] Error:', data.mensaje);
@@ -141,6 +156,7 @@ export const Juego: React.FC<JuegoProps> = ({
         socket.off('grupo_bloqueado');
         socket.off('grupo_liberado');
         socket.off('game_update');
+        socket.off('game_finished');
         socket.off('error_seleccion');
         socket.off('error_match');
     };
@@ -153,11 +169,48 @@ export const Juego: React.FC<JuegoProps> = ({
         setTiempoRestante(prev => prev - 1);
       }, 1000);
       return () => clearInterval(timer);
+    } else if (gameInfo.tipoJuego === 'Tiempo' && tiempoRestante === 0) {
+      // Notificar al servidor que el tiempo se agotó
+      socket?.emit('tiempo_agotado', { partidaId });
     }
-  }, [tiempoRestante, gameInfo.tipoJuego]);
+  }, [tiempoRestante, gameInfo.tipoJuego, socket, partidaId]);
 
   if (!tablero || tablero.length === 0) {
     return <div style={styles.windowFrame}><h1>Cargando partida...</h1></div>;
+  }
+
+  // Pantalla del ganador
+  if (viewState === 'winner' && winnerInfo && gameEndInfo) {
+    return (
+      <div style={styles.windowFrame}>
+        <div style={styles.winnerContainer}>
+          <h1 style={styles.winnerTitle}>🏆 ¡JUEGO FINALIZADO! 🏆</h1>
+          
+          <div style={styles.gameInfoSection}>
+            <p style={styles.gameInfoItem}><strong>Partida:</strong> {gameEndInfo.partidaId}</p>
+            <p style={styles.gameInfoItem}><strong>Temática:</strong> {gameEndInfo.tematica}</p>
+          </div>
+
+          <h2 style={styles.winnerName}>Ganador: {winnerInfo.nickname}</h2>
+          <p style={styles.winnerScore}>Puntuación: {winnerInfo.puntaje} puntos</p>
+          
+          <div style={styles.rankingContainer}>
+            <h3 style={styles.rankingTitle}>Clasificación Final:</h3>
+            {winnerInfo.ranking.map((jugador: any) => (
+              <div key={jugador.nickname} style={styles.rankingItem}>
+                <span style={styles.rankingPosition}>{jugador.posicion}°</span>
+                <span style={styles.rankingNickname}>{jugador.nickname}</span>
+                <span style={styles.rankingScore}>{jugador.puntaje} pts</span>
+              </div>
+            ))}
+          </div>
+
+          <button onClick={onLeave} style={styles.returnButton}>
+            Volver al menú
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const formatTime = (seconds: number) => {
@@ -381,5 +434,18 @@ const styles: { [key: string]: React.CSSProperties } = {
   buttonContainer: { display: 'flex', gap: '10px', marginTop: '10px' },
   confirmButton: { padding: '12px 30px', backgroundColor: '#00FF00', color: '#222', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '18px', fontWeight: 'bold', transition: 'all 0.2s', boxShadow: '0 4px #00AA00' },
   cancelButton: { padding: '12px 30px', backgroundColor: '#FF4500', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '18px', fontWeight: 'bold', transition: 'all 0.2s', boxShadow: '0 4px #CC3300' },
-  leaveButton: { position: 'absolute', bottom: '10px', right: '10px', backgroundColor: 'transparent', color: '#999', border: 'none', fontSize: '12px', cursor: 'pointer' }
+  leaveButton: { position: 'absolute', bottom: '10px', right: '10px', backgroundColor: 'transparent', color: '#999', border: 'none', fontSize: '12px', cursor: 'pointer' },
+  gameInfoSection: { backgroundColor: '#2a2a2a', padding: '15px', borderRadius: '8px', marginBottom: '20px', border: '2px solid #444' },
+  gameInfoItem: { fontSize: '16px', color: '#DDD', margin: '8px 0', textAlign: 'left' },
+  winnerContainer: { textAlign: 'center', padding: '40px', backgroundColor: '#1a1a1a', borderRadius: '15px', maxWidth: '600px', margin: '0 auto' },
+  winnerTitle: { fontSize: '36px', color: '#FFD700', marginBottom: '20px', textShadow: '2px 2px 4px rgba(255, 215, 0, 0.5)' },
+  winnerName: { fontSize: '28px', color: '#FFF', marginBottom: '10px' },
+  winnerScore: { fontSize: '22px', color: '#00FF00', marginBottom: '30px' },
+  rankingContainer: { backgroundColor: '#2a2a2a', padding: '20px', borderRadius: '10px', marginBottom: '30px' },
+  rankingTitle: { fontSize: '20px', color: '#FFD700', marginBottom: '15px' },
+  rankingItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', backgroundColor: '#333', borderRadius: '5px', marginBottom: '8px' },
+  rankingPosition: { fontSize: '18px', fontWeight: 'bold', color: '#FFD700', minWidth: '40px' },
+  rankingNickname: { fontSize: '18px', color: '#FFF', flex: 1, textAlign: 'left', marginLeft: '15px' },
+  rankingScore: { fontSize: '18px', color: '#00FF00', fontWeight: 'bold' },
+  returnButton: { padding: '15px 40px', backgroundColor: '#4A90E2', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '18px', fontWeight: 'bold', transition: 'all 0.2s' }
 };

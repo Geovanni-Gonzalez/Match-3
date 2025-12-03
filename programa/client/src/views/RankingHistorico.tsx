@@ -3,14 +3,13 @@
 import React, { useState, useEffect } from 'react';
 
 // --- Interfaces de Tipos ---
-interface JugadorRanking {
-  rank: number;
-  user: string;
-  victorias: number;
-  // Propiedades adicionales que podríamos obtener del API:
-  // tematicaMasJugada: string;
-  // tiempoTotal: string; 
-  // etc.
+interface EstadisticaPartida {
+  partidaId: string;
+  ganador: string;
+  puntaje: number;
+  tematica: string;
+  tiempoInvertidoSegundos: number;
+  fecha: string;
 }
 
 interface RankingHistoricoProps {
@@ -18,44 +17,45 @@ interface RankingHistoricoProps {
 }
 
 export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) => {
-  const [datosRanking, setDatosRanking] = useState<JugadorRanking[]>([]);
+  const [estadisticas, setEstadisticas] = useState<EstadisticaPartida[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchRanking();
+    fetchEstadisticas();
   }, []);
 
-  const fetchRanking = async () => {
+  const fetchEstadisticas = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Simulación de la llamada al API: GET /api/ranking
-      // En un proyecto real, se consultaría la base de datos para obtener los datos históricos.
-      // const response = await fetch('http://localhost:4000/api/ranking'); 
-      // const data = await response.json();
-
-      // Datos de simulación basados en la imagen y los requisitos del proyecto (ganadores históricos)
-      const mockData: JugadorRanking[] = [
-        { rank: 1, user: 'Mbappé', victorias: 7777777 },
-        { rank: 2, user: 'Verstappen', victorias: 133 },
-        { rank: 3, user: 'Benzema', victorias: 15 },
-        { rank: 4, user: 'Federer', victorias: 12 },
-        { rank: 5, user: 'Nadal', victorias: 10 },
-        { rank: 6, user: 'Hamilton', victorias: 8 },
-        { rank: 7, user: 'Perez', victorias: 5 },
-      ];
-
-      setTimeout(() => { // Simular latencia de red
-        setDatosRanking(mockData);
-        setLoading(false);
-      }, 500);
-
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:4000';
+      const response = await fetch(`${backendUrl}/api/estadisticas`);
+      
+      if (!response.ok) {
+        throw new Error('Error al obtener estadísticas');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.estadisticas) {
+        // Ordenar por puntaje descendente
+        const estadisticasOrdenadas = data.estadisticas.sort((a: EstadisticaPartida, b: EstadisticaPartida) => b.puntaje - a.puntaje);
+        setEstadisticas(estadisticasOrdenadas);
+      }
+      
+      setLoading(false);
     } catch (e) {
       setError('Fallo de conexión con el servidor de Ranking.');
       console.error(e);
       setLoading(false);
     } 
+  };
+
+  const formatTiempo = (segundos: number): string => {
+    const mins = Math.floor(segundos / 60);
+    const segs = segundos % 60;
+    return `${mins}m ${segs}s`;
   };
 
   return (
@@ -66,37 +66,43 @@ export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) =>
       </div>
       
       <div style={styles.header}>
-        <h1 style={styles.title}>Ranking</h1>
+        <h1 style={styles.title}>Ranking Histórico</h1>
       </div>
 
       <div style={styles.content}>
         
-        {loading && <p style={styles.loadingText}>Cargando ranking...</p>}
+        {loading && <p style={styles.loadingText}>Cargando estadísticas...</p>}
         {error && <p style={styles.errorText}>Error: {error}</p>}
 
-        {!loading && !error && datosRanking.length === 0 && (
-          <p style={styles.noDataText}>No hay datos de ranking disponibles.</p>
+        {!loading && !error && estadisticas.length === 0 && (
+          <p style={styles.noDataText}>No hay estadísticas disponibles. ¡Juega algunas partidas!</p>
         )}
 
-        {!loading && !error && datosRanking.length > 0 && (
+        {!loading && !error && estadisticas.length > 0 && (
           <div style={styles.tableWrapper}>
             <table style={styles.table}>
               <thead>
                 <tr>
-                  <th style={styles.tableHeader}>RANK</th>
-                  <th style={styles.tableHeader}>User</th>
-                  <th style={styles.tableHeader}>N° Victorias</th>
+                  <th style={styles.tableHeader}>Partida</th>
+                  <th style={styles.tableHeader}>Ganador</th>
+                  <th style={styles.tableHeader}>Puntaje</th>
+                  <th style={styles.tableHeader}>Temática</th>
+                  <th style={styles.tableHeader}>Tiempo</th>
+                  <th style={styles.tableHeader}>Fecha</th>
                 </tr>
               </thead>
               <tbody>
-                {datosRanking.map((jugador) => (
+                {estadisticas.map((stat, index) => (
                   <tr 
-                    key={jugador.rank} 
+                    key={`${stat.partidaId}-${index}`}
                     style={styles.tableRow}
                   >
-                    <td style={{ ...styles.tableCell, ...styles.rankCell }}>{jugador.rank}</td>
-                    <td style={styles.tableCell}>{jugador.user}</td>
-                    <td style={styles.tableCell}>{jugador.victorias}</td>
+                    <td style={{ ...styles.tableCell, ...styles.partidaCell }}>{stat.partidaId}</td>
+                    <td style={{ ...styles.tableCell, ...styles.ganadorCell }}>{stat.ganador}</td>
+                    <td style={{ ...styles.tableCell, ...styles.puntajeCell }}>{stat.puntaje}</td>
+                    <td style={styles.tableCell}>{stat.tematica}</td>
+                    <td style={styles.tableCell}>{formatTiempo(stat.tiempoInvertidoSegundos)}</td>
+                    <td style={styles.tableCell}>{stat.fecha}</td>
                   </tr>
                 ))}
               </tbody>
@@ -114,7 +120,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '10px',
     backgroundColor: '#333744',
     boxShadow: '0 8px 16px rgba(0, 0, 0, 0.5)',
-    width: '450px', // Ancho ajustado para la tabla
+    width: '800px', // Ancho aumentado para más columnas
+    maxHeight: '90vh',
     position: 'relative',
     display: 'flex',
     flexDirection: 'column',
@@ -162,7 +169,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   tableWrapper: {
     width: '100%',
-    maxHeight: '350px', // Para el scroll
+    maxHeight: '500px', // Para el scroll
     overflowY: 'auto',
     border: '1px solid #555',
     borderRadius: '5px',
@@ -174,22 +181,34 @@ const styles: { [key: string]: React.CSSProperties } = {
   tableHeader: {
     backgroundColor: '#4CAF50', // Color verde
     color: 'white',
-    padding: '10px',
+    padding: '12px',
     textAlign: 'center',
     position: 'sticky', 
     top: 0,
     zIndex: 1,
+    fontSize: '14px',
+    fontWeight: 'bold',
   },
   tableRow: {
     transition: 'background-color 0.2s',
+    cursor: 'default',
   },
   tableCell: {
     padding: '10px',
     borderBottom: '1px solid #444',
     textAlign: 'center',
+    fontSize: '13px',
   },
-  rankCell: {
+  partidaCell: {
     fontWeight: 'bold',
-    color: '#FF9800', // Color para resaltar el ranking
+    color: '#61dafb',
+  },
+  ganadorCell: {
+    fontWeight: 'bold',
+    color: '#FFD700',
+  },
+  puntajeCell: {
+    fontWeight: 'bold',
+    color: '#4CAF50',
   }
 };

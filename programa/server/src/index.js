@@ -65,6 +65,11 @@ io.on('connection', (socket) => {
             const { Partida } = require('../dist/classes/Partida');
             const { Jugador } = require('../dist/classes/Jugador');
             
+            // Obtener código visual de la partida desde el API
+            const apiRouter = require('./api');
+            const partidaData = apiRouter.partidas.find(p => p.id === partidaId);
+            const codigoVisual = partidaData ? partidaData.codigo : null;
+            
             const sockets = await io.in(partidaId).fetchSockets();
             
             if (sockets.length === 0) {
@@ -87,7 +92,8 @@ io.on('connection', (socket) => {
                 tematica || 'General',
                 sockets.length, // numJugadoresMax = número de jugadores actuales
                 config,
-                duracion
+                duracion,
+                codigoVisual // Pasar código visual
             );
             
             // Agregar jugadores
@@ -179,9 +185,37 @@ io.on('connection', (socket) => {
                 puntos: resultado.puntos,
                 nicknameQueHizoMatch: nickname // Identificar quién hizo el match
             });
+
+            // Verificar si el juego ha finalizado
+            if (resultado.juegoFinalizado) {
+                io.to(partidaId).emit('game_finished', {
+                    ganador: resultado.ganador,
+                    mensaje: 'Juego finalizado',
+                    tematica: juego.partida.tematica,
+                    partidaId: juego.partida.codigoVisual || partidaId
+                });
+            }
         } else {
             socket.emit('error_match', { mensaje: resultado.mensaje });
         }
+    });
+
+    // --- TIEMPO AGOTADO: Finaliza el juego en modo Tiempo ---
+    socket.on('tiempo_agotado', (data) => {
+        const { partidaId } = data;
+        const juego = partidasActivas[partidaId];
+
+        if (!juego || !juego.partida) return;
+
+        juego.partida.finalizarJuego();
+        const ganador = juego.partida.obtenerGanador();
+
+        io.to(partidaId).emit('game_finished', {
+            ganador: ganador,
+            mensaje: 'Se agotó el tiempo',
+            tematica: juego.partida.tematica,
+            partidaId: juego.partida.codigoVisual || partidaId
+        });
     });
 
     socket.on('disconnect', () => {

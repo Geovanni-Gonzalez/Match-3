@@ -10,6 +10,9 @@ export class Partida {
     private config: Configuracion;
     private fechaCreacion: Date;
     public duracionMinutos?: number;
+    public matchesRealizados: number = 0; // Contador de matches totales
+    public readonly MAX_MATCHES: number = 50; // Límite de matches para modo Match
+    public codigoVisual?: string; // Código visual de 6 caracteres
 
     constructor(
         public idPartida: string,
@@ -17,12 +20,14 @@ export class Partida {
         public tematica: string,
         private numJugadoresMax: number,
         config: Configuracion,
-        duracionMinutos?: number
+        duracionMinutos?: number,
+        codigoVisual?: string
     ) {
         this.config = config;
         this.tablero = new Tablero(config);
         this.fechaCreacion = new Date();
         this.duracionMinutos = duracionMinutos;
+        this.codigoVisual = codigoVisual;
     }
 
     public agregarJugador(jugador: Jugador): void {
@@ -158,7 +163,7 @@ export class Partida {
         });
     }
 
-    public confirmarMatch(nickname: string): { exito: boolean; mensaje: string; puntos?: number } {
+    public confirmarMatch(nickname: string): { exito: boolean; mensaje: string; puntos?: number; juegoFinalizado?: boolean; ganador?: any } {
         const jugador = this.jugadores.get(nickname);
         if (!jugador) return { exito: false, mensaje: 'Error jugador' };
 
@@ -176,6 +181,24 @@ export class Partida {
         this.limpiarSeleccionJugador(nickname);
         this.limpiarSeleccionesAfectadas(celdasEliminadas, nickname);
         
+        // Incrementar contador de matches
+        this.matchesRealizados++;
+        console.log(`[Partida ${this.idPartida}] Matches realizados: ${this.matchesRealizados}/${this.MAX_MATCHES}`);
+        
+        // Verificar si se alcanzó el límite de matches (solo en modo Match)
+        if (this.tipoJuego === 'Match' && this.matchesRealizados >= this.MAX_MATCHES) {
+            console.log(`[Partida ${this.idPartida}] ¡Límite de matches alcanzado! Finalizando juego...`);
+            this.finalizarJuego();
+            const ganador = this.obtenerGanador();
+            return { 
+                exito: true, 
+                mensaje: `Match de ${n}! +${Math.pow(n, 2)} pts - ¡JUEGO FINALIZADO!`, 
+                puntos: Math.pow(n, 2),
+                juegoFinalizado: true,
+                ganador
+            };
+        }
+        
         return { 
             exito: true, 
             mensaje: `Match de ${n}! +${Math.pow(n, 2)} pts`, 
@@ -191,9 +214,40 @@ export class Partida {
         const ranking = Array.from(this.jugadores.values()).sort((a, b) => b.puntaje - a.puntaje);
         const ganador = ranking[0];
         
+        // Calcular tiempo invertido en segundos
+        const tiempoInvertidoMs = Date.now() - this.fechaCreacion.getTime();
+        const tiempoInvertidoSegundos = Math.floor(tiempoInvertidoMs / 1000);
+        
         this.jugadores.forEach(jugador => {
             jugador.guardarEstadisticas(this.idPartida, jugador === ganador && jugador.puntaje > 0);
         });
+        
+        // Guardar estadísticas completas de la partida en JSON
+        const { DBManager } = require('../db/dbManager');
+        DBManager.guardarEstadisticasPartida(
+            this.codigoVisual || this.idPartida, // Usar código visual si está disponible
+            ganador.nickname,
+            ganador.puntaje,
+            this.tematica,
+            tiempoInvertidoSegundos
+        );
+        
+        console.log(`[Partida ${this.idPartida}] ========== JUEGO FINALIZADO ==========`);
+        console.log(`[Partida ${this.idPartida}] Ganador: ${ganador.nickname} con ${ganador.puntaje} puntos`);
+        console.log(`[Partida ${this.idPartida}] Tiempo invertido: ${tiempoInvertidoSegundos}s`);
+    }
+
+    public obtenerGanador(): any {
+        const ranking = Array.from(this.jugadores.values()).sort((a, b) => b.puntaje - a.puntaje);
+        return {
+            nickname: ranking[0].nickname,
+            puntaje: ranking[0].puntaje,
+            ranking: ranking.map((j, index) => ({
+                posicion: index + 1,
+                nickname: j.nickname,
+                puntaje: j.puntaje
+            }))
+        };
     }
 
     public enviarEstadoATodos(): void {

@@ -249,7 +249,7 @@ export class Tablero {
         historialCombos: Coordenada[][];
     } {
         console.log('\n[TABLERO] ========== PROCESANDO MATCH DEL JUGADOR ==========');
-        console.log(`[TABLERO] 💥 ${celdasInicialesEliminadas.length} celdas a eliminar`);
+        console.log(`[TABLERO]  ${celdasInicialesEliminadas.length} celdas a eliminar`);
         
         const historialCombos: Coordenada[][] = [];
         historialCombos.push([...celdasInicialesEliminadas]);
