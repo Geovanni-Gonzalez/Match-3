@@ -117,212 +117,129 @@ export const SalaDeEspera: React.FC<Props> = ({
   const isHost = jugadores.find(j => j.nickname === currentUser?.nickname)?.isHost;
 
   return (
-    <div style={styles.windowFrame}>
-      {/* Countdown Overlay */}
-      {countdown !== null && (
-        <div style={styles.overlay}>
-          <h1 style={styles.countdownText}>Iniciando en {countdown}...</h1>
+    <div className="sala-espera-container">
+      {/* Notificación de timeout */}
+      {showTimeoutNotification && (
+        <div className="notification-overlay">
+          <div className="notification-bubble">
+            <div className="notification-icon">⏰</div>
+            <div className="notification-content">
+              <h3 className="notification-title">Partida Cancelada</h3>
+              <p className="notification-message">
+                La partida ha sido cancelada por inactividad (3 minutos sin iniciar)
+              </p>
+              <p className="notification-subtext">Redirigiendo al menú principal...</p>
+            </div>
+          </div>
         </div>
       )}
 
-      <div style={styles.backButton} onClick={onLeave}>
-        
-      </div>
+      {/* Fondo animado con gradiente */}
+      <div className="sala-espera-background"></div>
+      
+      {/* Partículas flotantes */}
+      {Array.from({ length: 30 }).map((_, i) => (
+        <div
+          key={i}
+          className="sala-espera-particle"
+          style={{
+            left: `${Math.random() * 100}%`,
+            animationDuration: `${8 + Math.random() * 12}s`,
+            animationDelay: `${Math.random() * 10}s`,
+          }}
+        />
+      ))}
 
-      <h1 style={styles.title}>Sala de Espera</h1>
+      {/* Gemas decorativas */}
+      <div className="gem gem-red" style={{ top: '8%', left: '10%', animationDelay: '0s' }}>💎</div>
+      <div className="gem gem-blue" style={{ top: '15%', right: '12%', animationDelay: '1s' }}>💎</div>
+      <div className="gem gem-green" style={{ bottom: '18%', left: '8%', animationDelay: '2s' }}>💎</div>
+      <div className="gem gem-yellow" style={{ top: '45%', left: '5%', animationDelay: '1.5s' }}>💎</div>
+      <div className="gem gem-purple" style={{ bottom: '25%', right: '10%', animationDelay: '2.5s' }}>💎</div>
+      <div className="gem gem-orange" style={{ top: '60%', right: '7%', animationDelay: '0.8s' }}>💎</div>
 
-      <div style={styles.timerBox}>
-        <div> Tiempo para iniciar:</div>
-        <strong style={{ fontSize: 32, color: "#61dafb" }}>
-          {formatTime(timeLeft)}
-        </strong>
-      </div>
+      {/* Burbujas flotantes */}
+      {[...Array(8)].map((_, i) => (
+        <div
+          key={i}
+          className="bubble"
+          style={{
+            left: `${10 + i * 12}%`,
+            animationDuration: `${15 + Math.random() * 10}s`,
+            animationDelay: `${i * 2}s`,
+          }}
+        />
+      ))}
 
-      <div style={styles.infoBar}>
-        <span style={styles.infoBox}>
-          C�DIGO: {partidaId.substring(0, 6).toUpperCase()}
-        </span>
-        <span style={styles.infoBox}>
-          Jugadores: {jugadores.length}/{maxPlayers}
-        </span>
-      </div>
-
-      {/* Lista de jugadores */}
-      <div style={styles.playersList}>
-        {jugadores.map((j) => (
-          <div
-            key={j.socketID}
-            style={{
-              ...styles.playerItem,
-              ...(currentUser?.nickname === j.nickname
-                ? styles.currentPlayer
-                : {}),
-              ...(j.isReady ? styles.readyPlayer : {})
-            }}
-          >
-            {j.nickname}
-            {currentUser?.nickname === j.nickname ? " (T�)" : ""}
-            {j.isHost && <span style={{ marginLeft: "5px", color: "#FFD700" }}></span>}
-            <span style={styles.readyStatus}>
-              {j.isReady ? " LISTO" : " Esperando"}
-            </span>
-          </div>
-        ))}
-
-        {Array(Math.max(0, maxPlayers - jugadores.length))
-          .fill(0)
-          .map((_, i) => (
-            <div key={`empty-${i}`} style={styles.emptyPlayerItem}>
-              Esperando jugador...
-            </div>
-          ))}
-      </div>
-
-      {/* Bot�n listo/no listo */}
-      <button
-        onClick={toggleReady}
-        style={{
-          ...styles.readyButton,
-          backgroundColor: isReadyLocal ? "#4CAF50" : "#FF9800"
-        }}
-      >
-        {isReadyLocal ? "YA ESTOY LISTO" : "MARCAR LISTO"}
+      {/* Botón de retroceso */}
+      <button className="back-button" onClick={handleLeaveRoom}>
+        ← Salir
       </button>
 
-      {/* Mostrar bot�n de iniciar si todos est�n listos */}
-      {allReady && (
-        <div style={{ marginTop: 20 }}>
-          <p style={styles.startMessage}>
-            �Todos listos! La partida puede comenzar.
-          </p>
-          {isHost ? (
-            <button onClick={handleStart} style={styles.startButton}>
-              IR AL TABLERO (HOST)
-            </button>
-          ) : (
-            <p style={{ color: "#ccc", fontStyle: "italic" }}>
-              Esperando a que el anfitri�n inicie la partida...
-            </p>
-          )}
+      {/* Card principal */}
+      <div className="sala-espera-card">
+        <h1 className="sala-espera-title">Sala de Espera</h1>
+
+        {/* Indicador de tiempo restante */}
+        <div className={`timeout-warning ${
+          tiempoRestante > 120 ? 'green' : 
+          tiempoRestante > 60 ? 'orange' : 'red'
+        }`}>
+          ⏱️ Tiempo restante: {formatTime(tiempoRestante)}
+          {tiempoRestante <= 60 && <span className="urgent-warning"> - ¡Apúrate!</span>}
         </div>
-      )}
+
+        <div className="info-bar">
+          <span className="info-box">CÓDIGO: {partidaId.substring(0, 6).toUpperCase()}</span>
+          <span className="info-box">Jugadores: {jugadores.length}/{maxJugadores}</span>
+          {esLider && <span className="lider-badge">👑 LÍDER</span>}
+        </div>
+
+        <div className="players-list">
+          {jugadores.map((jugador, index) => (
+            <div 
+              key={jugador.socketID || index} 
+              className={`player-item ${
+                jugador.nickname === currentUserNickname ? 'current-player' : ''
+              } ${
+                jugador.isReady ? 'ready-player' : ''
+              }`}
+            >
+              <span>
+                {index === 0 && '👑 '}{jugador.nickname} {jugador.nickname === currentUserNickname ? '(Tú)' : ''}
+              </span>
+              <span className="ready-status">
+                {jugador.isReady ? '✅ LISTO' : '⏳ Esperando...'}
+              </span>
+            </div>
+          ))}
+          
+          {Array(Math.max(0, maxJugadores - jugadores.length)).fill(0).map((_, index) => (
+            <div key={`empty-${index}`} className="empty-player-item">Esperando jugador...</div>
+          ))}
+        </div>
+        
+        <button 
+          onClick={handleToggleReady}
+          className={`ready-button ${isReady ? 'is-ready' : 'not-ready'}`}
+        >
+          {isReady ? '✅ YA ESTOY LISTO' : '⏳ MARCAR LISTO'}
+        </button>
+
+        {puedeIniciar && (
+          <div className="start-section">
+            <p className="start-message">¡Todos listos! La partida puede comenzar.</p>
+            <button 
+              onClick={handleEmitStartGame} 
+              className="start-button"
+            >
+              🚀 INICIAR JUEGO
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
-const styles: { [key: string]: React.CSSProperties } = {
-  windowFrame: {
-    padding: "30px",
-    borderRadius: "10px",
-    backgroundColor: "#333744",
-    width: "450px",
-    boxShadow: "0 8px 16px rgba(0,0,0,0.5)",
-    position: "relative",
-    color: "white"
-  },
-  backButton: {
-    position: "absolute",
-    top: "15px",
-    left: "15px",
-    fontSize: "24px",
-    cursor: "pointer",
-    color: "#FF6347"
-  },
-  title: {
-    fontSize: "32px",
-    color: "#61dafb",
-    textAlign: "center"
-  },
-  infoBar: {
-    display: "flex",
-    justifyContent: "space-between",
-    padding: "10px",
-    marginBottom: "20px"
-  },
-  infoBox: {
-    backgroundColor: "#444857",
-    padding: "8px 15px",
-    borderRadius: "5px",
-    fontWeight: "bold"
-  },
-  playersList: {
-    width: "100%",
-    maxHeight: "240px",
-    overflowY: "auto"
-  },
-  playerItem: {
-    padding: "12px",
-    margin: "8px 0",
-    borderRadius: "8px",
-    backgroundColor: "#444857",
-    borderLeft: "5px solid #FF9800",
-    display: "flex",
-    justifyContent: "space-between"
-  },
-  currentPlayer: {
-    backgroundColor: "#2196F3",
-    borderLeft: "5px solid #1565C0"
-  },
-  readyPlayer: {
-    borderLeft: "5px solid #4CAF50"
-  },
-  readyStatus: {
-    fontSize: "12px"
-  },
-  emptyPlayerItem: {
-    padding: "12px",
-    margin: "8px 0",
-    textAlign: "center",
-    borderRadius: "8px",
-    backgroundColor: "#555866"
-  },
-  readyButton: {
-    padding: "14px 24px",
-    fontSize: "18px",
-    borderRadius: "8px",
-    color: "white",
-    cursor: "pointer",
-    border: "none",
-    marginTop: "10px"
-  },
-  startButton: {
-    padding: "14px 24px",
-    backgroundColor: "#61dafb",
-    borderRadius: "8px",
-    color: "#282c34",
-    cursor: "pointer",
-    border: "none"
-  },
-  startMessage: {
-    textAlign: "center",
-    color: "#4CAF50",
-    marginBottom: "10px",
-    fontWeight: "bold"
-  },
-  overlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.85)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 100,
-    borderRadius: "10px",
-  },
-  countdownText: {
-    fontSize: "60px",
-    color: "#61dafb",
-    fontWeight: "bold",
-  },
-  timerBox: {
-    textAlign: "center",
-    marginBottom: "20px",
-    backgroundColor: "#282c34",
-    padding: "10px",
-    borderRadius: "8px",
-    border: "1px solid #444"
-  }
-};
+export default SalaDeEspera;

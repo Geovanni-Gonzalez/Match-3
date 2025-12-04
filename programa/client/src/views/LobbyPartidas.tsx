@@ -109,135 +109,116 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
   // Render
   // ============================
   return (
-    <div style={styles.windowFrame}>
-      <div style={styles.backButton} onClick={onBack}>
-        ←
-      </div>
+    <div className="lobby-partidas-container">
+      {/* Fondo animado con gradiente */}
+      <div className="lobby-partidas-background"></div>
+      
+      {/* Partículas flotantes */}
+      {Array.from({ length: 30 }).map((_, i) => (
+        <div
+          key={i}
+          className="lobby-partidas-particle"
+          style={{
+            left: `${Math.random() * 100}%`,
+            animationDuration: `${8 + Math.random() * 12}s`,
+            animationDelay: `${Math.random() * 10}s`,
+          }}
+        />
+      ))}
 
-      <h1 style={styles.title}>Partidas disponibles</h1>
+      {/* Gemas decorativas */}
+      <div className="gem gem-red" style={{ top: '8%', left: '10%', animationDelay: '0s' }}>💎</div>
+      <div className="gem gem-blue" style={{ top: '15%', right: '12%', animationDelay: '1s' }}>💎</div>
+      <div className="gem gem-green" style={{ bottom: '18%', left: '8%', animationDelay: '2s' }}>💎</div>
+      <div className="gem gem-yellow" style={{ top: '45%', left: '5%', animationDelay: '1.5s' }}>💎</div>
+      <div className="gem gem-purple" style={{ bottom: '25%', right: '10%', animationDelay: '2.5s' }}>💎</div>
+      <div className="gem gem-orange" style={{ top: '60%', right: '7%', animationDelay: '0.8s' }}>💎</div>
 
-      {loading && <p style={styles.loading}>Cargando partidas...</p>}
-      {error && <p style={styles.error}>{error}</p>}
+      {/* Burbujas flotantes */}
+      {[...Array(8)].map((_, i) => (
+        <div
+          key={i}
+          className="bubble"
+          style={{
+            left: `${10 + i * 12}%`,
+            animationDuration: `${15 + Math.random() * 10}s`,
+            animationDelay: `${i * 2}s`,
+          }}
+        />
+      ))}
 
-      {!loading && partidas.length === 0 && (
-        <p style={styles.noData}>No hay partidas disponibles.</p>
-      )}
-
-      {!loading && partidas.length > 0 && (
-        <div style={styles.tableWrapper}>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>ID</th>
-                <th style={styles.th}>Tipo</th>
-                <th style={styles.th}>Temática</th>
-                <th style={styles.th}>Jugadores</th>
-                <th style={styles.th}>Tiempo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {partidas.map((p) => (
-                <tr
-                  key={p.id}
-                  onClick={() => setSelectedPartidaId(p.id)}
-                  style={
-                    selectedPartidaId === p.id
-                      ? styles.rowSelected
-                      : styles.row
-                  }
-                >
-                  <td style={styles.td}>{p.id}</td>
-                  <td style={styles.td}>{p.tipo}</td>
-                  <td style={styles.td}>{p.tematica}</td>
-                  <td style={styles.td}>
-                    {p.jugadores}/{p.maxJugadores}
-                  </td>
-                  <td style={styles.td}>{formatTime(p.tiempoRestante)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <button
-        style={styles.joinBtn}
-        onClick={handleUnirseClick}
-        disabled={!selectedPartidaId}
-      >
-        Unirse
+      {/* Botón de retroceso */}
+      <button className="back-button" onClick={onBack}>
+        ← Volver
       </button>
+      
+      {/* Card principal */}
+      <div className="lobby-partidas-card">
+        <h1 className="lobby-partidas-title">Partidas Disponibles</h1>
+        
+        <h3 className="lobby-subtitle">📋 Lista de partidas:</h3>
+        
+        {loading && <p className="loading-text">⏳ Cargando partidas...</p>}
+        {error && <p className="error-text">❌ Error: {error}</p>}
+
+        {!loading && !error && partidasDisponibles.length === 0 && (
+          <p className="no-partidas-text">No hay partidas disponibles en este momento.</p>
+        )}
+
+        {!loading && !error && partidasDisponibles.length > 0 && (
+          <div className="table-wrapper">
+            <table className="partidas-table">
+              <thead>
+                <tr>
+                  <th className="table-header">Código</th>
+                  <th className="table-header">Temática</th>
+                  <th className="table-header">Tipo</th>
+                  <th className="table-header">Jugadores</th>
+                  <th className="table-header">Duración/Tiempo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {partidasDisponibles.map((partida) => {
+                  // Calcular el texto para la columna de duración/tiempo
+                  let duracionTexto = 'N/A';
+                  if (partida.tipo === 'Tiempo' && partida.duracionMinutos) {
+                    duracionTexto = `${partida.duracionMinutos} min`;
+                  } else if (partida.tipo === 'Match') {
+                    duracionTexto = 'N/A';
+                  }
+                  
+                  return (
+                  <tr 
+                    key={partida.codigo} 
+                    className={`table-row ${selectedPartidaId === partida.codigo ? 'selected' : ''}`}
+                    onClick={() => {
+                      setSelectedPartidaId(partida.codigo);
+                      setSelectedPartida(partida);
+                    }}
+                  >
+                    <td className="table-cell">{partida.codigo}</td>
+                    <td className="table-cell">{partida.tematica}</td>
+                    <td className="table-cell">{partida.tipo}</td>
+                    <td className="table-cell">{partida.jugadores}/{partida.maxJugadores}</td>
+                    <td className="table-cell">{duracionTexto}</td>
+                  </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <button 
+          onClick={handleUnirseClick} 
+          disabled={!selectedPartidaId || loading} 
+          className="unirse-button"
+        >
+          🚀 Unirse a Partida
+        </button>
+      </div>
     </div>
   );
 };
 
-// ============================
-// ESTILOS
-// ============================
-const styles: { [key: string]: React.CSSProperties } = {
-  windowFrame: {
-    padding: "20px",
-    borderRadius: "10px",
-    backgroundColor: "#333744",
-    width: "640px",
-    position: "relative",
-    color: "white",
-  },
-  backButton: {
-    position: "absolute",
-    top: "12px",
-    left: "12px",
-    fontSize: "22px",
-    cursor: "pointer",
-    color: "#61dafb",
-  },
-  title: {
-    textAlign: "center",
-    color: "#61dafb",
-    marginBottom: "20px",
-  },
-  loading: { color: "#61dafb", textAlign: "center" },
-  error: { color: "tomato", textAlign: "center" },
-  noData: { color: "#ccc", textAlign: "center" },
-  tableWrapper: {
-    maxHeight: "300px",
-    overflowY: "auto",
-    marginBottom: "20px",
-    border: "1px solid #555",
-    borderRadius: "8px",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-    color: "white",
-  },
-  th: {
-    backgroundColor: "#4CAF50",
-    padding: "10px",
-    textAlign: "left",
-    position: "sticky",
-    top: 0,
-  },
-  td: {
-    padding: "10px",
-    borderBottom: "1px solid #444",
-  },
-  row: {
-    cursor: "pointer",
-  },
-  rowSelected: {
-    cursor: "pointer",
-    backgroundColor: "#505469",
-  },
-  joinBtn: {
-    padding: "12px 30px",
-    fontSize: "18px",
-    backgroundColor: "#4CAF50",
-    border: "none",
-    borderRadius: "8px",
-    color: "white",
-    cursor: "pointer",
-    display: "block",
-    margin: "auto",
-  },
-};
+export default LobbyPartidas;

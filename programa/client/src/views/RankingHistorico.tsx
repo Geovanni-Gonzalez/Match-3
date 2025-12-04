@@ -1,6 +1,7 @@
 // client/src/views/RankingHistorico.tsx
 
 import React, { useState, useEffect } from 'react';
+import './RankingHistorico.css';
 
 // --- Interfaces de Tipos ---
 interface JugadorRanking {
@@ -17,15 +18,15 @@ interface RankingHistoricoProps {
 }
 
 export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) => {
-  const [datosRanking, setDatosRanking] = useState<JugadorRanking[]>([]);
+  const [estadisticas, setEstadisticas] = useState<EstadisticaPartida[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchRanking();
+    fetchEstadisticas();
   }, []);
 
-  const fetchRanking = async () => {
+  const fetchEstadisticas = async () => {
     setLoading(true);
     setError(null);
     try {
@@ -54,50 +55,85 @@ export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) =>
   };
 
   return (
-    <div style={styles.windowFrame}>
+    <div className="ranking-historico-container">
+      {/* Fondo Animado */}
+      <div className="ranking-historico-background" />
+
+      {/* Partículas */}
+      {Array.from({ length: 30 }).map((_, i) => (
+        <div
+          key={`particle-${i}`}
+          className="ranking-historico-particle"
+          style={{
+            left: `${Math.random() * 100}%`,
+            animationDuration: `${8 + Math.random() * 10}s`,
+            animationDelay: `${Math.random() * 5}s`,
+          }}
+        />
+      ))}
+
+      {/* Gemas decorativas */}
+      <div className="gem gem-red" style={{ top: '8%', left: '10%', animationDelay: '0s' }}>💎</div>
+      <div className="gem gem-blue" style={{ top: '15%', right: '12%', animationDelay: '0.8s' }}>💎</div>
+      <div className="gem gem-green" style={{ bottom: '18%', left: '8%', animationDelay: '1.6s' }}>💎</div>
+      <div className="gem gem-yellow" style={{ bottom: '12%', right: '15%', animationDelay: '2.4s' }}>💎</div>
+      <div className="gem gem-purple" style={{ top: '50%', left: '5%', animationDelay: '3.2s' }}>💎</div>
+      <div className="gem gem-orange" style={{ top: '45%', right: '8%', animationDelay: '4s' }}>💎</div>
+
+      {/* Burbujas */}
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div
+          key={`bubble-${i}`}
+          className="bubble"
+          style={{
+            left: `${10 + i * 12}%`,
+            animationDuration: `${10 + Math.random() * 8}s`,
+            animationDelay: `${i * 1.2}s`,
+          }}
+        />
+      ))}
+
       {/* Botón de retroceso */}
-      <div style={styles.backButton} onClick={onBack}>
-        &larr;
-      </div>
+      <button className="back-button" onClick={onBack}>
+        ← Volver
+      </button>
 
-      <div style={styles.header}>
-        <h1 style={styles.title}>Ranking Histórico</h1>
-      </div>
+      {/* Card Principal */}
+      <div className="ranking-historico-card">
+        <h1 className="ranking-historico-title">🏆 Ranking Histórico 🏆</h1>
 
-      <div style={styles.content}>
+        {loading && <p className="loading-text">Cargando estadísticas...</p>}
+        {error && <p className="error-text">Error: {error}</p>}
 
-        {loading && <p style={styles.loadingText}>Cargando ranking...</p>}
-        {error && <p style={styles.errorText}>Error: {error}</p>}
-
-        {!loading && !error && datosRanking.length === 0 && (
-          <p style={styles.noDataText}>No hay datos de ranking disponibles.</p>
+        {!loading && !error && estadisticas.length === 0 && (
+          <p className="no-data-text">No hay estadísticas disponibles. ¡Juega algunas partidas!</p>
         )}
 
-        {!loading && !error && datosRanking.length > 0 && (
-          <div style={styles.tableWrapper}>
-            <table style={styles.table}>
+        {!loading && !error && estadisticas.length > 0 && (
+          <div className="table-wrapper">
+            <table className="ranking-table">
               <thead>
                 <tr>
-                  <th style={styles.tableHeader}>#</th>
-                  <th style={styles.tableHeader}>User</th>
-                  <th style={styles.tableHeader}>Puntaje</th>
-                  <th style={styles.tableHeader}>Tema</th>
-                  <th style={styles.tableHeader}>Tiempo</th>
-                  <th style={styles.tableHeader}>ID</th>
+                  <th className="table-header">Partida</th>
+                  <th className="table-header">Ganador</th>
+                  <th className="table-header">Puntaje</th>
+                  <th className="table-header">Temática</th>
+                  <th className="table-header">Tiempo</th>
+                  <th className="table-header">Fecha</th>
                 </tr>
               </thead>
               <tbody>
-                {datosRanking.map((jugador) => (
-                  <tr
-                    key={jugador.rank}
-                    style={styles.tableRow}
+                {estadisticas.map((stat, index) => (
+                  <tr 
+                    key={`${stat.partidaId}-${index}`}
+                    className="table-row"
                   >
-                    <td style={{ ...styles.tableCell, ...styles.rankCell }}>{jugador.rank}</td>
-                    <td style={styles.tableCell}>{jugador.user}</td>
-                    <td style={styles.tableCell}>{jugador.puntaje}</td>
-                    <td style={styles.tableCell}>{jugador.tematica}</td>
-                    <td style={styles.tableCell}>{formatTime(jugador.tiempo)}</td>
-                    <td style={{ ...styles.tableCell, fontSize: '12px' }}>{jugador.gameId}</td>
+                    <td className="table-cell partida-cell">{stat.partidaId}</td>
+                    <td className="table-cell ganador-cell">{stat.ganador}</td>
+                    <td className="table-cell puntaje-cell">{stat.puntaje}</td>
+                    <td className="table-cell">{stat.tematica}</td>
+                    <td className="table-cell">{formatTiempo(stat.tiempoInvertidoSegundos)}</td>
+                    <td className="table-cell">{stat.fecha}</td>
                   </tr>
                 ))}
               </tbody>
@@ -109,88 +145,4 @@ export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) =>
   );
 };
 
-const styles: { [key: string]: React.CSSProperties } = {
-  windowFrame: {
-    padding: '20px',
-    borderRadius: '10px',
-    backgroundColor: '#333744',
-    boxShadow: '0 8px 16px rgba(0, 0, 0, 0.5)',
-    width: '700px', // Ancho aumentado para más columnas
-    position: 'relative',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    color: 'white',
-  },
-  backButton: {
-    position: 'absolute',
-    top: '15px',
-    left: '15px',
-    fontSize: '24px',
-    cursor: 'pointer',
-    padding: '5px',
-    borderRadius: '5px',
-    color: '#61dafb',
-  },
-  header: {
-    width: '100%',
-    textAlign: 'center',
-    marginBottom: '20px',
-  },
-  title: {
-    fontSize: '28px',
-    color: '#61dafb',
-    margin: '0',
-  },
-  content: {
-    width: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: '0 20px',
-  },
-  loadingText: {
-    color: '#61dafb',
-    margin: '20px 0',
-  },
-  errorText: {
-    color: '#ff6b6b',
-    margin: '20px 0',
-  },
-  noDataText: {
-    color: '#ccc',
-    margin: '20px 0',
-  },
-  tableWrapper: {
-    width: '100%',
-    maxHeight: '350px', // Para el scroll
-    overflowY: 'auto',
-    border: '1px solid #555',
-    borderRadius: '5px',
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-  },
-  tableHeader: {
-    backgroundColor: '#4CAF50', // Color verde
-    color: 'white',
-    padding: '10px',
-    textAlign: 'center',
-    position: 'sticky',
-    top: 0,
-    zIndex: 1,
-  },
-  tableRow: {
-    transition: 'background-color 0.2s',
-  },
-  tableCell: {
-    padding: '10px',
-    borderBottom: '1px solid #444',
-    textAlign: 'center',
-  },
-  rankCell: {
-    fontWeight: 'bold',
-    color: '#FF9800', // Color para resaltar el ranking
-  }
-};
+export default RankingHistorico;

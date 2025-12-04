@@ -48,31 +48,131 @@ export const Bienvenida: React.FC = () => {
   };
 
   return (
-    <div style={styles.card}>
-      <h1>Match-3</h1>
-      <p>Bienvenido(a) al juego multijugador Match-3</p>
+    <div style={styles.container}>
+      {/* Fondo animado con gradiente dinámico */}
+      <div className="animated-background"></div>
+      
+      {/* Partículas brillantes flotantes */}
+      {[...Array(30)].map((_, i) => (
+        <div 
+          key={`particle-${i}`}
+          className="particle"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            animationDelay: `${Math.random() * 5}s`,
+            animationDuration: `${3 + Math.random() * 4}s`,
+          }}
+        />
+      ))}
+      
+      {/* Gemas decorativas flotantes - estilo Match-3 */}
+      <div className="gem gem-red" style={{top: '10%', left: '10%', animationDelay: '0s'}}>💎</div>
+      <div className="gem gem-blue" style={{top: '15%', right: '15%', animationDelay: '1s'}}>💠</div>
+      <div className="gem gem-green" style={{bottom: '20%', left: '8%', animationDelay: '2s'}}>🔷</div>
+      <div className="gem gem-yellow" style={{top: '60%', right: '10%', animationDelay: '1.5s'}}>⭐</div>
+      <div className="gem gem-purple" style={{bottom: '10%', right: '20%', animationDelay: '0.5s'}}>🔮</div>
+      <div className="gem gem-orange" style={{top: '40%', left: '5%', animationDelay: '2.5s'}}>🧡</div>
+      
+      {/* Burbujas decorativas */}
+      {[...Array(8)].map((_, i) => (
+        <div 
+          key={`bubble-${i}`}
+          className="bubble"
+          style={{
+            left: `${10 + i * 12}%`,
+            animationDelay: `${i * 0.8}s`,
+            animationDuration: `${6 + Math.random() * 3}s`,
+          }}
+        />
+      ))}
+      
+      <div style={styles.card} className="welcome-card">
+        {/* Brillo superior del card */}
+        <div className="card-shine"></div>
+        
+        {/* Logo/Título con efecto premium */}
+        <div style={styles.titleContainer}>
+          <div className="logo-container">
+            <div className="logo-glow"></div>
+            <div style={styles.logoIcon}>💎</div>
+          </div>
+          <h1 style={styles.title} className="animated-title">Match-3</h1>
+          <p className="title-shadow">LEGENDARY PUZZLE</p>
+          <div style={styles.titleUnderline} className="title-underline"></div>
+        </div>
 
-      <input
-        type="text"
-        placeholder="Ingresar nickname"
-        value={nickname}
-        onChange={(e) => setNickname(e.target.value)}
-        style={styles.input}
-      />
+        <p style={styles.subtitle}>✨¡Compite contra tus amigos!✨</p>
 
-      {error && <p style={styles.errorText}>⚠️ {error}</p>}
+        {/* Input con diseño premium */}
+        <div style={styles.inputContainer} className="input-wrapper">
+          <div style={styles.inputIcon}>👤</div>
+          <input
+            type="text"
+            placeholder="Tu nombre de jugador legendario"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            onKeyPress={handleKeyPress}
+            style={styles.input}
+            className="input-modern premium-input"
+            maxLength={20}
+          />
+          <div className="input-border-animation"></div>
+        </div>
+        
+        {/* Mensaje de error mejorado */}
+        {error && (
+          <div style={styles.errorContainer}>
+            <span style={styles.errorIcon}>⚠️</span>
+            <span style={styles.errorText}>{error}</span>
+          </div>
+        )}
 
-      <button
-        onClick={handleLogin}
-        disabled={nickname.trim().length < 3 || isLoading}
-        style={{
-          ...styles.button,
-          opacity: isLoading ? 0.5 : 1,
-          cursor: isLoading ? "not-allowed" : "pointer",
-        }}
-      >
-        {isLoading ? "Conectando..." : "Empezar"}
-      </button>
+        {/* Botón premium con efectos avanzados */}
+        <button 
+          onClick={handleLogin} 
+          disabled={nickname.trim().length < 3 || loading} 
+          className="button-shine premium-button"
+          style={{
+            ...styles.button,
+            ...(nickname.trim().length < 3 || loading ? styles.buttonDisabled : {})
+          }}
+          onMouseEnter={(e) => {
+            if (nickname.trim().length >= 3 && !loading) {
+              e.currentTarget.style.transform = 'translateY(-4px) scale(1.03)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0) scale(1)';
+          }}
+        >
+          <div className="button-glow"></div>
+          {loading ? (
+            <>
+              <span style={styles.spinner}></span>
+              <span className="button-loading-text">Conectando al servidor...</span>
+            </>
+          ) : (
+            <>
+              <span style={styles.buttonText}>¡EMPEZAR AVENTURA!</span>
+              <span style={styles.buttonIcon}></span>
+            </>
+          )}
+        </button>
+
+        {/* Info adicional con diseño mejorado */}
+        <div style={styles.infoText}>
+          <span style={styles.infoIcon}>💡</span>
+          Crea tu identidad con mínimo 3 caracteres
+        </div>
+        
+        {/* Decoración inferior */}
+        <div className="card-footer-decoration">
+          <span>⚔️</span>
+          <span>🏆</span>
+          <span>⚔️</span>
+        </div>
+      </div>
     </div>
   );
 };

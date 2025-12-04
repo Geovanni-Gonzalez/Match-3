@@ -119,7 +119,7 @@ const App: React.FC = () => {
       break;
 
     case 'game':
-      if (!currentGameId || !currentUser) return null;
+      if (!currentGameId || !currentUser || !gameInfo) return null;
       content = (
         <Juego
           {...({

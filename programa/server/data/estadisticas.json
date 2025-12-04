@@ -1,0 +1,98 @@
+[
+  {
+    "partidaId": "64ec9030-cf96-46fc-984a-fc7945618664",
+    "ganador": "kiki",
+    "puntaje": 91,
+    "tematica": "Gemas",
+    "tiempoInvertidoSegundos": 60,
+    "fecha": "2025-12-03T18:50:00.901Z"
+  },
+  {
+    "partidaId": "D948B9",
+    "ganador": "quriat",
+    "puntaje": 109,
+    "tematica": "Gemas",
+    "tiempoInvertidoSegundos": 60,
+    "fecha": "03-12-2025"
+  },
+  {
+    "partidaId": "5FADAA",
+    "ganador": "qui",
+    "puntaje": 9,
+    "tematica": "Gemas",
+    "tiempoInvertidoSegundos": 60,
+    "fecha": "03-12-2025"
+  },
+  {
+    "partidaId": "7FF2B6",
+    "ganador": "quiriat",
+    "puntaje": 128,
+    "tematica": "Gemas",
+    "tiempoInvertidoSegundos": 60,
+    "fecha": "03-12-2025"
+  },
+  {
+    "partidaId": "3CBAC3",
+    "ganador": "qui",
+    "puntaje": 25,
+    "tematica": "Gemas",
+    "tiempoInvertidoSegundos": 60,
+    "fecha": "03-12-2025"
+  },
+  {
+    "partidaId": "829AF0",
+    "ganador": "quiriat",
+    "puntaje": 9,
+    "tematica": "Gemas",
+    "tiempoInvertidoSegundos": 60,
+    "fecha": "03-12-2025"
+  },
+  {
+    "partidaId": "DD0845",
+    "ganador": "quiriat,kiki",
+    "puntaje": 9,
+    "tematica": "Gemas",
+    "tiempoInvertidoSegundos": 60,
+    "fecha": "03-12-2025"
+  },
+  {
+    "partidaId": "42C9E1",
+    "ganador": "quiriat,kiki",
+    "puntaje": 0,
+    "tematica": "Gemas",
+    "tiempoInvertidoSegundos": 60,
+    "fecha": "03-12-2025"
+  },
+  {
+    "partidaId": "005FC8",
+    "ganador": "kiki",
+    "puntaje": 9,
+    "tematica": "Gemas",
+    "tiempoInvertidoSegundos": 60,
+    "fecha": "03-12-2025"
+  },
+  {
+    "partidaId": "58B982",
+    "ganador": "kiki,quiriat",
+    "puntaje": 9,
+    "tematica": "Gemas",
+    "tiempoInvertidoSegundos": 60,
+    "fecha": "03-12-2025"
+  },
+  {
+    "partidaId": "DAB6AA",
+    "ganador": "kiki,quiriat",
+    "puntaje": 0,
+    "tematica": "Gemas",
+    "tiempoInvertidoSegundos": 60,
+    "fecha": "03-12-2025"
+  },
+  {
+    "partidaId": "ED8899",
+    "ganador": "quiriat,kiki",
+    "puntaje": 0,
+    "tematica": "Gemas",
+    "tiempoInvertidoSegundos": 60,
+    "fecha": "03-12-2025"
+  }
+]

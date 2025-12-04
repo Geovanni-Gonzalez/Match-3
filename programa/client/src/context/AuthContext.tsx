@@ -1,7 +1,7 @@
 // client/src/context/AuthContext.tsx
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { io, Socket } from 'socket.io-client'; // Importamos el cliente de socket
+import { io, Socket } from 'socket.io-client';
 
 // --- 1. INTERFACES DE TIPOS ---
 

@@ -4,15 +4,15 @@ import React from 'react';
 type MenuViews = 'menu' | 'lobby' | 'ranking' | 'create_game' | 'game';
 
 interface UserSession {
-  nickname: string;
-  socketID: string;
+  nickname: string;
+  socketID: string;
 }
 
 interface MenuPrincipalProps {
-  currentUser: UserSession;
-  onLogout: () => void;
-  // NUEVA PROP: Función para notificar al padre qué vista mostrar
-  onNavigate: (view: MenuViews) => void; 
+  currentUser: UserSession;
+  onLogout: () => void;
+  // NUEVA PROP: Función para notificar al padre qué vista mostrar
+  onNavigate: (view: MenuViews) => void; 
 }
 
 export const MenuPrincipal: React.FC<MenuPrincipalProps> = ({ currentUser, onLogout, onNavigate }) => { // ⬅️ Recibir la nueva prop
@@ -31,86 +31,83 @@ export const MenuPrincipal: React.FC<MenuPrincipalProps> = ({ currentUser, onLog
       console.log("Navegar a vista de creación de partida.");
   };
 
-  const handleVerRanking = () => {
-      // Usa onNavigate para cambiar a la vista de Ranking
-      onNavigate('ranking'); 
-      console.log("Navegar a Ranking.");
-  };
+  const handleVerRanking = () => {
+      onNavigate('ranking');
+      console.log("Navegar a vista de ranking.");
+  }
 
+  return (
+    <div className="menu-container">
+      {/* Fondo animado */}
+      <div className="menu-background"></div>
+      
+      {/* Partículas decorativas */}
+      {[...Array(30)].map((_, i) => (
+        <div 
+          key={`particle-${i}`}
+          className="menu-particle"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            animationDelay: `${Math.random() * 5}s`,
+            animationDuration: `${3 + Math.random() * 4}s`,
+          }}
+        />
+      ))}
+      
+      {/* Gemas decorativas flotantes - estilo Match-3 */}
+      <div className="gem gem-red" style={{top: '10%', left: '10%', animationDelay: '0s'}}>💎</div>
+      <div className="gem gem-blue" style={{top: '15%', right: '15%', animationDelay: '1s'}}>💠</div>
+      <div className="gem gem-green" style={{bottom: '20%', left: '8%', animationDelay: '2s'}}>🔷</div>
+      <div className="gem gem-yellow" style={{top: '60%', right: '10%', animationDelay: '1.5s'}}>⭐</div>
+      <div className="gem gem-purple" style={{bottom: '10%', right: '20%', animationDelay: '0.5s'}}>🔮</div>
+      <div className="gem gem-orange" style={{top: '40%', left: '5%', animationDelay: '2.5s'}}>🧡</div>
+      
+      {/* Burbujas decorativas */}
+      {[...Array(8)].map((_, i) => (
+        <div 
+          key={`bubble-${i}`}
+          className="bubble"
+          style={{
+            left: `${10 + i * 12}%`,
+            animationDelay: `${i * 0.8}s`,
+            animationDuration: `${6 + Math.random() * 3}s`,
+          }}
+        />
+      ))}
+      
+      <div className="menu-card">
+        {/* Botón de cerrar sesión */}
+        <button onClick={onLogout} className="logout-button">
+          <span>Salir</span>
+        </button>
+        
+        {/* Header con bienvenida */}
+        <div className="menu-header">
+          <h1 className="menu-title">Menu Principal</h1>
+          <p className="menu-welcome">
+            ¡Bienvenido, <span className="menu-username">{currentUser.nickname}</span>!
+          </p>
+        </div>
 
-  return (
-    <div style={styles.menuContainer}>
-      <h1>Menú Principal</h1>
-      <h2>Usuario: {currentUser.nickname}</h2>
-      <button onClick={onLogout} style={styles.logoutButton}>Cerrar Sesión</button> 
-      
-      <div style={styles.options}>
-        <button onClick={handleNuevoJuego} style={{ ...styles.actionButton, backgroundColor: '#4CAF50' }}>
-          Crear Partida Nueva
-        </button>
-        <button onClick={handleUnirsePartida} style={{ ...styles.actionButton, backgroundColor: '#FF9800' }}>
-          Unirse a Partida
-        </button>
-        <button onClick={handleVerRanking} style={{ ...styles.actionButton, backgroundColor: '#2196F3' }}>
-          Ver Ranking 
-        </button>
-      </div>
-    </div>
-  );
-};
-const styles: { [key: string]: React.CSSProperties } = {
-  menuContainer: {
-    padding: '50px',
-    backgroundColor: '#0c138eff',
-    borderRadius: '10px',
-    width: '500px',
-    height: '400px',
-    boxShadow: '0 5px 8px rgba(255, 255, 255, 0.3)',
-    position: 'relative', // permitir posicionamiento absoluto dentro del contenedor
-  },
-  logoutButton: {
-    position: 'absolute',
-    top: '20px',
-    left: '20px', // mover a la esquina superior izquierda
-    padding: '5px 10px',
-    backgroundColor: '#f44336',
-    color: 'white',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
-  },
-  options: {
-    display: 'flex',
-    height: '200px',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    margin: '10px 0',
-  },
-  actionButton: {
-    padding: '15px 20px',
-    color: 'white',
-    border: 'none',
-    borderRadius: '30px',
-    cursor: 'pointer',
-    fontWeight: 'bold',
-    minWidth: '200px',
-  },
-  sectionHeader: {
-    borderBottom: '1px solid #444',
-    paddingBottom: '10px',
-    marginBottom: '15px',
-  },
-  joinButton: {
-    padding: '8px 15px',
-    backgroundColor: '#61dafb',
-    color: '#282c34',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
-    fontWeight: 'bold',
-  },
-  errorText: {
-    color: '#ff6b6b',
-  },
+        {/* Opciones del menú */}
+        <div className="menu-options">
+          <button onClick={handleNuevoJuego} className="menu-action-button">
+            <span className="button-icon">➕</span>
+            <span>Crear Partida Nueva</span>
+          </button>
+          
+          <button onClick={handleUnirsePartida} className="menu-action-button">
+            <span className="button-icon">🎯</span>
+            <span>Unirse a Partida</span>
+          </button>
+          
+          <button onClick={handleVerRanking} className="menu-action-button">
+            <span className="button-icon">🏆</span>
+            <span>Ver Ranking</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };
