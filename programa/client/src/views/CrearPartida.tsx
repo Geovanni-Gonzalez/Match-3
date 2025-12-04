@@ -1,31 +1,50 @@
 // client/src/views/CrearPartida.tsx
-
-import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import './CrearPartida.css';
+import React, { useState } from 'react';
+import axios from 'axios';
+import { useGameEvents } from '../hooks/useGameEvents';
 
-// --- Interfaces de Tipos ---
+const API_URL = 'http://localhost:4000/api';
+
+// -------------------------------
+// PROPS
+// -------------------------------
 interface CrearPartidaProps {
-  onBack: () => void; // Función para regresar al menú principal
-  onCreateSuccess: (partidaId: string) => void; // Función al crear exitosamente
+  onBack: () => void;
+  onCreateSuccess: (partidaId: string) => void;
 }
 
-export const CrearPartida: React.FC<CrearPartidaProps> = ({ onBack, onCreateSuccess }) => {
-  const { currentUser } = useAuth(); // Obtener usuario autenticado
-  const [tipoJuego, setTipoJuego] = useState<'Match' | 'Tiempo'>('Match'); // Default "Match"
-  const [tematica, setTematica] = useState<string>('Gemas'); // Default "Match" (interpretado como Temática)
-  const [numJugadores, setNumJugadores] = useState<number>(2); // Default 2, REQ-008
-  const [duracionMinutos, setDuracionMinutos] = useState<number>(5); // Default 5 minutos para tipo Tiempo
+export const CrearPartida: React.FC<CrearPartidaProps> = ({
+  onBack,
+  onCreateSuccess
+}) => {
+
+  // Hook en modo general SIN partidaId
+  const {
+    joinGame,
+
+  } = useGameEvents(null as any);
+
+  const { currentUser } = useAuth();
+
+  // -------------------------------
+  // Estados
+  // -------------------------------
+  const [tipoJuego, setTipoJuego] = useState<'Match' | 'Tiempo'>('Match');
+  const [tematica, setTematica] = useState<string>('Gemas');
+  const [numJugadores, setNumJugadores] = useState<number>(2);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Opciones para los selectores (REQ-003 COLORES_VALIDOS para temática)
-  const opcionesTematica = ['Gemas', 'Monstruos', 'Frutas', 'Animales']; // Mock de temáticas
+  const opcionesTematica = ['Gemas', 'Monstruos', 'Frutas', 'Animales'];
   const opcionesTipoJuego = [
-    { value: 'Match', label: 'Match' }, 
+    { value: 'Match', label: 'Match' },
     { value: 'Tiempo', label: 'Tiempo' }
   ];
 
+  // -------------------------------
+  // CREAR PARTIDA
+  // -------------------------------
   const handleCrearPartida = async () => {
     console.log('[CREAR PARTIDA] Iniciando...');
     console.log('[CREAR PARTIDA] Usuario actual:', currentUser);
@@ -45,53 +64,44 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({ onBack, onCreateSucc
     setError(null);
     setLoading(true);
 
+
+
+
+
     try {
-      console.log('[CREAR PARTIDA] Enviando solicitud al backend...');
-      
-      // REQ-007: Llama a la ruta REST para crear una partida (POST /api/partidas)
-      const body: any = {
-        nickname: currentUser.nickname,
-        socketID: currentUser.socketID,
-        tipoJuego: tipoJuego,
-        tematica: tematica,
-        numJugadoresMax: numJugadores, // REQ-008
-      };
-
-      // Si es tipo Tiempo, agregar duración
-      if (tipoJuego === 'Tiempo') {
-        body.duracionMinutos = duracionMinutos;
-      }
-
-      console.log('[CREAR PARTIDA] Body a enviar:', body);
-
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:4000';
-      const response = await fetch(`${backendUrl}/api/partidas`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
+      const response = await axios.post(`${API_URL}/partida/crear_partida`, {
+        tipoJuego,
+        tematica,
+        numJugadoresMax: numJugadores
       });
 
-      console.log('[CREAR PARTIDA] Response status:', response.status);
-      const data = await response.json();
-      console.log('[CREAR PARTIDA] Respuesta del servidor:', data);
-
-      if (response.ok && data.success) {
-        const partidaId = data.partidaId;
-        console.log('[CREAR PARTIDA] Partida creada con ID:', partidaId);
-        onCreateSuccess(partidaId); // Notifica al padre para ir a sala de espera
-      } else {
-        setError(data.message || 'Error al crear la partida.');
+      if (response.status !== 201 || !response.data.codigoPartida) {
+        setError("Error al crear partida en backend.");
+        setLoading(false);
+        return;
       }
-    } catch (e) {
-      setError('Fallo de conexión con el servidor backend.');
-      console.error('[CREAR PARTIDA] Error:', e);
+
+      const codigoPartida = response.data.codigoPartida;
+      console.log("[CrearPartida] partidaId recibido →", codigoPartida);
+
+      joinGame?.(
+        codigoPartida,
+        currentUser?.nickname || "Jugador",
+        currentUser?.idDB ?? 0
+      );
+      onCreateSuccess(codigoPartida);
+
+    } catch (err) {
+      console.error(err);
+      setError("No se pudo conectar con el servidor.");
     } finally {
       setLoading(false);
     }
   };
 
+  // -------------------------------
+  // UI
+  // -------------------------------
   return (
     <div className="crear-partida-container">
       {/* Fondo animado con gradiente */}
@@ -217,7 +227,7 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({ onBack, onCreateSucc
           </button>
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 

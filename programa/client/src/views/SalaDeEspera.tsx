@@ -1,167 +1,120 @@
-// client/src/views/SalaDeEspera.tsx
+import React, { useEffect, useState, useRef } from "react";
+import { useGameEvents } from "../hooks/useGameEvents";
+import { useAuth } from "../context/AuthContext";
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import './SalaDeEspera.css'; 
-
-interface JugadorSala {
-  nickname: string;
-  socketID: string;
-  isReady: boolean;
-}
-
-interface SalaDeEsperaProps {
+interface Props {
   partidaId: string;
-  currentUserNickname: string;
   onLeave: () => void;
-  onStartGame: (partidaId: string, tablero: any[], jugadores: any[], gameInfo: any) => void;
+  onStartGame: (partidaId: string, tablero: any, config: any) => void;
 }
 
-export const SalaDeEspera: React.FC<SalaDeEsperaProps> = ({ 
-  partidaId, 
-  currentUserNickname,
-  onLeave, 
-  onStartGame 
+export const SalaDeEspera: React.FC<Props> = ({
+  partidaId,
+  onLeave,
+  onStartGame
 }) => {
-  const { socket } = useAuth(); 
-  const [jugadores, setJugadores] = useState<JugadorSala[]>([]);
-  const [isReady, setIsReady] = useState(false);
-  const [esLider, setEsLider] = useState(false);
-  const [maxJugadores, setMaxJugadores] = useState<number>(6);
-  const [infoPartida, setInfoPartida] = useState<any>(null); // Guardar info completa
-  const [tiempoRestante, setTiempoRestante] = useState<number>(180); // 3 minutos en segundos
-  const [showTimeoutNotification, setShowTimeoutNotification] = useState(false);
+  const { currentUser } = useAuth();
 
-  useEffect(() => {
-    // Obtener info de la partida
-    const fetchPartidaInfo = async () => {
-      try {
-        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:4000';
-        const response = await fetch(`${backendUrl}/api/partidas/${partidaId}`);
-        const data = await response.json();
-        
-        if (data.success) {
-          setMaxJugadores(data.partida.numJugadoresMax);
-          setInfoPartida(data.partida); // Guardar toda la info
-        }
-      } catch (error) {
-        console.error('[SalaDeEspera] Error al obtener info de partida:', error);
-      }
-    };
-    
-    fetchPartidaInfo();
-  }, [partidaId]);
+  const {
+    jugadores,
+    gameStatus,
+    tablero,
+    lobbyTimer,
+    setReady,
+    startGame,
+    onAllPlayersReady,
+    maxPlayers,
+    countdown,
+    gameConfig,
+    requestEnterGame,
+    onForceNavigateGame
+  } = useGameEvents(partidaId);
 
-  useEffect(() => {
-    if (!socket) return;
+  const [isReadyLocal, setIsReadyLocal] = useState(false);
 
-    console.log(`[Client] Uniéndose a sala: ${partidaId}`);
-    socket.emit('join_room', { partidaId, nickname: currentUserNickname });
-
-    socket.on('update_players_list', (listaServidor: JugadorSala[]) => {
-        setJugadores(listaServidor);
-        // El primer jugador de la lista es el líder
-        if (listaServidor.length > 0 && listaServidor[0].nickname === currentUserNickname) {
-            setEsLider(true);
-        }
-    });
-
-    socket.on('player_status_changed', (data) => {
-        setJugadores(prev => prev.map(p => 
-            p.socketID === data.socketID ? { ...p, isReady: data.isReady } : p
-        ));
-    });
-
-    // --- CORRECCIÓN AQUÍ: Recibimos y pasamos 'jugadores' ---
-    socket.on('game_started', (data: { tablero: any[], jugadores: any[], tipoJuego: string, tematica: string, duracionMinutos?: number }) => {
-        console.log('[Client] Partida iniciada. Datos recibidos:', data);
-        // Pasamos los argumentos con la info del juego
-        onStartGame(partidaId, data.tablero, data.jugadores, {
-            tipoJuego: data.tipoJuego,
-            tematica: data.tematica,
-            duracionMinutos: data.duracionMinutos
-        }); 
-    });
-
-    // Manejar timeout de partida (3 minutos sin iniciar)
-    socket.on('game_timeout', (data: { mensaje: string }) => {
-        console.log('[Client] Partida cancelada por timeout:', data.mensaje);
-        setShowTimeoutNotification(true);
-        
-        // Esperar 3 segundos para que el usuario lea el mensaje antes de regresar
-        setTimeout(() => {
-            onLeave();
-        }, 3000);
-    });
-
-    return () => {
-        socket.off('update_players_list');
-        socket.off('player_status_changed');
-        socket.off('game_started');
-        socket.off('game_timeout');
-    };
-  }, [socket, partidaId, currentUserNickname, onStartGame, onLeave]);
-
-  // Cronómetro de tiempo restante
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTiempoRestante(prev => {
-        if (prev <= 0) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  const handleToggleReady = () => {
-    if (!socket) return;
-    const newState = !isReady;
-    setIsReady(newState); 
-    socket.emit('player_ready', { partidaId, isReady: newState });
-  };
-
-  const handleEmitStartGame = () => {
-      if (!socket || !infoPartida) return;
-      console.log('[Client] Solicitando iniciar partida...');
-      
-      // Enviar info real de la partida
-      socket.emit('start_game', { 
-        partidaId,
-        tipoJuego: infoPartida.tipoJuego || 'Match',
-        tematica: infoPartida.tematica || 'Gemas',
-        duracion: infoPartida.duracionMinutos
-      });
-  };
-
-  const handleLeaveRoom = () => {
-    if (!socket) return;
-    console.log('[Client] Abandonando sala de espera...');
-    
-    // Notificar al servidor que el jugador abandona la sala
-    socket.emit('leave_waiting_room', { partidaId, nickname: currentUserNickname });
-    
-    // Ejecutar callback para regresar al menú
-    onLeave();
-  };
-
-  const allPlayersReady = jugadores.length >= 2 && jugadores.every(j => j.isReady);
-  const puedeIniciar = esLider && allPlayersReady; // Solo el líder puede iniciar cuando todos estén listos
+  // ----------------------------
+  // TIMER LOCAL (ANIMACI�N)
+  // ----------------------------
+  const [timeLeft, setTimeLeft] = useState(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
-  const getTimeColor = () => {
-    if (tiempoRestante > 120) return '#4CAF50'; // Verde
-    if (tiempoRestante > 60) return '#FF9800'; // Naranja
-    return '#FF4444'; // Rojo
+  // Sincronizar estado local de "listo" con la informaci�n del servidor
+  useEffect(() => {
+    const me = jugadores.find(j => j.nickname === currentUser?.nickname);
+    if (me) {
+      setIsReadyLocal(me.isReady);
+    }
+  }, [jugadores, currentUser]);
+
+  // Log opcional para cuando el servidor dice "todos listos"
+  useEffect(() => {
+    if (!onAllPlayersReady) return;
+    const unsub = onAllPlayersReady((d) => {
+      console.log("Servidor confirma: todos listos en", d.partidaId);
+    });
+    return () => {
+      if (typeof unsub === "function") {
+        void unsub();
+      }
+    };
+  }, [onAllPlayersReady]);
+
+  // Cuando el servidor fuerza la navegaci�n al tablero
+  useEffect(() => {
+    if (!onForceNavigateGame) return;
+    const unsub = onForceNavigateGame(({ tablero, config }) => {
+      console.log("[SalaDeEspera] Navegando al tablero...");
+      onStartGame(partidaId, tablero, config);
+    });
+    return () => { unsub(); };
+  }, [onForceNavigateGame, onStartGame, partidaId]);
+
+  const toggleReady = () => {
+    const next = !isReadyLocal;
+    // Optimistic update
+    setIsReadyLocal(next);
+    setReady?.(partidaId, next);
   };
+
+  // Cuando recibimos tiempo del server  sincronizamos
+  useEffect(() => {
+    if (lobbyTimer <= 0) return;
+
+    // Reiniciar loop local
+    if (intervalRef.current) clearInterval(intervalRef.current);
+
+    setTimeLeft(lobbyTimer);
+
+    intervalRef.current = setInterval(() => {
+      setTimeLeft(prev => {
+        const newVal = prev > 0 ? prev - 1 : 0;
+        return newVal;
+      });
+    }, 1000);
+  }, [lobbyTimer]);
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  const handleStart = () => {
+    requestEnterGame?.(partidaId);
+  };
+
+  const allReady =
+    jugadores.length >= 2 && jugadores.every((j) => j.isReady === true);
+
+  // Identificar si el usuario actual es el host
+  const isHost = jugadores.find(j => j.nickname === currentUser?.nickname)?.isHost;
 
   return (
     <div className="sala-espera-container">

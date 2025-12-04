@@ -1,6 +1,5 @@
+// programa/client/src/views/MenuPrincipal.tsx
 import React from 'react';
-import './MenuPrincipal.css';
-
 // Definir los tipos de vista para el componente
 type MenuViews = 'menu' | 'lobby' | 'ranking' | 'create_game' | 'game';
 
@@ -16,16 +15,21 @@ interface MenuPrincipalProps {
   onNavigate: (view: MenuViews) => void; 
 }
 
-export const MenuPrincipal: React.FC<MenuPrincipalProps> = ({ currentUser, onLogout, onNavigate }) => {
-  const handleUnirsePartida = () => {
-      onNavigate('lobby'); 
-      console.log("Navegar a vista de lobby de partidas.");
-  }
-  
-  const handleNuevoJuego = () => {
-      onNavigate('create_game'); 
-      console.log("Navegar a vista de crear partida.");
-  }
+export const MenuPrincipal: React.FC<MenuPrincipalProps> = ({ currentUser, onLogout, onNavigate }) => { // ⬅️ Recibir la nueva prop
+
+  // ... (el resto del estado y la lógica)
+
+  const handleUnirsePartida = () => {
+      // Usa onNavigate para cambiar a la vista del Lobby
+      onNavigate('lobby'); 
+      console.log("Navegar a vista de lobby de partidas.");
+  }
+  
+  const handleNuevoJuego = () => {
+      // Usa onNavigate para cambiar a la vista de Crear Partida
+      onNavigate('create_game'); 
+      console.log("Navegar a vista de creación de partida.");
+  };
 
   const handleVerRanking = () => {
       onNavigate('ranking');

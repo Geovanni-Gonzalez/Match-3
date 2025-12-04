@@ -1,45 +1,49 @@
 // client/src/views/Bienvenida.tsx
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import './Bienvenida.css';
+import { useAuth } from '../context/AuthContext'; 
+import axios from 'axios';
 
-interface BienvenidaProps {
-  onLoginSuccess: (nickname: string) => void;
-}
+const API_URL = 'http://localhost:4000/api';
 
-export const Bienvenida: React.FC<BienvenidaProps> = ({ onLoginSuccess }) => {
+export const Bienvenida: React.FC = () => {
   const { login } = useAuth();
-  const [nickname, setNickname] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [nickname, setNickname] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
     if (nickname.trim().length < 3) {
-      setError('El nickname debe tener al menos 3 caracteres.');
+      setError("El nickname debe tener al menos 3 caracteres.");
       return;
     }
-    setError('');
-    setLoading(true);
+
+    setError("");
+    setIsLoading(true);
 
     try {
-      console.log(`[BIENVENIDA] Autenticando a: ${nickname}`);
-      
-      // Usar el contexto de autenticación para hacer login
-      await login(nickname);
-      
-      console.log('[BIENVENIDA] Autenticación exitosa');
-      onLoginSuccess(nickname);
-    } catch (e) {
-      setError('No se pudo conectar con el servidor.');
-      console.error('[BIENVENIDA] Error:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
+      console.log("[Cliente] Registrando jugador...");
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && nickname.trim().length >= 3 && !loading) {
-      handleLogin();
+      const res = await axios.post(`${API_URL}/jugador/registrar`, { nickname });
+      const jugadorId = res.data.jugadorId;
+
+      console.log(`[Cliente] Jugador registrado con ID DB: ${jugadorId}`);
+
+      // Iniciar sesión (activa el socket + guarda nickname)
+      await login(nickname, jugadorId);
+
+      console.log("[Cliente] Sesión establecida correctamente.");
+
+    } catch (err) {
+      console.error("[Cliente] Error al iniciar sesión:", err);
+
+      const errMsg =
+        axios.isAxiosError(err)
+          ? err.response?.data?.message || "Error en el servidor."
+          : "Error desconocido.";
+
+      setError(errMsg);
+    } finally {
+      setIsLoading(false);
     }
   };
 

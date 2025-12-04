@@ -1,145 +1,113 @@
 // client/src/views/LobbyPartidas.tsx
-
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { getSocket } from '../api/socket';
-import './LobbyPartidas.css';
-
-// --- Interfaces de Tipos ---
-interface PartidaDisponible {
-  id: string; // UUID interno para operaciones
-  codigo: string; // Código visual de 6 caracteres
-  tipo: 'Match' | 'Tiempo';
-  tematica: string;
-  jugadores: number; // Número actual de jugadores
-  maxJugadores: number;
-  tiempoRestante: number; // En segundos
-  duracionMinutos?: number; // Duración configurada (solo para tipo Tiempo)
-  estado: string;
-  nicknames: string[]; // Lista de nicknames de jugadores unidos
-}
+import React, { useEffect, useState, useMemo } from "react";
+import { useAuth } from "../context/AuthContext";
+import { SocketService, PartidaListItem } from "../services/SocketService";
 
 interface LobbyPartidasProps {
-  onBack: () => void; // Función para regresar al menú principal
-  onJoinSuccess: (partidaId: string) => void; // Función al unirse exitosamente
+  onBack: () => void;
+  onJoinSuccess: (partidaId: string) => void;
 }
 
-export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({ onBack, onJoinSuccess }) => {
-    const { currentUser } = useAuth(); // Obtener el usuario logueado
-    const [partidasDisponibles, setPartidasDisponibles] = useState<PartidaDisponible[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [selectedPartidaId, setSelectedPartidaId] = useState<string | null>(null);
-    const [selectedPartida, setSelectedPartida] = useState<any>(null);
+export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
+  onBack,
+  onJoinSuccess,
+}) => {
+  const { socket, currentUser } = useAuth();
 
-    useEffect(() => {
-        fetchPartidas();
-        // En un entorno real, aquí se podría establecer un polling o un listener de Socket.IO
-        // para recibir actualizaciones de partidas disponibles en tiempo real.
-        const intervalId = setInterval(fetchPartidas, 5000); // Recargar cada 5 segundos
-        return () => clearInterval(intervalId); // Limpiar al desmontar
-    }, []);
+  const [partidas, setPartidas] = useState<PartidaListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedPartidaId, setSelectedPartidaId] = useState<string | null>(
+    null
+  );
 
-  const fetchPartidas = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      console.log('[LOBBY] Obteniendo partidas disponibles...');
-      
-      // REQ-011: Llama a la ruta REST para obtener partidas disponibles
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:4000';
-      const response = await fetch(`${backendUrl}/api/partidas`); 
-      const data = await response.json();
-      
-      console.log('[LOBBY] Respuesta del servidor:', data);
-      
-      if (response.ok && data.success) {
-        // La API devuelve { success, total, partidas }
-        const partidas: PartidaDisponible[] = data.partidas.map((p: any) => ({
-          id: p.id, // UUID interno para operaciones
-          codigo: p.codigo, // Código visual
-          tipo: p.tipo,
-          tematica: p.tematica,
-          jugadores: p.jugadores,
-          maxJugadores: p.maxJugadores,
-          tiempoRestante: p.tiempoRestante,
-          estado: p.estado,
-          nicknames: p.nicknames || []
-        }));
-        
-        setPartidasDisponibles(partidas);
-        console.log(`[LOBBY] ${partidas.length} partidas cargadas`);
-      } else {
-        setError(data.message || 'Error al cargar partidas del servidor.');
-      }
-    } catch (e) {
-      setError('Fallo de conexión con el servidor backend.');
-      console.error('[LOBBY] Error:', e);
-    } finally {
+  const service = useMemo(() => (socket ? new SocketService(socket) : null), [socket]);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // ============================
+  // 1) Cargar y actualizar partidas por WebSocket
+  // ============================
+  useEffect(() => {
+    if (!service) {
+      setError("La conexión no está disponible.");
       setLoading(false);
-    }
-  };
-
-  const handleUnirseClick = async () => {
-    if (!selectedPartidaId || !selectedPartida) {
-      alert('Por favor, selecciona una partida para unirte.');
       return;
     }
 
-    if (!currentUser) {
-      alert('Debes estar autenticado para unirte a una partida.');
-      return;
-    }
+    setLoading(true);
 
-    console.log(`[LOBBY] Intentando unirse a la partida: ${selectedPartidaId} (ID: ${selectedPartida.id})`);
-    
-    try {
-      // Primero llamar a la API REST para unirse (usando el ID interno)
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:4000';
-      const response = await fetch(`${backendUrl}/api/partidas/${selectedPartida.id}/unirse`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          nickname: currentUser.nickname,
-          socketID: currentUser.socketID
-        }),
-      });
+    // Pedir la lista inicial
+    service.getPartidas();
 
-      const data = await response.json();
-      console.log('[LOBBY] Respuesta de unirse:', data);
+    // Escuchar actualizaciones
+    const unsubscribe = service.onPartidasList((lista) => {
+      setPartidas(lista);
+      if (loading) setLoading(false);
+    });
 
-      if (response.ok && data.success) {
-        // Luego conectarse por Socket.IO
-        const socket = getSocket();
-        if (socket) {
-          socket.emit('unirse_partida', { 
-            codigo: selectedPartida.id, // Usar ID interno para sockets
-            nickname: currentUser.nickname 
-          });
-
-          // Escuchar eventos de la partida
-          socket.on('partida_actualizada', (partidaData) => {
-            console.log('[SOCKET] Partida actualizada:', partidaData);
-          });
-
-          socket.on('error_partida', (errorData) => {
-            alert(`Error: ${errorData.message}`);
-          });
-        }
-
-        alert(`¡Te has unido a la partida ${selectedPartidaId}!`);
-        onJoinSuccess(selectedPartida.id); // Pasar ID interno
-      } else {
-        alert(`Error al unirse: ${data.message}`);
+    // Escuchar actualizaciones del timer del lobby
+    const unsubscribeTimer = service.onTimerTick((data) => {
+      // Si el evento viene con partidaId, actualizamos solo esa partida en la lista local
+      if (data.partidaId) {
+        setPartidas(prevPartidas => 
+          prevPartidas.map(p => 
+            p.id === data.partidaId 
+              ? { ...p, tiempoRestante: data.secondsLeft } 
+              : p
+          )
+        );
       }
-    } catch (e) {
-      setError('No se pudo establecer la conexión para unirse.');
-      console.error('[LOBBY] Error:', e);
+    });
+
+    // Limpiar suscripción al desmontar
+    return () => {
+      unsubscribe();
+      unsubscribeTimer();
+    };
+  }, [service]);
+
+  // ============================
+  // 2) Unirse a partida por Socket.IO
+  // ============================
+  const handleUnirseClick = () => {
+    if (!service) {
+      alert("No hay conexión con el servidor.");
+      return;
     }
+    if (!currentUser) {
+      alert("Necesitas iniciar sesión.");
+      return;
+    }
+    if (!selectedPartidaId) {
+      alert("Selecciona una partida.");
+      return;
+    }
+
+    // Enviar join al backend
+    service.joinGame(selectedPartidaId, currentUser.nickname, currentUser.idDB);
+
+    // Esperar confirmación
+    socket!.once(
+      "joined_game",
+      (data: { idPartida: string; nickname: string; socketID: string }) => {
+        console.log("[LobbyPartidas] joined_game received, navigating...");
+        onJoinSuccess(data.idPartida);
+      }
+    );
+
+    socket!.once("error_join", (data: { message: string }) => {
+      alert("No se pudo entrar: " + data.message);
+    });
   };
 
+  // ============================
+  // Render
+  // ============================
   return (
     <div className="lobby-partidas-container">
       {/* Fondo animado con gradiente */}

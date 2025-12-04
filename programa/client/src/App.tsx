@@ -5,57 +5,46 @@ import { MenuPrincipal } from './views/MenuPrincipal';
 import { LobbyPartidas } from './views/LobbyPartidas';
 import { CrearPartida } from './views/CrearPartida';
 import { RankingHistorico } from './views/RankingHistorico';
-import { SalaDeEspera } from './views/SalaDeEspera'; 
+import { SalaDeEspera } from './views/SalaDeEspera';
 import { Juego } from './views/Juego';
 import { useAuth } from './context/AuthContext';
 
 // --- Tipos ---
-type AppView = 'welcome' | 'menu' | 'lobby' | 'ranking' | 'create_game' | 'waiting_room' | 'game';
+type AppView =
+  | 'welcome'
+  | 'menu'
+  | 'lobby'
+  | 'ranking'
+  | 'create_game'
+  | 'waiting_room'
+  | 'game';
 
-// Interfaz para las celdas del tablero (debe coincidir con el backend)
-interface Celda {
-  fila: number;
-  columna: number;
-  colorID: string;
-  estado: string;
-  bloqueadaPor: string | null;
-}
-
-// Interfaz para los jugadores
-interface Jugador {
-  nickname: string;
-  puntaje: number;
+// --- Tipo coherente con el backend ---
+export interface Celda {
+  tipo: number;
+  estado?: string;
 }
 
 const App: React.FC = () => {
-  const { currentUser, login, logout } = useAuth();
-  
-  const [currentView, setCurrentView] = useState<AppView>('welcome'); 
-  const [currentGameId, setCurrentGameId] = useState<string | null>(null); 
-  
-  // Estado para guardar el tablero inicial que envía el servidor
+  const { currentUser, logout } = useAuth();
+
+  const [currentView, setCurrentView] = useState<AppView>('welcome');
+  const [currentGameId, setCurrentGameId] = useState<string | null>(null);
+
+  // Tablero inicial que envía el servidor
   const [initialBoard, setInitialBoard] = useState<Celda[][]>([]);
-  // Estado para guardar la lista inicial de jugadores
-  const [initialPlayers, setInitialPlayers] = useState<Jugador[]>([]);
-  // Estado para guardar info del juego
-  const [gameInfo, setGameInfo] = useState<any>(null);
+  const [initialConfig, setInitialConfig] = useState<any>(null);
 
   const handleNavigation = (view: AppView) => {
     setCurrentView(view);
-  };
-
-  const handleLoginSuccess = async (nickname: string) => {
-    await login(nickname); 
-    setCurrentView('menu');
   };
 
   const handleLogout = () => {
     logout();
     setCurrentView('welcome');
     setCurrentGameId(null);
-    setInitialBoard([]); 
-    setInitialPlayers([]);
-    setGameInfo(null);
+    setInitialBoard([]);
+    setInitialConfig(null);
   };
 
   const handleGoToWaitingRoom = (partidaId: string) => {
@@ -63,12 +52,11 @@ const App: React.FC = () => {
     handleNavigation('waiting_room');
   };
 
-  // --- MODIFICADO: Ahora recibe info del juego ---
-  const handleStartGame = (partidaId: string, tableroServidor: any[], jugadoresServidor: any[], infoJuego: any) => {
+  // Recibe el tablero generado por el servidor vía sockets
+  const handleStartGame = (partidaId: string, tableroServidor: Celda[][], config: any) => {
     setCurrentGameId(partidaId);
-    setInitialBoard(tableroServidor); 
-    setInitialPlayers(jugadoresServidor);
-    setGameInfo(infoJuego); // Guardar tipo de juego, temática, duración
+    setInitialBoard(tableroServidor);
+    setInitialConfig(config);
     handleNavigation('game');
   };
 
@@ -76,82 +64,77 @@ const App: React.FC = () => {
 
   switch (currentView) {
     case 'welcome':
+      content = !currentUser ? <Bienvenida /> : null;
       if (currentUser) {
-          setCurrentView('menu'); 
-          content = null;
-      } else {
-          content = <Bienvenida onLoginSuccess={handleLoginSuccess} />;
+        setTimeout(() => handleNavigation('menu'), 0);
       }
       break;
-      
+
     case 'menu':
-      if (!currentUser) {
-        content = <Bienvenida onLoginSuccess={handleLoginSuccess} />;
-      } else {
-        content = (
-            <MenuPrincipal 
-                currentUser={currentUser} 
-                onLogout={handleLogout} 
-                onNavigate={handleNavigation}
-            />
-        );
-      }
+      content = currentUser ? (
+        <MenuPrincipal
+          currentUser={currentUser}
+          onLogout={handleLogout}
+          onNavigate={handleNavigation}
+        />
+      ) : (
+        <Bienvenida />
+      );
       break;
 
     case 'lobby':
-        content = (
-            <LobbyPartidas 
-                onBack={() => handleNavigation('menu')} 
-                onJoinSuccess={handleGoToWaitingRoom} 
-            />
-        );
-        break;
+      content = (
+        <LobbyPartidas
+          onBack={() => handleNavigation('menu')}
+          onJoinSuccess={handleGoToWaitingRoom}
+        />
+      );
+      break;
 
     case 'create_game':
-        content = (
-            <CrearPartida 
-                onBack={() => handleNavigation('menu')} 
-                onCreateSuccess={handleGoToWaitingRoom} 
-            />
-        );
-        break;
+      content = (
+        <CrearPartida
+          onBack={() => handleNavigation('menu')}
+          onCreateSuccess={handleGoToWaitingRoom}
+        />
+      );
+      break;
 
     case 'ranking':
-        content = (
-            <RankingHistorico
-                onBack={() => handleNavigation('menu')} 
-            />
-        );
-        break;
+      content = <RankingHistorico onBack={() => handleNavigation('menu')} />;
+      break;
 
     case 'waiting_room':
-        if (!currentGameId || !currentUser) return null;
-        content = (
-            <SalaDeEspera 
-                partidaId={currentGameId}
-                currentUserNickname={currentUser.nickname}
-                onLeave={() => handleNavigation('menu')}
-                onStartGame={handleStartGame} 
-            />
-        );
-        break;
+      if (!currentGameId || !currentUser) return null;
+      content = (
+        <SalaDeEspera
+          {...({
+            partidaId: currentGameId,
+            currentUserNickname: currentUser.nickname,
+            onLeave: () => handleNavigation('menu'),
+            onStartGame: handleStartGame,
+          } as any)}
+        />
+      );
+      break;
 
     case 'game':
       if (!currentGameId || !currentUser || !gameInfo) return null;
       content = (
-          <Juego 
-            partidaId={currentGameId}
-            currentUserNickname={currentUser.nickname}
-            initialTablero={initialBoard}
-            initialPlayers={initialPlayers}
-            gameInfo={gameInfo} // Pasar info del juego
-            onLeave={() => handleNavigation('menu')}
-          />
+        <Juego
+          {...({
+            partidaId: currentGameId,
+            currentUserNickname: currentUser.nickname,
+            initialTablero: initialBoard,
+            initialConfig: initialConfig,
+            onLeave: () => handleNavigation('menu'),
+          } as any)}
+        />
       );
       break;
 
     default:
-      content = <Bienvenida onLoginSuccess={handleLoginSuccess} />;
+      content = <Bienvenida />;
   }
 
   return (
@@ -163,6 +146,7 @@ const App: React.FC = () => {
 
 export default App;
 
+// --- Estilos ---
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     fontFamily: 'Arial, sans-serif',

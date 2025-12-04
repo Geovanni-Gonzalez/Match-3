@@ -1,0 +1,20 @@
+// server/src/core/repositories/PlayerRepo.ts
+import pool from './dbPool.js';
+import Logger from '../../utils/Logger.js';
+
+
+export class PlayerRepo {
+    static async findOrCreateByNickname(nickname: string) {
+        const conn = await pool.getConnection();
+        try {
+            Logger.info('[PlayerRepo] Buscando o creando jugador', { nickname });
+            const [rows] = await conn.execute('SELECT id_jugador FROM jugador WHERE nombre = ?', [nickname]);
+            if ((rows as any).length > 0) return (rows as any)[0].id_jugador;
+            const [res] = await conn.execute('INSERT INTO jugador (nombre, fecha_registro) VALUES (?, NOW())', [nickname]);
+            Logger.info('[PlayerRepo] Jugador creado', { id: (res as any).insertId });
+            return (res as any).insertId;
+        } finally {
+            conn.release();
+        }
+    }
+}

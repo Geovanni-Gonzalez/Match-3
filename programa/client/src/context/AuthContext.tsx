@@ -8,13 +8,14 @@ import { io, Socket } from 'socket.io-client';
 export interface UserSession {
     nickname: string;
     socketID: string;
+    idDB: number; 
 }
 
 interface AuthContextType {
     currentUser: UserSession | null;
     isAuthenticated: boolean;
     socket: Socket | null; // Agregamos el socket al contexto para usarlo en otras vistas
-    login: (nickname: string) => Promise<void>;
+    login: (nickname: string, idDB: number) => Promise<void>;
     logout: () => void;
 }
 
@@ -34,7 +35,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [socket, setSocket] = useState<Socket | null>(null);
     const isAuthenticated = currentUser !== null;
 
-    const login = async (nickname: string) => {
+    const login = async (nickname: string, idDB: number) => {
         return new Promise<void>((resolve, reject) => {
             // Conectamos al servidor real en el puerto 4000
             const newSocket = io('http://localhost:4000');
@@ -44,7 +45,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 
                 // Guardamos el socket y el usuario en el estado
                 setSocket(newSocket);
-                setCurrentUser({ nickname, socketID: newSocket.id || '' });
+                setCurrentUser({ nickname, socketID: newSocket.id || '' , idDB}); 
                 resolve();
             });
 
@@ -94,7 +95,3 @@ export const useAuth = (): AuthContextType => {
     return context;
 };
 
-/*
-// Ejemplo de uso en App.tsx:
-// const App: React.FC = () => { return (<AuthProvider><MainRouter /></AuthProvider>); };
-*/

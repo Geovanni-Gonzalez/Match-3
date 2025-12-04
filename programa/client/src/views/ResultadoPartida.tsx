@@ -14,12 +14,14 @@ interface ResultadoPartidaProps {
   partidaId: string;
   resultados: ResultadoJugador[];
   onContinue: () => void; // Función para regresar al Menú Principal
+  tematica?: string;
 }
 
 export const ResultadoPartida: React.FC<ResultadoPartidaProps> = ({ 
   partidaId, 
   resultados, 
-  onContinue 
+  onContinue,
+  tematica
 }) => {
 
   // Ordenar resultados por posición (ya deberían venir ordenados, pero por seguridad)
@@ -30,7 +32,7 @@ export const ResultadoPartida: React.FC<ResultadoPartidaProps> = ({
     <div style={styles.windowFrame}>
       
       <h1 style={styles.title}>Partida Terminada</h1>
-      <p style={styles.subtitle}>ID: {partidaId.substring(0, 8)}...</p>
+      <p style={styles.subtitle}>ID: {partidaId.substring(0, 8)}... | Tema: {tematica || 'N/A'}</p>
 
       {/* Mensaje de Resultado Personal */}
       {currentUserResult && (

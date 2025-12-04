@@ -4,13 +4,13 @@ import React, { useState, useEffect } from 'react';
 import './RankingHistorico.css';
 
 // --- Interfaces de Tipos ---
-interface EstadisticaPartida {
-  partidaId: string;
-  ganador: string;
+interface JugadorRanking {
+  rank: number;
+  user: string;
   puntaje: number;
   tematica: string;
-  tiempoInvertidoSegundos: number;
-  fecha: string;
+  tiempo: number;
+  gameId: string;
 }
 
 interface RankingHistoricoProps {
@@ -30,33 +30,28 @@ export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) =>
     setLoading(true);
     setError(null);
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:4000';
-      const response = await fetch(`${backendUrl}/api/estadisticas`);
-      
-      if (!response.ok) {
-        throw new Error('Error al obtener estadísticas');
-      }
-      
+      const response = await fetch('http://localhost:4000/api/partida/ranking');
       const data = await response.json();
-      
-      if (data.success && data.estadisticas) {
-        // Ordenar por índice invertido (último agregado = más reciente)
-        const estadisticasOrdenadas = [...data.estadisticas].reverse();
-        setEstadisticas(estadisticasOrdenadas);
+
+      if (data.ranking) {
+        setDatosRanking(data.ranking);
+      } else {
+        setDatosRanking([]);
       }
-      
       setLoading(false);
+
     } catch (e) {
       setError('Fallo de conexión con el servidor de Ranking.');
       console.error(e);
       setLoading(false);
-    } 
+    }
   };
 
-  const formatTiempo = (segundos: number): string => {
-    const mins = Math.floor(segundos / 60);
-    const segs = segundos % 60;
-    return `${mins}m ${segs}s`;
+  const formatTime = (seconds: number) => {
+    if (!seconds) return 'N/A';
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
   return (

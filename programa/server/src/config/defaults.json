@@ -1,0 +1,8 @@
+{
+"TIEMPO_VIDA_PARTIDA_MIN": 3,
+"MATCH_FINITO_LIMITE": 100,
+"TAMANIO_FILA": 9,
+"TAMANIO_COLUMNA": 7,
+"COLORES_VALIDOS": ["red", "blue", "green", "yellow", "purple", "orange"],
+"TIEMPO_MATCH_ACTIVATE_MS": 2000
+}

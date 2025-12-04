@@ -1,516 +1,389 @@
 // client/src/views/Juego.tsx
-
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import './Juego.css';
-
-// --- Constantes ---
-const FILAS = 9;
-const COLUMNAS = 7;
-
-// Mapeo de colores del servidor a CSS
-const COLOR_MAP: { [key: string]: string } = {
-  'azul': '#1E90FF',      // DodgerBlue
-  'naranja': '#FF8C00',   // DarkOrange
-  'rojo': '#DC143C',      // Crimson
-  'verde': '#32CD32',     // LimeGreen
-  'amarillo': '#FFD700',  // Gold
-  'morado': '#9370DB'     // MediumPurple
-};
-
-interface JugadorPartida {
-  nickname: string;
-  puntaje: number;
-}
-
-interface Celda {
-  fila: number;
-  columna: number;
-  colorID: string;
-  estado: string;
-  bloqueadaPor: string | null;
-}
+import React, { useEffect } from "react";
+import { useGameEvents } from "../hooks/useGameEvents";
+import { ResultadoPartida } from "./ResultadoPartida";
 
 interface JuegoProps {
   partidaId: string;
   currentUserNickname: string;
-  initialTablero: Celda[][];
-  initialPlayers: JugadorPartida[];
-  gameInfo: { tipoJuego: string; tematica: string; duracionMinutos?: number };
+  initialTablero?: any[][];
+  initialConfig?: any;
   onLeave: () => void;
 }
 
-export const Juego: React.FC<JuegoProps> = ({ 
-  partidaId, 
-  currentUserNickname, 
+// Mapeo de temáticas a iconos/emojis
+const THEME_ICONS: Record<string, Record<string, string>> = {
+  'Gemas': {
+    red: '🔴', blue: '🔵', green: '🟢', yellow: '🟡', purple: '🟣', orange: '🟠'
+  },
+  'Animales': {
+    red: '🐞', blue: '🐳', green: '🐸', yellow: '🐝', purple: '🦄', orange: '🦊'
+  },
+  'Frutas': {
+    red: '🍎', blue: '🫐', green: '🥝', yellow: '🍌', purple: '🍇', orange: '🍊'
+  },
+  'Monstruos': {
+    red: '👹', blue: '👾', green: '🧟', yellow: '💀', purple: '👿', orange: '🎃'
+  }
+};
+
+export const Juego: React.FC<JuegoProps> = ({
+  partidaId,
+  currentUserNickname,
   initialTablero,
-  initialPlayers,
-  gameInfo,
-  onLeave 
+  initialConfig,
+  onLeave
 }) => {
-  const { socket } = useAuth(); 
-  
-  console.log('[Juego] Recibido initialTablero:', initialTablero);
-  console.log('[Juego] Tipo de juego:', gameInfo.tipoJuego);
-  console.log('[Juego] Temática:', gameInfo.tematica);
-  
-  const [tablero, setTablero] = useState<Celda[][]>(initialTablero || []);
-  const [jugadores, setJugadores] = useState<JugadorPartida[]>(initialPlayers || []);
-  const [grupoSeleccionado, setGrupoSeleccionado] = useState<{fila: number, columna: number}[]>([]);
-  const [mensajeError, setMensajeError] = useState<string | null>(null);
-  const [viewState, setViewState] = useState<'playing' | 'winner'>('playing');
-  const [winnerInfo, setWinnerInfo] = useState<any>(null);
-  const [gameEndInfo, setGameEndInfo] = useState<{ tematica: string; partidaId: string } | null>(null);
-  
-  // Estados para el sistema de inicio
-  const [gameStarted, setGameStarted] = useState(false);
-  const [countdown, setCountdown] = useState<number | null>(null);
-  const [isLeader, setIsLeader] = useState(false);
-  
-  // Configurar según tipo de juego
-  const [tiempoRestante, setTiempoRestante] = useState<number>(
-    gameInfo.tipoJuego === 'Tiempo' && gameInfo.duracionMinutos 
-      ? gameInfo.duracionMinutos * 60 
-      : 0
-  );
 
-  // Detectar si el usuario es líder
-  useEffect(() => {
-    if (initialPlayers && initialPlayers.length > 0) {
-      setIsLeader(initialPlayers[0].nickname === currentUserNickname);
-    }
-  }, [initialPlayers, currentUserNickname]);
+  const {
+    jugadores,
+    tablero,
+    gameStatus,
+    error,
+    selectCell,
+    activateMatch,
+    startGame,
+    countdown,
+    matchesLeft,
+    gameConfig,
+    timer,
+    results,
+    rawSocket,
+    notification
+  } = useGameEvents(partidaId, initialTablero, initialConfig);
 
-  // Escuchar tecla U para iniciar cuenta regresiva (solo líder)
+  const isHost = jugadores.find(j => j.nickname === currentUserNickname)?.isHost;
+
+  // ---- CALLBACKS ----
+  const handleCellClick = (r: number, c: number) => {
+    if (gameStatus !== "active") return;
+    selectCell?.(partidaId, r, c);
+  };
+
+  const handleMatch = () => {
+    activateMatch?.(partidaId);
+  };
+
+  // Auto-match por inactividad (2 segundos)
   useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === 'u' && isLeader && !gameStarted && countdown === null) {
-        console.log('[Juego] Líder presionó U, iniciando cuenta regresiva');
-        socket?.emit('leader_start_countdown', { partidaId });
+    if (gameStatus !== "active" || !tablero) return;
+
+    // Verificar si el usuario actual tiene celdas seleccionadas
+    const mySocketId = rawSocket?.()?.id;
+    const hasSelection = tablero.some(row => 
+      row.some(cell => cell.seleccionadoPor === mySocketId)
+    );
+
+    if (!hasSelection) return;
+
+    const timerId = setTimeout(() => {
+      console.log("[Juego] Auto-match por inactividad");
+      handleMatch();
+    }, 2000); // Requerimiento: 2 segundos de inactividad
+
+    return () => clearTimeout(timerId);
+  }, [tablero, gameStatus, partidaId, rawSocket]); // Se reinicia cada vez que cambia el tablero (selección)
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 'u' && isHost && gameStatus === 'ready_to_start') {
+        startGame?.(partidaId);
       }
     };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [startGame, partidaId, isHost, gameStatus]);
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [socket, partidaId, isLeader, gameStarted, countdown]);
+  // ---- RENDER ----
+  if (gameStatus === "finished" && results) {
+    // Mapear resultados al formato esperado por ResultadoPartida
+    // Asumimos que results trae { nickname, puntaje, ... }
+    const sortedResults = [...results].sort((a: any, b: any) => b.puntaje - a.puntaje);
+    
+    const formattedResults = sortedResults.map((r: any, index: number) => ({
+      posicion: index + 1,
+      nickname: r.nickname,
+      puntaje: r.puntaje,
+      isCurrentUser: r.nickname === currentUserNickname
+    }));
 
-  useEffect(() => {
-    if (!socket) return;
+    return (
+      <ResultadoPartida
+        partidaId={partidaId}
+        resultados={formattedResults}
+        onContinue={onLeave}
+        tematica={gameConfig?.tematica}
+      />
+    );
+  }
 
-    // Escuchar inicio de cuenta regresiva
-    socket.on('countdown_started', (data: { count: number }) => {
-      console.log('[Juego] Cuenta regresiva iniciada:', data.count);
-      setCountdown(data.count);
-    });
-
-    // Escuchar actualización de cuenta regresiva
-    socket.on('countdown_update', (data: { count: number }) => {
-      console.log('[Juego] Cuenta regresiva:', data.count);
-      setCountdown(data.count);
-    });
-
-    // Escuchar fin de cuenta regresiva e inicio real del juego
-    socket.on('game_actually_started', () => {
-      console.log('[Juego] ¡El juego ha comenzado!');
-      setCountdown(null);
-      setGameStarted(true);
-    });
-
-    // --- GRUPO BLOQUEADO: Cuando alguien selecciona un grupo ---
-    socket.on('grupo_bloqueado', (data) => {
-        console.log('[Client] Grupo bloqueado:', data);
-        console.log('[Client] Bloqueado por:', data.nickname);
-        console.log('[Client] Usuario actual:', currentUserNickname);
-        
-        // Actualizar tablero con el estado del servidor
-        if (data.tablero) {
-            setTablero(data.tablero);
-        }
-        
-        // Si soy yo quien lo bloqueó, guardar el grupo
-        if (data.nickname === currentUserNickname) {
-            setGrupoSeleccionado(data.grupo);
-        }
-    });
-
-    // --- GRUPO LIBERADO: Cuando alguien cancela ---
-    socket.on('grupo_liberado', (data) => {
-        console.log('[Client] Grupo liberado:', data);
-        
-        // Actualizar tablero con el estado del servidor
-        if (data.tablero) {
-            setTablero(data.tablero);
-        }
-        
-        if (data.nickname === currentUserNickname) {
-            setGrupoSeleccionado([]);
-        }
-    });
-
-    // --- GAME UPDATE: Tablero actualizado después de un match ---
-    socket.on('game_update', (data) => {
-        console.log('[Client] Actualización recibida:', data);
-        
-        // Actualizar tablero y jugadores siempre
-        setTablero(data.tablero);
-        setJugadores(data.jugadores);
-        setMensajeError(null);
-        
-        // Verificar si las celdas seleccionadas aún existen con el mismo color
-        if (grupoSeleccionado.length > 0 && data.tablero) {
-            const grupoSigueValido = grupoSeleccionado.every(coord => {
-                const celdaAnterior = tablero[coord.fila]?.[coord.columna];
-                const celdaNueva = data.tablero[coord.fila]?.[coord.columna];
-                return celdaAnterior && celdaNueva && celdaAnterior.colorID === celdaNueva.colorID;
-            });
-            
-            // Solo limpiar si el grupo ya no es válido (celdas fueron eliminadas/cambiadas)
-            if (!grupoSigueValido) {
-                console.log('[Client] Grupo seleccionado ya no es válido, limpiando');
-                setGrupoSeleccionado([]);
-            }
-        }
-    });
-
-    // --- JUEGO FINALIZADO ---
-    socket.on('game_finished', (data) => {
-        console.log('[Client] Juego finalizado:', data);
-        // Navegar a la pantalla del ganador
-        setViewState('winner');
-        setWinnerInfo(data.ganador);
-        setGameEndInfo({
-            tematica: data.tematica,
-            partidaId: data.partidaId
-        });
-    });
-
-    // --- ERROR SELECCIÓN ---
-    socket.on('error_seleccion', (data) => {
-        console.log('[Client] Error:', data.mensaje);
-        setMensajeError(data.mensaje);
-        setTimeout(() => setMensajeError(null), 3000);
-    });
-
-    // --- ERROR MATCH ---
-    socket.on('error_match', (data) => {
-        console.log('[Client] Error match:', data.mensaje);
-        setMensajeError(data.mensaje);
-        setTimeout(() => setMensajeError(null), 3000);
-    });
-
-    return () => {
-        socket.off('countdown_started');
-        socket.off('countdown_update');
-        socket.off('game_actually_started');
-        socket.off('grupo_bloqueado');
-        socket.off('grupo_liberado');
-        socket.off('game_update');
-        socket.off('game_finished');
-        socket.off('error_seleccion');
-        socket.off('error_match');
-    };
-  }, [socket, currentUserNickname, grupoSeleccionado, tablero]);
-
-  // Cronómetro (solo para tipo Tiempo)
-  useEffect(() => {
-    if (gameInfo.tipoJuego === 'Tiempo' && tiempoRestante > 0) {
-      const timer = setInterval(() => {
-        setTiempoRestante(prev => prev - 1);
-      }, 1000);
-      return () => clearInterval(timer);
-    } else if (gameInfo.tipoJuego === 'Tiempo' && tiempoRestante === 0) {
-      // Notificar al servidor que el tiempo se agotó
-      socket?.emit('tiempo_agotado', { partidaId });
-    }
-  }, [tiempoRestante, gameInfo.tipoJuego, socket, partidaId]);
+  if (error) {
+    return (
+      <div style={styles.windowFrame}>
+        <h1 style={styles.title}>Error</h1>
+        <p>{error}</p>
+        <button onClick={onLeave} style={styles.leaveButton}>Volver</button>
+      </div>
+    );
+  }
 
   if (!tablero || tablero.length === 0) {
     return (
-      <div className="juego-container">
-        <div className="juego-background">
-          {[...Array(20)].map((_, i) => (
-            <div key={i} className="juego-particle"></div>
-          ))}
-        </div>
-        <div className="juego-card">
-          <h1>Cargando partida...</h1>
-        </div>
+      <div style={styles.windowFrame}>
+        <h1 style={styles.title}>Cargando partida...</h1>
       </div>
     );
   }
 
-  // Pantalla del ganador
-  if (viewState === 'winner' && winnerInfo && gameEndInfo) {
-    const esEmpate = winnerInfo.esEmpate || false;
-    
-    return (
-      <div className="juego-container">
-        <div className="juego-background">
-          {[...Array(20)].map((_, i) => (
-            <div key={i} className="juego-particle"></div>
-          ))}
-        </div>
-        <div className="juego-card">
-          <div className="winner-container">
-            <h1 className="winner-title">
-              {esEmpate ? '🤝 ¡EMPATE! 🤝' : '🏆 ¡JUEGO FINALIZADO! 🏆'}
-            </h1>
-            
-            <div className="game-info-section">
-              <p className="game-info-item"><strong>Partida:</strong> {gameEndInfo.partidaId}</p>
-              <p className="game-info-item"><strong>Temática:</strong> {gameEndInfo.tematica}</p>
-            </div>
-
-            {esEmpate ? (
-              <>
-                <h2 className="winner-name">Ganadores (Empate):</h2>
-                <div className="tie-winners">
-                  {winnerInfo.ganadores.map((ganador: any) => (
-                    <div key={ganador.nickname} className="tie-winner-item">
-                      <span className="tie-winner-icon">👑</span>
-                      <span className="tie-winner-name">{ganador.nickname}</span>
-                    </div>
-                  ))}
-                </div>
-                <p className="winner-score">Puntuación: {winnerInfo.puntaje} puntos</p>
-              </>
-            ) : (
-              <>
-                <h2 className="winner-name">Ganador: {winnerInfo.nickname}</h2>
-                <p className="winner-score">Puntuación: {winnerInfo.puntaje} puntos</p>
-              </>
-            )}
-            
-            <div className="ranking-container">
-              <h3 className="ranking-title">Clasificación Final:</h3>
-              {winnerInfo.ranking.map((jugador: any) => (
-                <div key={jugador.nickname} className="ranking-item">
-                  <span className="ranking-position">{jugador.posicion}°</span>
-                  <span className="ranking-nickname">{jugador.nickname}</span>
-                  <span className="ranking-score">{jugador.puntaje} pts</span>
-                </div>
-              ))}
-            </div>
-
-            <button onClick={onLeave} className="return-button">
-              Volver al menú
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const handleCellClick = (fila: number, columna: number) => {
-    const celda = tablero[fila][columna];
-    
-    // No permitir clics hasta que el juego inicie
-    if (!gameStarted) return;
-    
-    // Si la celda está bloqueada por otro jugador, no hacer nada
-    if (celda.bloqueadaPor && celda.bloqueadaPor !== currentUserNickname) {
-      return;
-    }
-
-    console.log('[Client] Enviando selección:', fila, columna);
-    socket?.emit('select_cell', { 
-      partidaId, 
-      fila, 
-      columna, 
-      nickname: currentUserNickname 
-    });
-  };
-
-  const handleConfirmar = () => {
-    if (!gameStarted || grupoSeleccionado.length === 0) {
-      setMensajeError('Debes seleccionar un grupo primero');
-      setTimeout(() => setMensajeError(null), 3000);
-      return;
-    }
-    
-    console.log('[Client] Confirmando match');
-    socket?.emit('confirm_match', { 
-      partidaId, 
-      nickname: currentUserNickname 
-    });
-    
-    // Limpiar inmediatamente la selección local después de confirmar
-    setGrupoSeleccionado([]);
-  };
-
-  const handleCancelar = () => {
-    console.log('[Client] Cancelando selección');
-    socket?.emit('cancel_selection', { 
-      partidaId, 
-      nickname: currentUserNickname 
-    });
-    setGrupoSeleccionado([]);
-  };
-
-  // Pantalla de espera y cuenta regresiva
-  if (!gameStarted) {
-    return (
-      <div className="juego-container">
-        <div className="juego-background">
-          {[...Array(20)].map((_, i) => (
-            <div key={i} className="juego-particle"></div>
-          ))}
-        </div>
-        <div className="juego-card">
-          <div className="waiting-overlay">
-            <h1 className="waiting-title">
-              {countdown !== null ? '¡PREPARADOS!' : 'Esperando inicio...'}
-            </h1>
-            
-            {countdown !== null && countdown > 0 && (
-              <div className="countdown-number">{countdown}</div>
-            )}
-            
-            {countdown === 0 && (
-              <div className="countdown-number">¡GO!</div>
-            )}
-            
-            {countdown === null && isLeader && (
-              <div className="leader-instructions">
-                <p className="instruction-text">
-                  👑 Eres el líder de la partida
-                </p>
-                <p className="instruction-text">
-                  Presiona la tecla <span className="key-highlight">U</span> para iniciar la cuenta regresiva
-                </p>
-              </div>
-            )}
-            
-            {countdown === null && !isLeader && (
-              <div className="waiting-message">
-                <p className="instruction-text">
-                  Esperando a que el líder inicie la partida...
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
   return (
-    <div className="juego-container">
-      <div className="juego-background">
-        {[...Array(20)].map((_, i) => (
-          <div key={i} className="juego-particle"></div>
-        ))}
-      </div>
-      <div className="juego-card">
-        <h1 className="juego-title">{gameInfo.tematica} - {gameInfo.tipoJuego}</h1>
-
-        {gameInfo.tipoJuego === 'Tiempo' && (
-          <div className="goal-header">
-              Tiempo restante: {formatTime(tiempoRestante)}
-          </div>
-        )}
-        {gameInfo.tipoJuego === 'Match' && (
-          <div className="goal-header">
-              Modo: Match (sin límite de tiempo)
-          </div>
-        )}
-
-        <div className="game-area">
-            <div className="score-panel">
-                <table className="score-table">
-                    <thead>
-                        <tr>
-                            <th className="score-header">Nombre</th>
-                            <th className="score-header">Puntaje</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {jugadores
-                           .sort((a, b) => b.puntaje - a.puntaje)
-                           .map((jugador) => (
-                            <tr 
-                                key={jugador.nickname} 
-                                className={jugador.nickname === currentUserNickname ? 'current-user-row' : ''}
-                            >
-                                <td className="score-cell">{jugador.nickname}</td>
-                                <td className="score-cell">{jugador.puntaje}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-
-            <div className="board-container">
-                <div className="board-grid">
-                    {tablero.map((fila, filaIdx) => 
-                        fila.map((celda, colIdx) => {
-                            const estaBloqueadaPorMi = celda.bloqueadaPor === currentUserNickname;
-                            const estaBloqueadaPorOtro = celda.bloqueadaPor && celda.bloqueadaPor !== currentUserNickname;
-                            
-                            // Debug: mostrar celdas bloqueadas
-                            if (celda.bloqueadaPor && filaIdx === 0 && colIdx === 0) {
-                                console.log('[Render] Celda [0,0] bloqueada por:', celda.bloqueadaPor, 'Usuario actual:', currentUserNickname);
-                            }
-                            
-                            // Mapear color del servidor a CSS
-                            const colorCSS = COLOR_MAP[celda.colorID] || celda.colorID;
-                            
-                            return (
-                                <div 
-                                    key={`${filaIdx}-${colIdx}`}
-                                    className={`cell ${estaBloqueadaPorMi ? 'locked-by-me' : ''} ${estaBloqueadaPorOtro ? 'locked-by-other' : ''}`}
-                                    style={{ backgroundColor: colorCSS }}
-                                    onClick={() => handleCellClick(filaIdx, colIdx)}
-                                    title={celda.bloqueadaPor ? `Bloqueada por ${celda.bloqueadaPor}` : ''}
-                                >
-                                    {estaBloqueadaPorOtro && <span className="lock-icon">🔒</span>}
-                                </div>
-                            );
-                        })
-                    )}
-                </div>
-            </div>
+    <div style={styles.windowFrame}>
+      {notification && (
+        <div style={{
+          ...styles.notification,
+          backgroundColor: notification.type === 'error' ? '#ff4444' : '#00C851',
+        }}>
+          {notification.message}
         </div>
-        
-        {mensajeError && (
-            <div className="error-message">{mensajeError}</div>
+      )}
+
+      <h1 style={styles.title}>Juego: {partidaId}</h1>
+
+      {/* Game Info Bar */}
+      <div style={styles.infoBar}>
+        <span style={{ marginRight: '20px', color: '#fff' }}>Tema: {gameConfig?.tematica || 'Gemas'}</span>
+        {gameConfig?.tipoJuego === 'Tiempo' && (
+          <span>Tiempo: {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}</span>
         )}
-        
-        <div className="button-container">
-            <button 
-                onClick={handleConfirmar} 
-                className="confirm-button"
-                style={{
-                    opacity: grupoSeleccionado.length > 0 ? 1 : 0.4,
-                    cursor: grupoSeleccionado.length > 0 ? 'pointer' : 'not-allowed',
-                    boxShadow: grupoSeleccionado.length > 0 ? '0 4px #00AA00' : '0 2px #006600',
-                    filter: grupoSeleccionado.length > 0 ? 'none' : 'grayscale(30%)'
-                }}
-                disabled={grupoSeleccionado.length === 0}
-            >
-                Confirmar {grupoSeleccionado.length > 0 ? `(${grupoSeleccionado.length} celdas)` : '(0 celdas)'}
-            </button>
-            <button 
-                onClick={handleCancelar} 
-                className="cancel-button"
-                style={{
-                    opacity: grupoSeleccionado.length > 0 ? 1 : 0.5,
-                    cursor: grupoSeleccionado.length > 0 ? 'pointer' : 'not-allowed'
-                }}
-                disabled={grupoSeleccionado.length === 0}
-            >
-                Cancelar
-            </button>
-        </div>
-        
-        <button onClick={onLeave} className="leave-button">Abandonar Partida</button>
+        {gameConfig?.tipoJuego === 'Match' && (
+          <span>Matches Restantes: {matchesLeft ?? gameConfig?.limit}</span>
+        )}
       </div>
+
+      {/* Countdown Overlay */}
+      {countdown !== null && (
+        <div style={styles.overlay}>
+          <h1 style={styles.countdownText}>{countdown}</h1>
+        </div>
+      )}
+
+      {/* Waiting for start Overlay */}
+      {gameStatus === 'ready_to_start' && countdown === null && (
+         <div style={styles.overlay}>
+            <div style={{textAlign: 'center'}}>
+              <h1 style={{color: 'white'}}>Partida Lista</h1>
+              {isHost ? (
+                 <p style={{color: '#61dafb', fontSize: '24px'}}>Presiona 'u' para iniciar</p>
+              ) : (
+                 <p style={{color: '#ccc', fontSize: '20px'}}>Esperando al anfitrión...</p>
+              )}
+            </div>
+         </div>
+      )}
+
+      {/* Scoreboard */}
+      <div style={styles.gameArea}>
+        <div style={styles.scorePanel}>
+          <table style={styles.scoreTable}>
+            <thead>
+              <tr>
+                <th style={styles.scoreHeader}>Nombre</th>
+                <th style={styles.scoreHeader}>Puntaje</th>
+              </tr>
+            </thead>
+            <tbody>
+              {jugadores.map(j => (
+                <tr
+                  key={j.socketID}
+                  style={j.nickname === currentUserNickname ? styles.currentUserRow : {}}
+                >
+                  <td style={styles.scoreCell}>{j.nickname}</td>
+                  <td style={styles.scoreCell}>{j.puntaje ?? 0}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Tablero */}
+        <div style={styles.boardContainer}>
+          <div
+            style={{
+              ...styles.boardGrid,
+              gridTemplateRows: `repeat(${tablero.length}, 1fr)`,
+              gridTemplateColumns: `repeat(${tablero[0].length}, 1fr)`
+            }}
+          >
+            {tablero.map((row, r) =>
+              row.map((celda, c) => {
+                const mySocketId = rawSocket?.()?.id;
+                const isPropia = celda.seleccionadoPor === mySocketId;
+                const isOtro = celda.seleccionadoPor && celda.seleccionadoPor !== mySocketId;
+
+                // Determinar icono según temática
+                const currentTheme = gameConfig?.tematica || 'Gemas';
+                const iconSet = THEME_ICONS[currentTheme] || THEME_ICONS['Gemas'];
+                const icon = iconSet[celda.colorID] || celda.colorID;
+
+                return (
+                  <div
+                    key={`${r}-${c}`}
+                    style={{
+                      ...styles.cell,
+                      backgroundColor: '#282c34', // Fondo neutro para resaltar el icono
+                      border: isPropia
+                        ? "3px solid #FFD700"
+                        : isOtro
+                          ? "3px solid #FF4500"
+                          : "1px solid #444",
+                      opacity: isOtro ? 0.5 : 1,
+                      cursor: gameStatus === "active" ? "pointer" : "default",
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      fontSize: '24px'
+                    }}
+                    onClick={() => handleCellClick(r, c)}
+                  >
+                    {icon}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </div>
+
+      {gameStatus === "active" && (
+        <button onClick={handleMatch} style={styles.matchButton}>
+          Hacer Match
+        </button>
+      )}
+
+      <button onClick={onLeave} style={styles.leaveButton}>
+        Salir
+      </button>
     </div>
   );
+};
+
+// ---- ESTILOS ----
+const styles: { [key: string]: React.CSSProperties } = {
+  windowFrame: {
+    padding: "30px",
+    borderRadius: "10px",
+    backgroundColor: "#333744",
+    boxShadow: "0 8px 16px rgba(0,0,0,0.5)",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    color: "white",
+    position: 'relative', // Needed for overlay
+  },
+  title: {
+    fontSize: "24px",
+    color: "#61dafb",
+    marginBottom: "20px",
+  },
+  gameArea: {
+    display: "flex",
+    gap: "20px",
+    alignItems: "flex-start",
+    marginBottom: "20px",
+  },
+  scorePanel: {
+    width: "200px",
+    borderRadius: "8px",
+    overflow: "hidden",
+    backgroundColor: "#444857",
+  },
+  scoreTable: {
+    width: "100%",
+    borderCollapse: "collapse",
+  },
+  scoreHeader: {
+    backgroundColor: "#61dafb",
+    color: "#222",
+    padding: "10px",
+    textAlign: "left",
+  },
+  scoreCell: {
+    padding: "8px 10px",
+    textAlign: "left",
+    borderBottom: "1px solid #555",
+  },
+  currentUserRow: {
+    backgroundColor: "#3A404F",
+    fontWeight: "bold",
+  },
+  boardContainer: {
+    padding: "5px",
+    borderRadius: "8px",
+    backgroundColor: "#282c34",
+  },
+  boardGrid: {
+    display: "grid",
+    gap: "2px",
+  },
+  cell: {
+    width: "35px",
+    height: "35px",
+    borderRadius: "4px",
+    transition: "transform 0.1s, border 0.1s",
+  },
+  matchButton: {
+    padding: "12px 30px",
+    backgroundColor: "#00CED1",
+    color: "#222",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontSize: "18px",
+    fontWeight: "bold",
+    marginBottom: "10px",
+  },
+  leaveButton: {
+    marginTop: "10px",
+    backgroundColor: "transparent",
+    color: "#ccc",
+    border: "none",
+    cursor: "pointer",
+  },
+  infoBar: {
+    display: 'flex',
+    gap: '20px',
+    fontSize: '20px',
+    fontWeight: 'bold',
+    color: '#FFD700',
+    marginBottom: '10px',
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+    borderRadius: '10px',
+  },
+  countdownText: {
+    fontSize: '80px',
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  notification: {
+    position: 'absolute',
+    top: '10px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    padding: '10px 20px',
+    borderRadius: '5px',
+    color: 'white',
+    fontWeight: 'bold',
+    zIndex: 200,
+    boxShadow: '0 2px 5px rgba(0,0,0,0.3)',
+  }
 };
