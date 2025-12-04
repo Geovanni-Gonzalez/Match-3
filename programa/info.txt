@@ -7,34 +7,9 @@ Proyecto Programado #4
 Match-3
 
 Estudiantes:
-- [Nombre Estudiante 1] - [Carnet 1]
-- [Nombre Estudiante 2] - [Carnet 2]
-- [Nombre Estudiante 3] - [Carnet 3]
+- Gerny Diaz Hall - 2022172980
+- Geovanni Gonzalez Aguilar- 2022163324
+- Quiriat Mata Araya - [Carne]
 
 Fecha de entrega: 03 de diciembre de 2025
 Estatus de la entrega: Excelente
-
-Descripción:
-Este proyecto implementa un juego multijugador en tiempo real tipo Match-3.
-El backend está desarrollado en Node.js con Express y Socket.IO.
-El frontend está desarrollado en React con TypeScript.
-Se utiliza MySQL como base de datos.
-
-Instrucciones de Ejecución:
-1. Base de Datos:
-   - Asegurarse de tener MySQL corriendo.
-   - Crear la base de datos 'matchdb' y ejecutar el script de inicialización si es necesario (el servidor intenta inicializar tablas básicas).
-   - Configurar las credenciales en un archivo .env en la carpeta server/ o usar los valores por defecto (root, sin password).
-
-2. Servidor:
-   - Navegar a la carpeta 'server'.
-   - Ejecutar 'npm install' para instalar dependencias.
-   - Ejecutar 'npm run dev' para iniciar el servidor en modo desarrollo (puerto 4000).
-
-3. Cliente:
-   - Navegar a la carpeta 'client'.
-   - Ejecutar 'npm install' para instalar dependencias.
-   - Ejecutar 'npm start' para iniciar la aplicación React (puerto 3000).
-
-4. Acceso Público (Opcional):
-   - Utilizar ngrok para exponer el puerto 3000 (frontend) y 4000 (backend) si se desea jugar desde redes externas.
