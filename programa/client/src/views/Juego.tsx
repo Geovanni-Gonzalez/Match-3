@@ -2,6 +2,7 @@
 import React, { useEffect } from "react";
 import { useGameEvents } from "../hooks/useGameEvents";
 import { ResultadoPartida } from "./ResultadoPartida";
+import '../styles/Juego.css';
 
 interface JuegoProps {
   partidaId: string;
@@ -119,271 +120,163 @@ export const Juego: React.FC<JuegoProps> = ({
 
   if (error) {
     return (
-      <div style={styles.windowFrame}>
-        <h1 style={styles.title}>Error</h1>
-        <p>{error}</p>
-        <button onClick={onLeave} style={styles.leaveButton}>Volver</button>
+      <div className="juego-container">
+        <div className="juego-background"></div>
+        <div className="juego-card">
+          <h1 className="juego-title">Error</h1>
+          <p className="error-message">{error}</p>
+          <button onClick={onLeave} className="leave-button">Volver</button>
+        </div>
       </div>
     );
   }
 
   if (!tablero || tablero.length === 0) {
     return (
-      <div style={styles.windowFrame}>
-        <h1 style={styles.title}>Cargando partida...</h1>
+      <div className="juego-container">
+        <div className="juego-background"></div>
+        <div className="juego-card">
+          <h1 className="juego-title">Cargando partida...</h1>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={styles.windowFrame}>
-      {notification && (
-        <div style={{
-          ...styles.notification,
-          backgroundColor: notification.type === 'error' ? '#ff4444' : '#00C851',
-        }}>
-          {notification.message}
-        </div>
-      )}
+    <div className="juego-container">
+      <div className="juego-background"></div>
+      {/* Partículas */}
+      {Array.from({ length: 20 }).map((_, i) => (
+        <div
+          key={i}
+          className="juego-particle"
+          style={{
+            left: `${Math.random() * 100}%`,
+            animationDuration: `${5 + Math.random() * 10}s`,
+            animationDelay: `${Math.random() * 5}s`,
+          }}
+        />
+      ))}
 
-      <h1 style={styles.title}>Juego: {partidaId}</h1>
-
-      {/* Game Info Bar */}
-      <div style={styles.infoBar}>
-        <span style={{ marginRight: '20px', color: '#fff' }}>Tema: {gameConfig?.tematica || 'Gemas'}</span>
-        {gameConfig?.tipoJuego === 'Tiempo' && (
-          <span>Tiempo: {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}</span>
+      <div className="juego-card">
+        {notification && (
+          <div className="notification" style={{
+            backgroundColor: notification.type === 'error' ? '#ef4444' : '#10b981',
+            borderColor: notification.type === 'error' ? '#dc2626' : '#059669',
+          }}>
+            {notification.message}
+          </div>
         )}
-        {gameConfig?.tipoJuego === 'Match' && (
-          <span>Matches Restantes: {matchesLeft ?? gameConfig?.limit}</span>
-        )}
-      </div>
 
-      {/* Countdown Overlay */}
-      {countdown !== null && (
-        <div style={styles.overlay}>
-          <h1 style={styles.countdownText}>{countdown}</h1>
+        <h1 className="juego-title">Juego: {partidaId.substring(0, 6).toUpperCase()}</h1>
+
+        {/* Game Info Bar */}
+        <div className="info-bar">
+          <span style={{ marginRight: '20px', color: '#fff' }}>Tema: {gameConfig?.tematica || 'Gemas'}</span>
+          {gameConfig?.tipoJuego === 'Tiempo' && (
+            <span>Tiempo: {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}</span>
+          )}
+          {gameConfig?.tipoJuego === 'Match' && (
+            <span>Matches Restantes: {matchesLeft ?? gameConfig?.limit}</span>
+          )}
         </div>
-      )}
 
-      {/* Waiting for start Overlay */}
-      {gameStatus === 'ready_to_start' && countdown === null && (
-         <div style={styles.overlay}>
-            <div style={{textAlign: 'center'}}>
-              <h1 style={{color: 'white'}}>Partida Lista</h1>
-              {isHost ? (
-                 <p style={{color: '#61dafb', fontSize: '24px'}}>Presiona 'u' para iniciar</p>
-              ) : (
-                 <p style={{color: '#ccc', fontSize: '20px'}}>Esperando al anfitrión...</p>
+        {/* Countdown Overlay */}
+        {countdown !== null && (
+          <div className="overlay">
+            <h1 className="countdown-number">{countdown}</h1>
+          </div>
+        )}
+
+        {/* Waiting for start Overlay */}
+        {gameStatus === 'ready_to_start' && countdown === null && (
+           <div className="overlay">
+              <div style={{textAlign: 'center'}}>
+                <h1 className="waiting-title">Partida Lista</h1>
+                {isHost ? (
+                   <p style={{color: '#fbbf24', fontSize: '24px', fontWeight: 'bold'}}>Presiona 'U' para iniciar</p>
+                ) : (
+                   <p style={{color: '#c4b5fd', fontSize: '20px'}}>Esperando al anfitrión...</p>
+                )}
+              </div>
+           </div>
+        )}
+
+        {/* Scoreboard */}
+        <div className="game-area">
+          <div className="score-panel">
+            <table className="score-table">
+              <thead>
+                <tr>
+                  <th className="score-header">Nombre</th>
+                  <th className="score-header">Puntaje</th>
+                </tr>
+              </thead>
+              <tbody>
+                {jugadores.map(j => (
+                  <tr
+                    key={j.socketID}
+                    className={j.nickname === currentUserNickname ? "current-user-row" : ""}
+                  >
+                    <td className="score-cell">{j.nickname}</td>
+                    <td className="score-cell">{j.puntaje ?? 0}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Tablero */}
+          <div className="board-container">
+            <div
+              className="board-grid"
+              style={{
+                gridTemplateRows: `repeat(${tablero.length}, 1fr)`,
+                gridTemplateColumns: `repeat(${tablero[0].length}, 1fr)`
+              }}
+            >
+              {tablero.map((row, r) =>
+                row.map((celda, c) => {
+                  const mySocketId = rawSocket?.()?.id;
+                  const isPropia = celda.seleccionadoPor === mySocketId;
+                  const isOtro = celda.seleccionadoPor && celda.seleccionadoPor !== mySocketId;
+
+                  // Determinar icono según temática
+                  const currentTheme = gameConfig?.tematica || 'Gemas';
+                  const iconSet = THEME_ICONS[currentTheme] || THEME_ICONS['Gemas'];
+                  const icon = iconSet[celda.colorID] || celda.colorID;
+
+                  return (
+                    <div
+                      key={`${r}-${c}`}
+                      className={`cell ${isPropia ? 'locked-by-me' : ''} ${isOtro ? 'locked-by-other' : ''}`}
+                      style={{
+                        backgroundColor: '#282c34', // Fondo neutro para resaltar el icono
+                        cursor: gameStatus === "active" ? "pointer" : "default",
+                        fontSize: '24px'
+                      }}
+                      onClick={() => handleCellClick(r, c)}
+                    >
+                      {icon}
+                      {isOtro && <div className="lock-icon">🔒</div>}
+                    </div>
+                  );
+                })
               )}
             </div>
-         </div>
-      )}
-
-      {/* Scoreboard */}
-      <div style={styles.gameArea}>
-        <div style={styles.scorePanel}>
-          <table style={styles.scoreTable}>
-            <thead>
-              <tr>
-                <th style={styles.scoreHeader}>Nombre</th>
-                <th style={styles.scoreHeader}>Puntaje</th>
-              </tr>
-            </thead>
-            <tbody>
-              {jugadores.map(j => (
-                <tr
-                  key={j.socketID}
-                  style={j.nickname === currentUserNickname ? styles.currentUserRow : {}}
-                >
-                  <td style={styles.scoreCell}>{j.nickname}</td>
-                  <td style={styles.scoreCell}>{j.puntaje ?? 0}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Tablero */}
-        <div style={styles.boardContainer}>
-          <div
-            style={{
-              ...styles.boardGrid,
-              gridTemplateRows: `repeat(${tablero.length}, 1fr)`,
-              gridTemplateColumns: `repeat(${tablero[0].length}, 1fr)`
-            }}
-          >
-            {tablero.map((row, r) =>
-              row.map((celda, c) => {
-                const mySocketId = rawSocket?.()?.id;
-                const isPropia = celda.seleccionadoPor === mySocketId;
-                const isOtro = celda.seleccionadoPor && celda.seleccionadoPor !== mySocketId;
-
-                // Determinar icono según temática
-                const currentTheme = gameConfig?.tematica || 'Gemas';
-                const iconSet = THEME_ICONS[currentTheme] || THEME_ICONS['Gemas'];
-                const icon = iconSet[celda.colorID] || celda.colorID;
-
-                return (
-                  <div
-                    key={`${r}-${c}`}
-                    style={{
-                      ...styles.cell,
-                      backgroundColor: '#282c34', // Fondo neutro para resaltar el icono
-                      border: isPropia
-                        ? "3px solid #FFD700"
-                        : isOtro
-                          ? "3px solid #FF4500"
-                          : "1px solid #444",
-                      opacity: isOtro ? 0.5 : 1,
-                      cursor: gameStatus === "active" ? "pointer" : "default",
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      fontSize: '24px'
-                    }}
-                    onClick={() => handleCellClick(r, c)}
-                  >
-                    {icon}
-                  </div>
-                );
-              })
-            )}
           </div>
         </div>
-      </div>
 
-      {gameStatus === "active" && (
-        <button onClick={handleMatch} style={styles.matchButton}>
-          Hacer Match
+        {gameStatus === "active" && (
+          <button onClick={handleMatch} className="match-button">
+            Hacer Match
+          </button>
+        )}
+
+        <button onClick={onLeave} className="leave-button">
+          Salir
         </button>
-      )}
-
-      <button onClick={onLeave} style={styles.leaveButton}>
-        Salir
-      </button>
+      </div>
     </div>
   );
-};
-
-// ---- ESTILOS ----
-const styles: { [key: string]: React.CSSProperties } = {
-  windowFrame: {
-    padding: "30px",
-    borderRadius: "10px",
-    backgroundColor: "#333744",
-    boxShadow: "0 8px 16px rgba(0,0,0,0.5)",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    color: "white",
-    position: 'relative', // Needed for overlay
-  },
-  title: {
-    fontSize: "24px",
-    color: "#61dafb",
-    marginBottom: "20px",
-  },
-  gameArea: {
-    display: "flex",
-    gap: "20px",
-    alignItems: "flex-start",
-    marginBottom: "20px",
-  },
-  scorePanel: {
-    width: "200px",
-    borderRadius: "8px",
-    overflow: "hidden",
-    backgroundColor: "#444857",
-  },
-  scoreTable: {
-    width: "100%",
-    borderCollapse: "collapse",
-  },
-  scoreHeader: {
-    backgroundColor: "#61dafb",
-    color: "#222",
-    padding: "10px",
-    textAlign: "left",
-  },
-  scoreCell: {
-    padding: "8px 10px",
-    textAlign: "left",
-    borderBottom: "1px solid #555",
-  },
-  currentUserRow: {
-    backgroundColor: "#3A404F",
-    fontWeight: "bold",
-  },
-  boardContainer: {
-    padding: "5px",
-    borderRadius: "8px",
-    backgroundColor: "#282c34",
-  },
-  boardGrid: {
-    display: "grid",
-    gap: "2px",
-  },
-  cell: {
-    width: "35px",
-    height: "35px",
-    borderRadius: "4px",
-    transition: "transform 0.1s, border 0.1s",
-  },
-  matchButton: {
-    padding: "12px 30px",
-    backgroundColor: "#00CED1",
-    color: "#222",
-    border: "none",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontSize: "18px",
-    fontWeight: "bold",
-    marginBottom: "10px",
-  },
-  leaveButton: {
-    marginTop: "10px",
-    backgroundColor: "transparent",
-    color: "#ccc",
-    border: "none",
-    cursor: "pointer",
-  },
-  infoBar: {
-    display: 'flex',
-    gap: '20px',
-    fontSize: '20px',
-    fontWeight: 'bold',
-    color: '#FFD700',
-    marginBottom: '10px',
-  },
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 100,
-    borderRadius: '10px',
-  },
-  countdownText: {
-    fontSize: '80px',
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  notification: {
-    position: 'absolute',
-    top: '10px',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    padding: '10px 20px',
-    borderRadius: '5px',
-    color: 'white',
-    fontWeight: 'bold',
-    zIndex: 200,
-    boxShadow: '0 2px 5px rgba(0,0,0,0.3)',
-  }
 };

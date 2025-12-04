@@ -8,6 +8,7 @@ import { RankingHistorico } from './views/RankingHistorico';
 import { SalaDeEspera } from './views/SalaDeEspera';
 import { Juego } from './views/Juego';
 import { useAuth } from './context/AuthContext';
+import './styles/App.css';
 
 // --- Tipos ---
 type AppView =
@@ -119,7 +120,7 @@ const App: React.FC = () => {
       break;
 
     case 'game':
-      if (!currentGameId || !currentUser || !gameInfo) return null;
+      if (!currentGameId || !currentUser || !initialConfig) return null;
       content = (
         <Juego
           {...({
@@ -138,25 +139,10 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="App" style={styles.container}>
+    <div className="app-container">
       {content}
     </div>
   );
 };
 
 export default App;
-
-// --- Estilos ---
-const styles: { [key: string]: React.CSSProperties } = {
-  container: {
-    fontFamily: 'Arial, sans-serif',
-    textAlign: 'center',
-    backgroundColor: '#282c34',
-    minHeight: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: 'white',
-  },
-};

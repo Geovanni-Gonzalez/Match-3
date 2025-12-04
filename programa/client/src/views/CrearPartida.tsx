@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useGameEvents } from '../hooks/useGameEvents';
+import '../styles/CrearPartida.css';
 
 const API_URL = 'http://localhost:4000/api';
 
@@ -33,6 +34,7 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({
   const [tipoJuego, setTipoJuego] = useState<'Match' | 'Tiempo'>('Match');
   const [tematica, setTematica] = useState<string>('Gemas');
   const [numJugadores, setNumJugadores] = useState<number>(2);
+  const [duracionMinutos, setDuracionMinutos] = useState<number>(5);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

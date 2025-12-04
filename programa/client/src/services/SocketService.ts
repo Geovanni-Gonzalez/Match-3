@@ -25,6 +25,7 @@ export interface PartidaListItem {
   jugadores: number;
   maxJugadores: number;
   tiempoRestante: number;
+  duracionMinutos?: number;
 }
 
 export class SocketService {

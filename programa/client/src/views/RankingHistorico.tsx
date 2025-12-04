@@ -1,7 +1,7 @@
 // client/src/views/RankingHistorico.tsx
 
 import React, { useState, useEffect } from 'react';
-import './RankingHistorico.css';
+import '../styles/RankingHistorico.css';
 
 // --- Interfaces de Tipos ---
 interface JugadorRanking {
@@ -11,6 +11,15 @@ interface JugadorRanking {
   tematica: string;
   tiempo: number;
   gameId: string;
+}
+
+interface EstadisticaPartida {
+  partidaId: string;
+  ganador: string;
+  puntaje: number;
+  tematica: string;
+  tiempoInvertidoSegundos: number;
+  fecha: string;
 }
 
 interface RankingHistoricoProps {
@@ -34,9 +43,9 @@ export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) =>
       const data = await response.json();
 
       if (data.ranking) {
-        setDatosRanking(data.ranking);
+        setEstadisticas(data.ranking);
       } else {
-        setDatosRanking([]);
+        setEstadisticas([]);
       }
       setLoading(false);
 
@@ -132,7 +141,7 @@ export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) =>
                     <td className="table-cell ganador-cell">{stat.ganador}</td>
                     <td className="table-cell puntaje-cell">{stat.puntaje}</td>
                     <td className="table-cell">{stat.tematica}</td>
-                    <td className="table-cell">{formatTiempo(stat.tiempoInvertidoSegundos)}</td>
+                    <td className="table-cell">{formatTime(stat.tiempoInvertidoSegundos)}</td>
                     <td className="table-cell">{stat.fecha}</td>
                   </tr>
                 ))}

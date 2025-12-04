@@ -35,6 +35,12 @@ export class GameService {
       if (players.length >= 2) {
         // Si hay suficientes jugadores, iniciar la partida automáticamente
         console.log(`[GameService] Tiempo de espera agotado para partida ${matchId}. Iniciando con ${players.length} jugadores.`);
+        
+        // 1. Preparar la partida (cambia estado a 'ready_to_start' y notifica clientes)
+        // Pasamos undefined como socketID para indicar que es una acción del sistema
+        this.prepararPartida(matchId);
+        
+        // 2. Iniciar la cuenta regresiva
         this.iniciarPartida(matchId);
       } else {
         // Si no hay suficientes jugadores, eliminar la partida
@@ -156,15 +162,15 @@ export class GameService {
    * Solo el anfitrión puede solicitar esto.
    *
    * @param partidaId ID de la partida
-   * @param requestedBySocketID Socket ID de quien solicita preparar la partida (debe ser el host)
+   * @param requestedBySocketID Socket ID de quien solicita preparar la partida (debe ser el host). Opcional si es sistema.
    */
-  public prepararPartida(partidaId: string, requestedBySocketID: string) {
+  public prepararPartida(partidaId: string, requestedBySocketID?: string) {
     const partida = this.servidor.obtenerPartida(partidaId);
     if (!partida) throw new Error('Partida no encontrada');
     if (partida.estado !== 'espera') throw new Error('La partida no está en espera para ser preparada.');
 
-    // Verificar que quien solicita sea el host
-    if (partida.hostSocketID !== requestedBySocketID) {
+    // Verificar que quien solicita sea el host (si se provee socketID)
+    if (requestedBySocketID && partida.hostSocketID !== requestedBySocketID) {
       throw new Error('Solo el anfitrión puede preparar la partida.');
     }
 

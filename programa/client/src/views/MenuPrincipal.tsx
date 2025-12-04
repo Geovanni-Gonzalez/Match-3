@@ -1,5 +1,7 @@
 // programa/client/src/views/MenuPrincipal.tsx
 import React from 'react';
+import '../styles/MenuPrincipal.css';
+
 // Definir los tipos de vista para el componente
 type MenuViews = 'menu' | 'lobby' | 'ranking' | 'create_game' | 'game';
 

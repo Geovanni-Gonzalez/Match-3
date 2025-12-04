@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../context/AuthContext";
 import { SocketService, PartidaListItem } from "../services/SocketService";
+import '../styles/LobbyPartidas.css';
 
 interface LobbyPartidasProps {
   onBack: () => void;
@@ -161,11 +162,11 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
         {loading && <p className="loading-text">⏳ Cargando partidas...</p>}
         {error && <p className="error-text">❌ Error: {error}</p>}
 
-        {!loading && !error && partidasDisponibles.length === 0 && (
+        {!loading && !error && partidas.length === 0 && (
           <p className="no-partidas-text">No hay partidas disponibles en este momento.</p>
         )}
 
-        {!loading && !error && partidasDisponibles.length > 0 && (
+        {!loading && !error && partidas.length > 0 && (
           <div className="table-wrapper">
             <table className="partidas-table">
               <thead>
@@ -174,11 +175,12 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
                   <th className="table-header">Temática</th>
                   <th className="table-header">Tipo</th>
                   <th className="table-header">Jugadores</th>
-                  <th className="table-header">Duración/Tiempo</th>
+                  <th className="table-header">Duración</th>
+                  <th className="table-header">Cierre Lobby</th>
                 </tr>
               </thead>
               <tbody>
-                {partidasDisponibles.map((partida) => {
+                {partidas.map((partida) => {
                   // Calcular el texto para la columna de duración/tiempo
                   let duracionTexto = 'N/A';
                   if (partida.tipo === 'Tiempo' && partida.duracionMinutos) {
@@ -189,18 +191,20 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
                   
                   return (
                   <tr 
-                    key={partida.codigo} 
-                    className={`table-row ${selectedPartidaId === partida.codigo ? 'selected' : ''}`}
+                    key={partida.id} 
+                    className={`table-row ${selectedPartidaId === partida.id ? 'selected' : ''}`}
                     onClick={() => {
-                      setSelectedPartidaId(partida.codigo);
-                      setSelectedPartida(partida);
+                      setSelectedPartidaId(partida.id);
                     }}
                   >
-                    <td className="table-cell">{partida.codigo}</td>
+                    <td className="table-cell">{partida.id}</td>
                     <td className="table-cell">{partida.tematica}</td>
                     <td className="table-cell">{partida.tipo}</td>
                     <td className="table-cell">{partida.jugadores}/{partida.maxJugadores}</td>
                     <td className="table-cell">{duracionTexto}</td>
+                    <td className="table-cell" style={{ color: partida.tiempoRestante < 60 ? '#ff4444' : 'inherit' }}>
+                      {formatTime(partida.tiempoRestante)}
+                    </td>
                   </tr>
                   );
                 })}

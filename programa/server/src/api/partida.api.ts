@@ -25,13 +25,13 @@ router.post('/crear_partida', async (req: Request, res: Response) => {
   try {
     // Generar código de partida único (6 caracteres alfanuméricos)
     const codigoPartida = uuidv4().split('-')[0].toUpperCase(); // Usar los primeros 6 caracteres del UUID
-    
+
     // Usar GameService para crear en memoria Y persistir en BD
     if (!gameService) {
-       throw new Error('GameService no inicializado en API');
+      throw new Error('GameService no inicializado en API');
     }
     await gameService.crearPartida(codigoPartida, tipoJuego, tematica, numJugadoresMax);
-    
+
     console.log('[API][Partida] Partida creada con ID:', codigoPartida);
     return res.status(201).json({ message: 'Partida creada exitosamente', codigoPartida, tipoJuego, tematica, numJugadoresMax });
   } catch (err) {
@@ -61,14 +61,16 @@ router.post('/agregar_jugador', async (req: Request, res: Response) => {
 
 /**
  * GET /api/partida/partidas
- * Respuesta: { partidas: [...] }
+ * Respuesta: Array de partidas disponibles
  */
 router.get('/partidas', async (req: Request, res: Response) => {
   try {
-    const partidas = []; 
-    return res.status(200).json({ partidas: [] });
-  }
-  catch (err) {
+    if (!gameService) {
+      return res.status(500).json({ message: 'GameService no disponible' });
+    }
+    const partidas = gameService.listarPartidasDisponibles();
+    return res.status(200).json(partidas);
+  } catch (err) {
     console.error('[API][Partida] Error obtener partidas:', err);
     return res.status(500).json({ message: 'Error interno al obtener partidas.' });
   }

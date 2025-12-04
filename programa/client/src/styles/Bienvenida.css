@@ -3,6 +3,20 @@
    Estilo inspirado en Clash Royale & Candy Crush
    ============================================ */
 
+.bienvenida-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  z-index: 1;
+  padding: 20px;
+}
+
 /* ========== FONDO ANIMADO ========== */
 .animated-background {
   position: fixed;
@@ -128,8 +142,25 @@
   }
 }
 
-/* ========== CARD PRINCIPAL ========== */
+/* ========== TARJETA PRINCIPAL ========== */
 .welcome-card {
+  position: relative;
+  padding: 55px 45px 45px;
+  border-radius: 35px;
+  background: rgba(30, 27, 75, 0.85);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 
+              0 20px 50px rgba(0, 0, 0, 0.5), 
+              0 0 100px rgba(124, 58, 237, 0.2) inset;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
   animation: cardEntrance 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   transform-origin: center;
 }
@@ -515,4 +546,181 @@
     font-size: 16px;
     gap: 12px;
   }
+}
+
+/* ========== ESTILOS BASE (Migrados de TSX) ========== */
+
+.title-container {
+  margin-bottom: 15px;
+  position: relative;
+  text-align: center;
+}
+
+.logo-icon {
+  font-size: 80px;
+  margin-bottom: 15px;
+  display: inline-block;
+  animation: logoFloat 3s ease-in-out infinite;
+  filter: drop-shadow(0 8px 16px rgba(102, 126, 234, 0.5));
+  position: relative;
+  z-index: 2;
+}
+
+.game-title {
+  font-size: 56px;
+  font-weight: 900;
+  background: linear-gradient(135deg, #a78bfa 0%, #c4b5fd 30%, #ddd6fe 60%, #ede9fe 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 10px 0 5px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  position: relative;
+  filter: drop-shadow(0 4px 12px rgba(167, 139, 250, 0.5));
+}
+
+.title-underline {
+  width: 120px;
+  height: 5px;
+  background: linear-gradient(90deg, #7c3aed 0%, #8b5cf6 50%, #a78bfa 100%);
+  margin: 12px auto;
+  border-radius: 3px;
+  box-shadow: 0 4px 8px rgba(139, 92, 246, 0.4);
+}
+
+.subtitle {
+  font-size: 17px;
+  color: #c4b5fd;
+  margin-bottom: 40px;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(167, 139, 250, 0.3);
+  letter-spacing: 0.5px;
+}
+
+.input-container {
+  position: relative;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.input-icon {
+  position: absolute;
+  left: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 26px;
+  z-index: 2;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.premium-input {
+  width: 100%;
+  padding: 22px 25px 22px 65px;
+  border-radius: 18px;
+  border: 3px solid #4c1d95;
+  font-size: 17px;
+  font-weight: 600;
+  text-align: left;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  color: #e0e7ff;
+  outline: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 2px 4px rgba(139, 92, 246, 0.1);
+  position: relative;
+  z-index: 1;
+}
+
+.premium-button {
+  width: 100%;
+  padding: 22px 35px;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%);
+  color: white;
+  border: none;
+  border-radius: 18px;
+  cursor: pointer;
+  font-size: 19px;
+  font-weight: 800;
+  margin-top: 15px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 12px 35px rgba(220, 38, 38, 0.4), 0 6px 12px rgba(153, 27, 27, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.premium-button:disabled {
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
+  cursor: not-allowed;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transform: none !important;
+}
+
+.button-text {
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.button-icon {
+  font-size: 24px;
+  animation: iconBounce 1.5s ease-in-out infinite;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  animation: rotate 1s linear infinite;
+  display: inline-block;
+}
+
+.error-container {
+  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+  padding: 15px 22px;
+  border-radius: 15px;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 3px solid #b91c1c;
+  animation: shake 0.5s ease-in-out;
+  box-shadow: 0 4px 12px rgba(127, 29, 29, 0.3);
+  width: 100%;
+}
+
+.error-icon {
+  font-size: 24px;
+}
+
+.error-text {
+  color: #fecaca;
+  font-size: 15px;
+  font-weight: 700;
+  flex: 1;
+  text-align: left;
+}
+
+.info-text {
+  margin-top: 25px;
+  font-size: 14px;
+  color: #c4b5fd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(167, 139, 250, 0.3);
+}
+
+.info-icon {
+  font-size: 16px;
 }

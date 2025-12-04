@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useGameEvents } from "../hooks/useGameEvents";
 import { useAuth } from "../context/AuthContext";
+import '../styles/SalaDeEspera.css';
 
 interface Props {
   partidaId: string;
@@ -17,23 +18,19 @@ export const SalaDeEspera: React.FC<Props> = ({
 
   const {
     jugadores,
-    gameStatus,
-    tablero,
     lobbyTimer,
     setReady,
-    startGame,
+    requestEnterGame,
     onAllPlayersReady,
     maxPlayers,
-    countdown,
-    gameConfig,
-    requestEnterGame,
     onForceNavigateGame
   } = useGameEvents(partidaId);
 
   const [isReadyLocal, setIsReadyLocal] = useState(false);
+  const [showTimeoutNotification, setShowTimeoutNotification] = useState(false);
 
   // ----------------------------
-  // TIMER LOCAL (ANIMACI�N)
+  // TIMER LOCAL (ANIMACIN)
   // ----------------------------
   const [timeLeft, setTimeLeft] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -106,15 +103,26 @@ export const SalaDeEspera: React.FC<Props> = ({
     };
   }, []);
 
-  const handleStart = () => {
-    requestEnterGame?.(partidaId);
-  };
-
   const allReady =
     jugadores.length >= 2 && jugadores.every((j) => j.isReady === true);
 
   // Identificar si el usuario actual es el host
   const isHost = jugadores.find(j => j.nickname === currentUser?.nickname)?.isHost;
+
+  // Listener para tecla 'U' para iniciar juego (REQUERIMIENTO)
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'u' || e.key === 'U') {
+        if (allReady && isHost) {
+          console.log('[SalaDeEspera] Tecla U presionada - Iniciando juego');
+          requestEnterGame?.(partidaId);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [allReady, isHost, partidaId, requestEnterGame]);
 
   return (
     <div className="sala-espera-container">
@@ -136,7 +144,7 @@ export const SalaDeEspera: React.FC<Props> = ({
 
       {/* Fondo animado con gradiente */}
       <div className="sala-espera-background"></div>
-      
+
       {/* Partículas flotantes */}
       {Array.from({ length: 30 }).map((_, i) => (
         <div
@@ -172,7 +180,7 @@ export const SalaDeEspera: React.FC<Props> = ({
       ))}
 
       {/* Botón de retroceso */}
-      <button className="back-button" onClick={handleLeaveRoom}>
+      <button className="back-button" onClick={onLeave}>
         ← Salir
       </button>
 
@@ -181,59 +189,56 @@ export const SalaDeEspera: React.FC<Props> = ({
         <h1 className="sala-espera-title">Sala de Espera</h1>
 
         {/* Indicador de tiempo restante */}
-        <div className={`timeout-warning ${
-          tiempoRestante > 120 ? 'green' : 
-          tiempoRestante > 60 ? 'orange' : 'red'
-        }`}>
-          ⏱️ Tiempo restante: {formatTime(tiempoRestante)}
-          {tiempoRestante <= 60 && <span className="urgent-warning"> - ¡Apúrate!</span>}
+        <div className={`timeout-warning ${timeLeft > 120 ? 'green' :
+          timeLeft > 60 ? 'orange' : 'red'
+          }`}>
+          ⏱️ Tiempo restante: {formatTime(timeLeft)}
+          {timeLeft <= 60 && <span className="urgent-warning"> - ¡Apúrate!</span>}
         </div>
 
         <div className="info-bar">
           <span className="info-box">CÓDIGO: {partidaId.substring(0, 6).toUpperCase()}</span>
-          <span className="info-box">Jugadores: {jugadores.length}/{maxJugadores}</span>
-          {esLider && <span className="lider-badge">👑 LÍDER</span>}
+          <span className="info-box">Jugadores: {jugadores.length}/{maxPlayers}</span>
+          {isHost && <span className="lider-badge">👑 LÍDER</span>}
         </div>
 
         <div className="players-list">
           {jugadores.map((jugador, index) => (
-            <div 
-              key={jugador.socketID || index} 
-              className={`player-item ${
-                jugador.nickname === currentUserNickname ? 'current-player' : ''
-              } ${
-                jugador.isReady ? 'ready-player' : ''
-              }`}
+            <div
+              key={jugador.socketID || index}
+              className={`player-item ${jugador.nickname === currentUser?.nickname ? 'current-player' : ''
+                } ${jugador.isReady ? 'ready-player' : ''
+                }`}
             >
               <span>
-                {index === 0 && '👑 '}{jugador.nickname} {jugador.nickname === currentUserNickname ? '(Tú)' : ''}
+                {index === 0 && '👑 '}{jugador.nickname} {jugador.nickname === currentUser?.nickname ? '(Tú)' : ''}
               </span>
               <span className="ready-status">
                 {jugador.isReady ? '✅ LISTO' : '⏳ Esperando...'}
               </span>
             </div>
           ))}
-          
-          {Array(Math.max(0, maxJugadores - jugadores.length)).fill(0).map((_, index) => (
+
+          {Array(Math.max(0, maxPlayers - jugadores.length)).fill(0).map((_, index) => (
             <div key={`empty-${index}`} className="empty-player-item">Esperando jugador...</div>
           ))}
         </div>
-        
-        <button 
-          onClick={handleToggleReady}
-          className={`ready-button ${isReady ? 'is-ready' : 'not-ready'}`}
+
+        <button
+          onClick={toggleReady}
+          className={`ready-button ${isReadyLocal ? 'is-ready' : 'not-ready'}`}
         >
-          {isReady ? '✅ YA ESTOY LISTO' : '⏳ MARCAR LISTO'}
+          {isReadyLocal ? '✅ YA ESTOY LISTO' : '⏳ MARCAR LISTO'}
         </button>
 
-        {puedeIniciar && (
+        {allReady && isHost && (
           <div className="start-section">
-            <p className="start-message">¡Todos listos! La partida puede comenzar.</p>
-            <button 
-              onClick={handleEmitStartGame} 
+            <p className="start-message">¡Todos listos! Presiona 'U' o haz clic para iniciar.</p>
+            <button
+              onClick={() => requestEnterGame?.(partidaId)}
               className="start-button"
             >
-              🚀 INICIAR JUEGO
+              🚀 INICIAR JUEGO (U)
             </button>
           </div>
         )}
