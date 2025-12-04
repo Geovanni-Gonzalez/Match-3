@@ -1,4 +1,15 @@
-// server/src/core/services/GameService.ts
+/**
+ * @file GameService.ts
+ * @description Servicio principal que orquesta la lógica de negocio del juego.
+ * 
+ * Responsabilidades:
+ * - Gestión del ciclo de vida de las partidas (creación, inicio, finalización).
+ * - Coordinación de jugadores (unión, desconexión, reconexión).
+ * - Manejo de eventos de juego (selección de celdas, validación de matches).
+ * - Persistencia de datos a través de repositorios.
+ * - Comunicación en tiempo real con los clientes vía Socket.IO.
+ */
+
 import { Server } from 'socket.io';
 import { ServidorPartidas } from '../manager/ServidorPartidas.js';
 import { Jugador } from '../domain/Jugador.js';
@@ -12,15 +23,22 @@ import { TimerManager } from '../manager/TimerManager.js';
 export class GameService {
   private servidor = ServidorPartidas.getInstance();
 
+  /**
+   * Inicializa el servicio de juego.
+   * @param io - Instancia del servidor Socket.IO para comunicación en tiempo real.
+   */
   constructor(private io: Server) {
     TimerManager.getInstance().setSocketServer(io);
   }
 
   /**
    * Maneja la expiración del tiempo de espera de una partida en el lobby.
-   * Si hay suficientes jugadores (>=2), inicia la partida automáticamente.
-   * Si no, la elimina.
-   * @param matchId ID de la partida
+   * 
+   * Lógica:
+   * - Si hay suficientes jugadores (>=2), inicia la partida automáticamente.
+   * - Si no hay suficientes jugadores, elimina la partida y notifica.
+   * 
+   * @param matchId - ID único de la partida.
    */
   async handleMatchExpiration(matchId: string) {
     try {
@@ -56,14 +74,14 @@ export class GameService {
 
   /**
    * Crea una nueva partida, la almacena en memoria y la persiste en la base de datos.
-   * Configura el temporizador de vida útil de la partida.
+   * Configura el temporizador de vida útil de la partida en el lobby.
    * 
-   * @param idPartida Código único de la partida
-   * @param tipoJuego 'Match' o 'Tiempo'
-   * @param tematica Temática visual del juego
-   * @param max Número máximo de jugadores
-   * @param duracion Duración en minutos (solo para Vs Tiempo)
-   * @returns La instancia de la partida creada
+   * @param idPartida - Código único de la partida.
+   * @param tipoJuego - Tipo de juego ('Match' o 'Tiempo').
+   * @param tematica - Temática visual del juego.
+   * @param max - Número máximo de jugadores permitidos.
+   * @param duracion - Duración en minutos (opcional, solo para modo 'Tiempo').
+   * @returns La instancia de la partida creada.
    */
   public async crearPartida(idPartida: string, tipoJuego: 'Match' | 'Tiempo', tematica: string, max: number, duracion?: number) {
     console.log('[GameService] Creando partida:', idPartida, tipoJuego, tematica, max, duracion);
@@ -89,19 +107,25 @@ export class GameService {
     return partida;
   }
 
+  /**
+   * Obtiene una partida por su ID.
+   * @param idPartida - ID de la partida.
+   * @returns La instancia de la partida o undefined si no existe.
+   */
   public obtenerPartida(idPartida: string) {
     return this.servidor.obtenerPartida(idPartida);
   }
 
   /**
    * Permite a un jugador unirse a una partida existente.
-   * Crea la instancia del jugador y persiste la relación en la BD.
+   * Crea la instancia del jugador en memoria y persiste la relación en la BD.
    * 
-   * @param idPartida ID de la partida
-   * @param nickname Nombre del jugador
-   * @param socketID ID del socket de conexión
-   * @param jugadorDBId ID del jugador en la base de datos
-   * @returns La instancia del nuevo jugador
+   * @param idPartida - ID de la partida.
+   * @param nickname - Nombre del jugador.
+   * @param socketID - ID del socket de conexión actual.
+   * @param jugadorDBId - ID del jugador en la base de datos.
+   * @returns La instancia del nuevo jugador creado.
+   * @throws Error si la partida no existe.
    */
   public async unirseAPartida(idPartida: string, nickname: string, socketID: string, jugadorDBId: number) {
     const partida = this.servidor.obtenerPartida(idPartida);
@@ -124,8 +148,8 @@ export class GameService {
   }
 
   /**
-   * Elimina una partida de la memoria del servidor.
-   * @param idPartida ID de la partida a eliminar
+   * Elimina una partida de la memoria del servidor y limpia sus timers asociados.
+   * @param idPartida - ID de la partida a eliminar.
    */
   public eliminarPartida(idPartida: string) {
     TimerManager.getInstance().clearTimer(idPartida);
@@ -134,12 +158,12 @@ export class GameService {
   }
 
   /**
-   * Actualiza el estado de "listo" de un jugador.
-   * Si todos los jugadores están listos, emite el evento 'all_players_ready'.
+   * Actualiza el estado de "listo" de un jugador en la sala de espera.
+   * Si todos los jugadores están listos (y hay al menos 2), emite el evento 'all_players_ready'.
    * 
-   * @param partidaId ID de la partida
-   * @param socketID ID del socket del jugador
-   * @param isReady Nuevo estado de listo
+   * @param partidaId - ID de la partida.
+   * @param socketID - ID del socket del jugador.
+   * @param isReady - Nuevo estado de listo (true/false).
    */
   public setReady(partidaId: string, socketID: string, isReady: boolean) {
     const partida = this.servidor.obtenerPartida(partidaId);
@@ -159,11 +183,11 @@ export class GameService {
 
   /**
    * Prepara la partida para ser mostrada en el cliente, cambiando su estado a 'ready_to_start'.
-   * Esto envía el tablero inicial a los clientes para que puedan renderizarlo, pero sin iniciar el juego.
-   * Solo el anfitrión puede solicitar esto.
-   *
-   * @param partidaId ID de la partida
-   * @param requestedBySocketID Socket ID de quien solicita preparar la partida (debe ser el host). Opcional si es sistema.
+   * Envía el tablero inicial a los clientes para renderizado previo al inicio.
+   * 
+   * @param partidaId - ID de la partida.
+   * @param requestedBySocketID - (Opcional) Socket ID de quien solicita la acción (para validación de host).
+   * @throws Error si la partida no existe, no está en espera, o si el solicitante no es el host.
    */
   public prepararPartida(partidaId: string, requestedBySocketID?: string) {
     const partida = this.servidor.obtenerPartida(partidaId);
@@ -194,11 +218,11 @@ export class GameService {
   }
 
   /**
-   * Inicia la secuencia de arranque de la partida (cuenta regresiva).
-   * Valida que la partida esté en espera y que quien la inicia sea el host (si aplica).
+   * Inicia la secuencia de arranque de la partida (cuenta regresiva de 3 segundos).
    * 
-   * @param partidaId ID de la partida
-   * @param requestedBySocketID (Opcional) Socket ID de quien solicita iniciar
+   * @param partidaId - ID de la partida.
+   * @param requestedBySocketID - (Opcional) Socket ID de quien solicita iniciar.
+   * @throws Error si la partida no está en estado 'ready_to_start' o si el solicitante no es el host.
    */
   public iniciarPartida(partidaId: string, requestedBySocketID?: string) {
     const partida = this.servidor.obtenerPartida(partidaId);
@@ -231,13 +255,19 @@ export class GameService {
 
   /**
    * Transición interna al estado 'jugando'.
-   * Inicializa el tablero, envía configuración a clientes e inicia timers de juego si aplica.
-   * @param partida Instancia de la partida
+   * Inicializa timestamps, marca inicio en BD e inicia timers de juego si aplica.
+   * 
+   * @param partida - Instancia de la partida.
    */
   private comenzarJuegoReal(partida: any) {
     const partidaId = partida.idPartida;
     partida.setEstado('jugando');
     partida.startTime = Date.now();
+
+    // Actualizar fecha_inicio en BD
+    PartidaRepo.marcarInicioPartida(partidaId).catch(err => {
+      console.warn('[GameService] Error marcando inicio partida en BD:', err);
+    });
 
     // La configuración y el tablero ya deberían haber sido enviados por 'prepararPartida'
     const gameConfig = {
@@ -267,10 +297,10 @@ export class GameService {
    * Procesa la selección de una celda por parte de un jugador.
    * Valida turno, estado de celda y bloqueos por otros jugadores.
    * 
-   * @param partidaId ID de la partida
-   * @param socketID ID del jugador
-   * @param r Fila seleccionada
-   * @param c Columna seleccionada
+   * @param partidaId - ID de la partida.
+   * @param socketID - ID del socket del jugador.
+   * @param r - Fila seleccionada.
+   * @param c - Columna seleccionada.
    */
   public manejarSeleccion(partidaId: string, socketID: string, r: number, c: number) {
     const partida = this.servidor.obtenerPartida(partidaId);
@@ -306,11 +336,15 @@ export class GameService {
 
   /**
    * Intenta validar y ejecutar un match con las celdas seleccionadas por el jugador.
-   * Si es válido: suma puntos, actualiza tablero y notifica.
-   * Si es inválido: limpia selección y notifica error.
    * 
-   * @param partidaId ID de la partida
-   * @param socketID ID del jugador
+   * Flujo:
+   * 1. Valida que haya al menos 3 celdas seleccionadas.
+   * 2. Llama a MatchService para validar la cadena.
+   * 3. Si es válido: suma puntos, actualiza tablero, notifica éxito y verifica fin de juego.
+   * 4. Si es inválido: limpia selección y notifica error.
+   * 
+   * @param partidaId - ID de la partida.
+   * @param socketID - ID del socket del jugador.
    */
   public async activarMatch(partidaId: string, socketID: string) {
     const partida = this.servidor.obtenerPartida(partidaId);
@@ -368,6 +402,10 @@ export class GameService {
     }
   }
 
+  /**
+   * Emite el estado actual de la partida (tablero y jugadores) a todos los participantes.
+   * @param partidaId - ID de la partida.
+   */
   private emitirEstadoPartida(partidaId: string) {
     const partida = this.servidor.obtenerPartida(partidaId);
     if (!partida) return;
@@ -381,7 +419,8 @@ export class GameService {
   }
 
   /**
-   * Finaliza la partida: calcula ganador/es y persiste resultados en BD
+   * Finaliza la partida, calcula ganadores y persiste los resultados en la base de datos.
+   * @param partidaId - ID de la partida a finalizar.
    */
   public async finalizarPartida(partidaId: string) {
     const partida = this.servidor.obtenerPartida(partidaId);
@@ -409,8 +448,10 @@ export class GameService {
       tiempoInvertido: durationSeconds
     }));
 
+    const idGanadorPrincipal = (ganador && ganador.puntaje > 0) ? ganador.idDB : null;
+
     try {
-      await PartidaRepo.guardarResultadosFinales(partidaId, resultadosForDb);
+      await PartidaRepo.guardarResultadosFinales(partidaId, resultadosForDb, idGanadorPrincipal);
     } catch (err) {
       console.warn('[GameService] No se pudo persistir resultados finales:', err);
     }
@@ -423,7 +464,11 @@ export class GameService {
   }
 
   /**
-   * Manejo de desconexión: ya implementado
+   * Maneja la desconexión de un socket.
+   * Marca al jugador como desconectado y actualiza el estado de la partida.
+   * Si la partida queda vacía, la elimina.
+   * 
+   * @param socketID - ID del socket desconectado.
    */
   public manejarDesconexion(socketID: string) {
     for (const [id, partida] of this.servidor.partidasActivas.entries()) {
@@ -445,11 +490,13 @@ export class GameService {
   }
 
   /**
-   * Re-attach / Reconnect player:
-   * Si se proporciona partidaId, intentará re-conectar en esa partida.
-   * Si no se proporciona, buscará por jugador idDB en todas las partidas activas.
-   *
-   * Retorna { partidaId, jugadoresResumen } en éxito, o null si no encontró nada.
+   * Intenta reconectar a un jugador que perdió la conexión.
+   * Busca al jugador por su ID de base de datos en la partida especificada o en todas las activas.
+   * 
+   * @param partidaId - (Opcional) ID de la partida donde buscar.
+   * @param jugadorDBId - ID de base de datos del jugador.
+   * @param nuevoSocketID - Nuevo ID de socket asignado al reconectar.
+   * @returns Objeto con ID de partida y resumen de jugadores si tiene éxito, o null.
    */
   public async reconnectPlayer(partidaId: string | undefined, jugadorDBId: number, nuevoSocketID: string) {
     const buscarEnPartida = (p: any): Jugador | null => {
@@ -491,6 +538,12 @@ export class GameService {
     }
   }
 
+  /**
+   * Genera una lista de partidas disponibles para mostrar en el lobby.
+   * Filtra partidas en espera y que no estén llenas.
+   * 
+   * @returns Array de objetos con información resumida de las partidas.
+   */
   public listarPartidasDisponibles() {
     return Array.from(this.servidor.partidasActivas.values())
       .filter(p => p.estado === 'espera' && !p.estaLlena())
@@ -509,7 +562,7 @@ export class GameService {
   }
 
   /**
-   * Emite la lista actualizada de partidas a todos los clientes en el lobby.
+   * Emite la lista actualizada de partidas a todos los clientes conectados al lobby.
    */
   private emitirListaPartidas() {
     const partidas = this.listarPartidasDisponibles();

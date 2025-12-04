@@ -1,30 +1,50 @@
-// src/sockets/lobby.socket.ts
+/**
+ * @file lobby.sockets.ts
+ * @description Manejador de eventos de Socket.IO relacionados con el Lobby y la gestión de salas.
+ * 
+ * Escucha eventos para:
+ * - Listar partidas disponibles.
+ * - Unirse a una partida existente.
+ * - Solicitar información de una partida.
+ */
+
 import { Server, Socket } from 'socket.io';
 import { GameService } from '../core/services/GameService.js';
 import { ServidorPartidas } from '../core/manager/ServidorPartidas.js';
 import { TimerManager } from '../core/manager/TimerManager.js';
 import { Console } from 'console';
 
+/**
+ * Registra los listeners de eventos del lobby en el servidor Socket.IO.
+ * 
+ * @param io - Instancia del servidor Socket.IO.
+ * @param gameService - Servicio de juego para delegar la lógica.
+ */
 export function registerLobbySockets(io: Server, gameService: GameService) {
   const servidor = ServidorPartidas.getInstance();
   const timerManager = TimerManager.getInstance();
   timerManager.setSocketServer(io);
 
   io.on('connection', (socket: Socket) => {
+    // Al conectar, unirse al canal "lobby" y enviar lista actual
     socket.join("lobby");
-    // send current list immediately - get from ServidorPartidas directly
     const partidasDisponibles = gameService.listarPartidasDisponibles();
     socket.emit('partidas:list', partidasDisponibles);
 
-
-    // client asks for explicit list
+    /**
+     * Evento: partidas:get
+     * Descripción: El cliente solicita explícitamente la lista de partidas.
+     */
     socket.on('partidas:get', () => {
       const partidas = gameService.listarPartidasDisponibles();
       socket.emit('partidas:list', partidas);
     });
 
-
-    // join_game
+    /**
+     * Evento: join_game
+     * Descripción: Un jugador solicita unirse a una partida específica.
+     * Payload: { idPartida, nickName, jugadorDBId }
+     */
     socket.on('join_game', async (data) => {
       try {
         const { idPartida, nickName, jugadorDBId } = data;
@@ -54,6 +74,11 @@ export function registerLobbySockets(io: Server, gameService: GameService) {
       }
     });
 
+    /**
+     * Evento: request_game_info
+     * Descripción: Solicita detalles de una partida (configuración, jugadores).
+     * Payload: { partidaId }
+     */
     socket.on('request_game_info', (data) => {
       const { partidaId } = data;
       const partida = servidor.obtenerPartida(partidaId);

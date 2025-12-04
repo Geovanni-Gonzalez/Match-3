@@ -1,3 +1,7 @@
+/**
+ * @file reportWebVitals.ts
+ * @description Utilidad para medir y reportar métricas de rendimiento web (Web Vitals).
+ */
 import { ReportHandler } from 'web-vitals';
 
 const reportWebVitals = (onPerfEntry?: ReportHandler) => {

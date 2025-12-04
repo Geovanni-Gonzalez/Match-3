@@ -1,14 +1,30 @@
-// client/src/views/Juego.tsx
+/**
+ * @file Juego.tsx
+ * @description Vista principal del juego activo.
+ * 
+ * Renderiza:
+ * - El tablero de juego (grid 9x7).
+ * - La lista de jugadores y puntajes en tiempo real.
+ * - Temporizadores y contadores de estado.
+ * - Maneja la interacción del usuario (selección de celdas, activación de match).
+ * - Muestra notificaciones y estados de transición (cuenta regresiva, fin de juego).
+ */
+
 import React, { useEffect } from "react";
 import { useGameEvents } from "../hooks/useGameEvents";
 import { ResultadoPartida } from "./ResultadoPartida";
 import '../styles/Juego.css';
 
 interface JuegoProps {
+  /** ID de la partida actual. */
   partidaId: string;
+  /** Nickname del usuario actual. */
   currentUserNickname: string;
+  /** Estado inicial del tablero (opcional). */
   initialTablero?: any[][];
+  /** Configuración inicial de la partida (opcional). */
   initialConfig?: any;
+  /** Función para salir de la partida. */
   onLeave: () => void;
 }
 
@@ -28,6 +44,9 @@ const THEME_ICONS: Record<string, Record<string, string>> = {
   }
 };
 
+/**
+ * Componente principal de la vista de juego.
+ */
 export const Juego: React.FC<JuegoProps> = ({
   partidaId,
   currentUserNickname,
@@ -56,11 +75,20 @@ export const Juego: React.FC<JuegoProps> = ({
   const isHost = jugadores.find(j => j.nickname === currentUserNickname)?.isHost;
 
   // ---- CALLBACKS ----
+  
+  /**
+   * Maneja el clic en una celda del tablero.
+   * @param r - Fila.
+   * @param c - Columna.
+   */
   const handleCellClick = (r: number, c: number) => {
     if (gameStatus !== "active") return;
     selectCell?.(partidaId, r, c);
   };
 
+  /**
+   * Solicita al servidor validar el match con las celdas seleccionadas.
+   */
   const handleMatch = () => {
     activateMatch?.(partidaId);
   };

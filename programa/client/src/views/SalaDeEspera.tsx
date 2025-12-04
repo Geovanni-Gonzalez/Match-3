@@ -1,14 +1,31 @@
+/**
+ * @file SalaDeEspera.tsx
+ * @description Vista de sala de espera (lobby) previa al inicio de la partida.
+ * 
+ * Permite:
+ * - Ver la lista de jugadores que se han unido.
+ * - Marcar al jugador actual como "listo".
+ * - Si todos están listos, el host puede iniciar el juego presionando 'U'.
+ * - Temporizador de espera que cancela la partida si no hay inicio en 3 minutos.
+ */
+
 import React, { useEffect, useState, useRef } from "react";
 import { useGameEvents } from "../hooks/useGameEvents";
 import { useAuth } from "../context/AuthContext";
 import '../styles/SalaDeEspera.css';
 
 interface Props {
+  /** ID de la partida en la que se encuentra el jugador. */
   partidaId: string;
+  /** Función para salir de la sala. */
   onLeave: () => void;
+  /** Callback para navegar al juego cuando todos estén listos. */
   onStartGame: (partidaId: string, tablero: any, config: any) => void;
 }
 
+/**
+ * Componente de sala de espera antes del inicio del juego.
+ */
 export const SalaDeEspera: React.FC<Props> = ({
   partidaId,
   onLeave,

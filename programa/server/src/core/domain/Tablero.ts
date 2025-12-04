@@ -1,22 +1,33 @@
-// server/src/core/domain/Tablero.ts
+/**
+ * @file Tablero.ts
+ * @description Representa la cuadrícula de juego (Grid) donde ocurren las interacciones.
+ * 
+ * Esta clase es responsable de:
+ * - Generar y mantener la matriz de celdas.
+ * - Asegurar que el tablero siempre tenga movimientos válidos (matches posibles).
+ * - Actualizar el estado del tablero tras un match exitoso.
+ */
+
 import { Celda } from './Celda.js';
 import config from '../../config/config.js';
 import { Coordenada } from '../../interfaces.js';
 
-
 export class Tablero {
+    /** Matriz bidimensional de celdas que representa el grid del juego. */
     public matriz: Celda[][] = [];
 
-
+    /**
+     * Constructor de la clase Tablero.
+     * Inicializa la matriz y asegura que sea jugable.
+     */
     constructor() {
         this.inicializar();
     }
 
-
     /**
      * Inicializa el tablero generando celdas aleatorias.
      * Intenta hasta 20 veces generar un tablero que contenga al menos un match válido.
-     * Si falla, fuerza la creación de un match.
+     * Si falla, fuerza la creación de un match artificialmente.
      */
     private inicializar() {
         const R = config.TAMANIO_FILA;
@@ -45,18 +56,25 @@ export class Tablero {
         }
     }
 
-
+    /**
+     * Obtiene una celda específica del tablero de forma segura.
+     * 
+     * @param r - Índice de fila.
+     * @param c - Índice de columna.
+     * @returns La instancia de Celda o undefined si las coordenadas son inválidas.
+     */
     public obtenerCelda(r: number, c: number) {
         if (r < 0 || c < 0) return undefined;
         if (!this.matriz[r] || !this.matriz[r][c]) return undefined;
         return this.matriz[r][c];
     }
 
-
     /**
      * Actualiza las celdas especificadas con nuevos colores aleatorios.
+     * Se llama después de que un jugador completa un match exitoso.
      * Garantiza que el tablero resultante siga teniendo matches posibles.
-     * @param lista Lista de coordenadas a actualizar
+     * 
+     * @param lista - Lista de coordenadas de las celdas a regenerar.
      */
     public actualizarCeldas(lista: Coordenada[]) {
         const colores = config.COLORES_VALIDOS;
@@ -74,7 +92,8 @@ export class Tablero {
     /**
      * Verifica si existe al menos una combinación válida de 3 colores en el tablero.
      * Revisa horizontal, vertical y diagonales.
-     * @returns true si existe al menos un match
+     * 
+     * @returns true si existe al menos un match posible.
      */
     private verificarExistenciaDeMatches(): boolean {
         const R = this.matriz.length;
@@ -111,7 +130,7 @@ export class Tablero {
 
     /**
      * Fuerza la creación de un match de 3 celdas del mismo color en una posición aleatoria.
-     * Se utiliza como fallback para evitar tableros sin movimientos posibles.
+     * Se utiliza como mecanismo de seguridad (fallback) para evitar tableros "muertos" (sin movimientos).
      */
     private forzarMatch() {
         const R = this.matriz.length;

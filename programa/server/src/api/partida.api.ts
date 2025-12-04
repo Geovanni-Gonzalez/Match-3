@@ -1,4 +1,11 @@
-// server/src/api/partida.api.ts
+/**
+ * @file partida.api.ts
+ * @description Definición de endpoints REST relacionados con la entidad Partida.
+ * 
+ * Maneja la creación de partidas, listado, unión de jugadores y consulta de rankings.
+ * Utiliza inyección de dependencias para acceder a GameService.
+ */
+
 import { Router, Request, Response } from 'express';
 import { PartidaRepo } from '../core/repositories/PartidaRepo.js';
 import { v4 as uuidv4 } from 'uuid';
@@ -7,15 +14,26 @@ import { GameService } from '../core/services/GameService.js';
 const router = Router();
 let gameService: GameService; // Variable para mantener la instancia de GameService
 
-// Función para inyectar GameService
+/**
+ * Inyecta la instancia de GameService necesaria para la lógica de negocio.
+ * @param serviceInstance - Instancia singleton de GameService.
+ */
 export function setGameService(serviceInstance: GameService) {
   gameService = serviceInstance;
 }
 
 /**
- * POST /api/partida/crear_partida
- * Body: { tipoJuego, tematica, numJugadoresMax }
- * Respuesta: { partidaId, tipoJuego, tematica, numJugadoresMax }
+ * @route POST /api/partida/crear_partida
+ * @description Crea una nueva partida en el sistema.
+ * 
+ * @body {string} tipoJuego - 'Match' o 'Tiempo'.
+ * @body {string} tematica - Temática visual.
+ * @body {number} numJugadoresMax - Límite de jugadores.
+ * @body {number} [duracion] - Duración en minutos (opcional).
+ * 
+ * @returns {object} 201 - { message, codigoPartida, ... }
+ * @returns {object} 400 - Datos inválidos.
+ * @returns {object} 500 - Error interno.
  */
 router.post('/crear_partida', async (req: Request, res: Response) => {
   const { tipoJuego, tematica, numJugadoresMax, duracion } = req.body;
@@ -41,9 +59,15 @@ router.post('/crear_partida', async (req: Request, res: Response) => {
 });
 
 /**
- * POST /api/partida/agregar_jugador
- * Body: { codigoPartida, jugadorId }
- * Respuesta: { message }
+ * @route POST /api/partida/agregar_jugador
+ * @description Asocia un jugador existente a una partida.
+ * 
+ * @body {string} codigoPartida - Código de la partida.
+ * @body {number} jugadorId - ID del jugador.
+ * 
+ * @returns {object} 200 - Éxito.
+ * @returns {object} 400 - Datos inválidos.
+ * @returns {object} 500 - Error interno.
  */
 router.post('/agregar_jugador', async (req: Request, res: Response) => {
   const { codigoPartida, jugadorId } = req.body;
@@ -60,8 +84,11 @@ router.post('/agregar_jugador', async (req: Request, res: Response) => {
 });
 
 /**
- * GET /api/partida/partidas
- * Respuesta: Array de partidas disponibles
+ * @route GET /api/partida/partidas
+ * @description Obtiene la lista de partidas disponibles en el lobby.
+ * 
+ * @returns {object} 200 - Array de partidas.
+ * @returns {object} 500 - Error interno.
  */
 router.get('/partidas', async (req: Request, res: Response) => {
   try {
@@ -77,8 +104,11 @@ router.get('/partidas', async (req: Request, res: Response) => {
 });
 
 /**
- * GET /api/partida/ranking
- * Respuesta: { ranking: [...] }
+ * @route GET /api/partida/ranking
+ * @description Obtiene el ranking histórico de ganadores.
+ * 
+ * @returns {object} 200 - { ranking: [...] }
+ * @returns {object} 500 - Error interno.
  */
 router.get('/ranking', async (req: Request, res: Response) => {
   try {

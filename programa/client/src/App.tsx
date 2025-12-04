@@ -1,4 +1,17 @@
-// client/src/App.tsx
+/**
+ * @file App.tsx
+ * @description Componente raíz de la aplicación cliente.
+ * 
+ * Maneja la navegación entre las distintas vistas de la aplicación:
+ * - Bienvenida / Login.
+ * - Menú Principal.
+ * - Crear Partida / Lobby / Ranking.
+ * - Sala de Espera.
+ * - Juego Activo.
+ * 
+ * Coordina el flujo del usuario y mantiene el estado global de navegación.
+ */
+
 import React, { useState } from 'react';
 import { Bienvenida } from './views/Bienvenida';
 import { MenuPrincipal } from './views/MenuPrincipal';
@@ -11,6 +24,8 @@ import { useAuth } from './context/AuthContext';
 import './styles/App.css';
 
 // --- Tipos ---
+
+/** Posibles vistas de la aplicación. */
 type AppView =
   | 'welcome'
   | 'menu'
@@ -20,12 +35,15 @@ type AppView =
   | 'waiting_room'
   | 'game';
 
-// --- Tipo coherente con el backend ---
+/** Representación de una celda del tablero (coherente con backend). */
 export interface Celda {
   tipo: number;
   estado?: string;
 }
 
+/**
+ * Componente principal de la aplicación cliente.
+ */
 const App: React.FC = () => {
   const { currentUser, logout } = useAuth();
 
@@ -36,10 +54,17 @@ const App: React.FC = () => {
   const [initialBoard, setInitialBoard] = useState<Celda[][]>([]);
   const [initialConfig, setInitialConfig] = useState<any>(null);
 
+  /**
+   * Cambia la vista actual de la aplicación.
+   * @param view - Vista a la que navegar.
+   */
   const handleNavigation = (view: AppView) => {
     setCurrentView(view);
   };
 
+  /**
+   * Cierra la sesión del usuario y reinicia el estado de la aplicación.
+   */
   const handleLogout = () => {
     logout();
     setCurrentView('welcome');
@@ -48,12 +73,21 @@ const App: React.FC = () => {
     setInitialConfig(null);
   };
 
+  /**
+   * Navega a la sala de espera con el ID de partida proporcionado.
+   * @param partidaId - ID de la partida.
+   */
   const handleGoToWaitingRoom = (partidaId: string) => {
     setCurrentGameId(partidaId);
     handleNavigation('waiting_room');
   };
 
-  // Recibe el tablero generado por el servidor vía sockets
+  /**
+   * Inicia el juego con el tablero generado por el servidor.
+   * @param partidaId - ID de la partida.
+   * @param tableroServidor - Tablero inicial del juego.
+   * @param config - Configuración de la partida.
+   */
   const handleStartGame = (partidaId: string, tableroServidor: Celda[][], config: any) => {
     setCurrentGameId(partidaId);
     setInitialBoard(tableroServidor);

@@ -1,9 +1,19 @@
-// client/src/views/ResultadoPartida.tsx
+/**
+ * @file ResultadoPartida.tsx
+ * @description Vista de resultados finales de la partida.
+ * 
+ * Muestra:
+ * - Tabla con las posiciones finales de todos los jugadores.
+ * - Resalta la posición del usuario actual.
+ * - Botón para regresar al menú principal.
+ */
 
 import React from 'react';
 import '../styles/ResultadoPartida.css';
 
 // --- Interfaces de Tipos ---
+
+/** Resultado individual de un jugador. */
 interface ResultadoJugador {
   posicion: number;
   nickname: string;
@@ -12,12 +22,19 @@ interface ResultadoJugador {
 }
 
 interface ResultadoPartidaProps {
+  /** ID de la partida finalizada. */
   partidaId: string;
+  /** Lista de resultados de los jugadores ordenada por posición. */
   resultados: ResultadoJugador[];
-  onContinue: () => void; // Función para regresar al Menú Principal
+  /** Función para regresar al menú principal. */
+  onContinue: () => void;
+  /** Temática de la partida (opcional). */
   tematica?: string;
 }
 
+/**
+ * Componente de vista de resultados de la partida.
+ */
 export const ResultadoPartida: React.FC<ResultadoPartidaProps> = ({ 
   partidaId, 
   resultados, 

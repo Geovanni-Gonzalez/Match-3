@@ -1,9 +1,20 @@
-// server/src/core/repositories/PlayerRepo.ts
+/**
+ * @file PlayerRepo.ts
+ * @description Repositorio de acceso a datos para la entidad Jugador.
+ * 
+ * Gestiona la creación y recuperación de jugadores en la base de datos.
+ */
+
 import pool from './dbPool.js';
 import Logger from '../../utils/Logger.js';
 
-
 export class PlayerRepo {
+    /**
+     * Busca un jugador por su nickname o lo crea si no existe.
+     * 
+     * @param nickname - Nombre de usuario del jugador.
+     * @returns ID del jugador (existente o nuevo).
+     */
     static async findOrCreateByNickname(nickname: string) {
         const conn = await pool.getConnection();
         try {

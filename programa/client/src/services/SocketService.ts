@@ -1,6 +1,16 @@
-// programa/client/src/services/SocketService.ts
+/**
+ * @file SocketService.ts
+ * @description Servicio cliente para la gestión de la comunicación en tiempo real con Socket.IO.
+ * 
+ * Encapsula la instancia del socket y proporciona métodos tipados para emitir eventos
+ * y suscribirse a respuestas del servidor.
+ */
+
 import { Socket } from 'socket.io-client';
 
+/**
+ * Datos públicos de un jugador en una partida.
+ */
 export interface JugadorData {
   nickname: string;
   socketID: string;
@@ -10,6 +20,9 @@ export interface JugadorData {
   isHost?: boolean;
 }
 
+/**
+ * Representación serializada de una celda del tablero para el cliente.
+ */
 export interface TableroSerializedCell {
   r: number;
   c: number;
@@ -18,6 +31,9 @@ export interface TableroSerializedCell {
   seleccionadoPor?: string | null;
 }
 
+/**
+ * Información resumida de una partida para mostrar en el lobby.
+ */
 export interface PartidaListItem {
   id: string;
   tipo: string;
@@ -32,47 +48,60 @@ export interface PartidaListItem {
 export class SocketService {
   private socket: Socket;
 
+  /**
+   * Inicializa el servicio con una instancia de Socket.IO.
+   * @param socketInstance - Instancia conectada de Socket.IO Client.
+   */
   constructor(socketInstance: Socket) {
     if (!socketInstance) throw new Error("SocketService requiere instancia válida de Socket.");
     this.socket = socketInstance;
   }
 
-  // ---------- EMITS ----------
+  // ---------- EMITS (Envío de eventos al servidor) ----------
 
+  /** Solicita la lista actualizada de partidas. */
   public getPartidas() {
     console.log("[SocketService] Emitiendo partidas:get");
     this.socket.emit("partidas:get");
   }
 
+  /** Solicita unirse a una partida específica. */
   public joinGame(idPartida: string, nickName: string, jugadorDBId: number) {
     console.log("[SocketService] Emitiendo join_game:", { idPartida, nickName, jugadorDBId });
     this.socket.emit("join_game", { idPartida, nickName, jugadorDBId });
   }
 
+  /** Abandona la partida actual. */
   public leaveGame(partidaId: string) {
     this.socket.emit("leave_game", { partidaId });
   }
 
+  /** Cambia el estado de "listo" del jugador. */
   public setReady(partidaId: string, isReady: boolean) {
     this.socket.emit("set_ready", { partidaId, isReady });
   }
 
+  /** Inicia la partida (solo host). */
   public startGame(partidaId: string) {
     this.socket.emit("start_game", { partidaId });
   }
 
+  /** Selecciona una celda en el tablero. */
   public selectCell(partidaId: string, r: number, c: number) {
     this.socket.emit("select_cell", { partidaId, r, c });
   }
 
+  /** Intenta activar un match con las celdas seleccionadas. */
   public activateMatch(partidaId: string) {
     this.socket.emit("activate_match", { partidaId });
   }
 
+  /** Solicita información detallada de una partida. */
   public requestGameInfo(partidaId: string) {
     this.socket.emit("request_game_info", { partidaId });
   }
 
+  /** Solicita preparar la partida para entrar al tablero (solo host). */
   public requestEnterGame(partidaId: string) {
     this.socket.emit("request_enter_game", { partidaId });
   }
@@ -82,7 +111,8 @@ export class SocketService {
     this.socket.emit("make_move", { partidaId, moves });
   }
 
-  // ---------- ON con auto-unsubscribe ----------
+  // ---------- ON (Suscripción a eventos del servidor) ----------
+  // Todos los métodos retornan una función para desuscribirse (cleanup).
 
   public onPartidasList(callback: (lista: PartidaListItem[]) => void) {
     this.socket.on("partidas:list", callback);

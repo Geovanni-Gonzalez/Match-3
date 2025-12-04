@@ -1,4 +1,15 @@
-// client/src/views/RankingHistorico.tsx
+/**
+ * @file RankingHistorico.tsx
+ * @description Vista de ranking histórico de partidas finalizadas.
+ * 
+ * Muestra una tabla con:
+ * - Nombre del ganador.
+ * - Puntaje obtenido.
+ * - Temática y duración.
+ * - Fecha de la partida.
+ * 
+ * Consulta la API REST del servidor para obtener los datos históricos.
+ */
 
 import React, { useState, useEffect } from 'react';
 import { API_URL } from '../config';
@@ -6,6 +17,8 @@ import { API_URL } from '../config';
 import '../styles/RankingHistorico.css';
 
 // --- Interfaces de Tipos ---
+
+/** Datos de una entrada del ranking. */
 interface JugadorRanking {
   rank: number;
   user: string;
@@ -17,9 +30,13 @@ interface JugadorRanking {
 }
 
 interface RankingHistoricoProps {
-  onBack: () => void; // Función para regresar al menú principal
+  /** Función para regresar al menú principal. */
+  onBack: () => void;
 }
 
+/**
+ * Componente de vista del ranking histórico.
+ */
 export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) => {
   const [estadisticas, setEstadisticas] = useState<JugadorRanking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +50,11 @@ export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) =>
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_URL}/api/partida/ranking`);
+      const response = await fetch(`${API_URL}/api/partida/ranking`, {
+        headers: {
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
       const data = await response.json();
 
       if (data.ranking) {

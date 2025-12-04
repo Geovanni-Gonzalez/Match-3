@@ -1,14 +1,30 @@
-// client/src/views/LobbyPartidas.tsx
+/**
+ * @file LobbyPartidas.tsx
+ * @description Vista de listado de partidas disponibles (Lobby).
+ * 
+ * Muestra una tabla en tiempo real con las partidas creadas, permitiendo:
+ * - Ver detalles (temática, jugadores, tiempo restante para inicio).
+ * - Seleccionar una partida.
+ * - Unirse a una partida existente.
+ * 
+ * Se suscribe a eventos de Socket.IO para mantener la lista actualizada.
+ */
+
 import React, { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../context/AuthContext";
 import { SocketService, PartidaListItem } from "../services/SocketService";
 import '../styles/LobbyPartidas.css';
 
 interface LobbyPartidasProps {
+  /** Función para volver al menú principal. */
   onBack: () => void;
+  /** Callback ejecutado al unirse exitosamente a una partida. */
   onJoinSuccess: (partidaId: string) => void;
 }
 
+/**
+ * Componente de Lobby para listar y unirse a partidas.
+ */
 export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
   onBack,
   onJoinSuccess,
@@ -24,6 +40,9 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
 
   const service = useMemo(() => (socket ? new SocketService(socket) : null), [socket]);
 
+  /**
+   * Formatea segundos a formato MM:SS.
+   */
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
@@ -75,6 +94,10 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
   // ============================
   // 2) Unirse a partida por Socket.IO
   // ============================
+  /**
+   * Maneja la acción de unirse a la partida seleccionada.
+   * Emite el evento 'join_game' y espera confirmación.
+   */
   const handleUnirseClick = () => {
     if (!service) {
       alert("No hay conexión con el servidor.");

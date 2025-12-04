@@ -1,16 +1,41 @@
-// src/core/services/MatchService.ts
+/**
+ * @file MatchService.ts
+ * @description Servicio encargado de la validación lógica de las jugadas (matches).
+ * 
+ * Implementa las reglas del juego para determinar si una secuencia de celdas
+ * seleccionadas constituye un match válido.
+ */
+
 import { Coordenada } from '../../interfaces.js';
 import { Celda } from '../domain/Celda.js';
 
 export class MatchService {
   /**
-   * Valida una cadena de celdas de forma síncrona en memoria para máxima velocidad.
+   * Valida una cadena de celdas de forma síncrona.
+   * 
+   * @param celdas - Lista de coordenadas seleccionadas por el jugador.
+   * @param tablero - Matriz actual del tablero de juego.
+   * @returns Promesa con el resultado de la validación (valido, n, celdas).
    */
   public static async validarCadena(celdas: Coordenada[], tablero: Celda[][]) {
     // Ejecución inmediata sin overhead de Worker Threads
     return this.validarLogica(celdas, tablero);
   }
 
+  /**
+   * Implementa la lógica core de validación de matches.
+   * 
+   * Reglas aplicadas:
+   * 1. Tamaño Mínimo: Al menos 3 celdas.
+   * 2. Uniformidad de Color: Todas las celdas deben ser del mismo color.
+   * 3. No Repetición: Una celda no puede estar dos veces en la selección.
+   * 4. Adyacencia: Cada celda debe ser adyacente a la anterior.
+   * 5. Linealidad: La secuencia debe formar una línea recta (horizontal, vertical o diagonal).
+   * 
+   * @param listaCeldas - Lista de coordenadas a validar.
+   * @param tablero - Referencia al tablero para consultar colores.
+   * @returns Objeto con flag de validez, número de celdas y la lista procesada.
+   */
   private static validarLogica(listaCeldas: Coordenada[], tablero: Celda[][]) {
     const n = listaCeldas.length;
 

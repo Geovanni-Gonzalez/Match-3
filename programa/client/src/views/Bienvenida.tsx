@@ -1,4 +1,14 @@
-// client/src/views/Bienvenida.tsx
+/**
+ * @file Bienvenida.tsx
+ * @description Vista inicial de la aplicación. Permite al usuario registrarse con un nickname.
+ * 
+ * Esta vista maneja:
+ * - Entrada del nombre de usuario.
+ * - Validación básica (longitud mínima).
+ * - Registro en el backend vía API REST.
+ * - Inicio de sesión en el contexto global (Socket.IO).
+ */
+
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext'; 
 import axios from 'axios';
@@ -6,13 +16,21 @@ import '../styles/Bienvenida.css';
 
 import { API_URL } from '../config';
 
-
+/**
+ * Componente de pantalla de bienvenida y login.
+ */
 export const Bienvenida: React.FC = () => {
   const { login } = useAuth();
   const [nickname, setNickname] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  /**
+   * Maneja el proceso de inicio de sesión.
+   * 1. Valida el nickname.
+   * 2. Registra al jugador en la base de datos.
+   * 3. Establece la sesión en el contexto global.
+   */
   const handleLogin = async () => {
     if (nickname.trim().length < 3) {
       setError("El nickname debe tener al menos 3 caracteres.");
@@ -50,6 +68,10 @@ export const Bienvenida: React.FC = () => {
     }
   };
 
+  /**
+   * Permite iniciar sesión presionando Enter.
+   * @param e - Evento de teclado.
+   */
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleLogin();

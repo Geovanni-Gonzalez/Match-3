@@ -1,4 +1,11 @@
-// server/src/core/repositories/dbPool.js
+/**
+ * @file dbPool.ts
+ * @description Configuración y exportación del pool de conexiones a la base de datos MySQL.
+ * 
+ * Utiliza `mysql2/promise` para permitir el uso de async/await en las consultas.
+ * Las credenciales se cargan desde variables de entorno.
+ */
+
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 dotenv.config();

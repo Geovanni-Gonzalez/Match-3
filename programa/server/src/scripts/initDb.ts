@@ -23,8 +23,8 @@ export async function initDb() {
                 tipo_juego VARCHAR(20) NOT NULL,
                 tematica VARCHAR(50) NOT NULL,
                 num_jugadores INT NOT NULL,
-                fecha_inicio DATETIME,
-                fecha_fin DATETIME,
+                fecha_inicio DATETIME NULL,
+                fecha_fin DATETIME NULL,
                 id_ganador_principal INT,
                 FOREIGN KEY (id_ganador_principal) REFERENCES jugador(id_jugador)
             );
@@ -37,7 +37,7 @@ export async function initDb() {
                 id_jugador INT,
                 puntaje_final INT DEFAULT 0,
                 es_ganador TINYINT(1) DEFAULT 0,
-                tiempo_invertido INT,
+                tiempo_invertido INT NULL,
                 PRIMARY KEY(id_partida, id_jugador),
                 FOREIGN KEY (id_partida) REFERENCES partida(id_partida),
                 FOREIGN KEY (id_jugador) REFERENCES jugador(id_jugador)

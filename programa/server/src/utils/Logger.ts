@@ -1,3 +1,11 @@
+/**
+ * @file Logger.ts
+ * @description Configuración del sistema de logging de la aplicación.
+ * 
+ * Utiliza la librería 'winston' para gestionar logs estructurados.
+ * Configurado para salida por consola con colores y formato simple en desarrollo.
+ */
+
 import winston from 'winston';
 
 const logger = winston.createLogger({

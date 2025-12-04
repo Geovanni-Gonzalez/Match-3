@@ -1,4 +1,14 @@
-// programa/client/src/views/MenuPrincipal.tsx
+/**
+ * @file MenuPrincipal.tsx
+ * @description Vista principal del menú del juego.
+ * 
+ * Presenta las opciones principales:
+ * - Crear una nueva partida.
+ * - Unirse a una partida existente.
+ * - Ver el ranking histórico.
+ * - Cerrar sesión.
+ */
+
 import React from 'react';
 import '../styles/MenuPrincipal.css';
 
@@ -11,13 +21,18 @@ interface UserSession {
 }
 
 interface MenuPrincipalProps {
+  /** Sesión del usuario actual. */
   currentUser: UserSession;
+  /** Función para cerrar sesión. */
   onLogout: () => void;
-  // NUEVA PROP: Función para notificar al padre qué vista mostrar
+  /** Función para notificar al padre qué vista mostrar. */
   onNavigate: (view: MenuViews) => void; 
 }
 
-export const MenuPrincipal: React.FC<MenuPrincipalProps> = ({ currentUser, onLogout, onNavigate }) => { // ⬅️ Recibir la nueva prop
+/**
+ * Componente del menú principal con las opciones de navegación.
+ */
+export const MenuPrincipal: React.FC<MenuPrincipalProps> = ({ currentUser, onLogout, onNavigate }) => {
 
   // ... (el resto del estado y la lógica)
 

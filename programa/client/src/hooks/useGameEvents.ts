@@ -1,16 +1,39 @@
-// programa/client/src/hooks/useGameEvents.ts
+/**
+ * @file useGameEvents.ts
+ * @description Hook personalizado para gestionar la lógica de eventos del juego en el cliente.
+ * 
+ * Centraliza la suscripción a eventos de Socket.IO (actualización de tablero, jugadores, temporizadores, etc.)
+ * y expone el estado reactivo y las acciones del juego a los componentes de vista.
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { SocketService, JugadorData } from "../services/SocketService";
 
+/**
+ * Representación de una celda en el tablero del cliente.
+ */
 export interface TableroCell {
+  /** Fila de la celda (0-indexed). */
   r: number;
+  /** Columna de la celda (0-indexed). */
   c: number;
+  /** Identificador del color (hex o nombre). */
   colorID: string;
+  /** Estado de la celda ('libre', 'seleccionado', 'bloqueado', etc.). */
   estado: string;
+  /** ID del socket del jugador que seleccionó la celda (opcional). */
   seleccionadoPor?: string | null;
 }
 
+/**
+ * Hook principal para la lógica de juego en tiempo real.
+ * 
+ * @param partidaId - ID de la partida a la que conectarse.
+ * @param initialTablero - Estado inicial del tablero (opcional).
+ * @param initialConfig - Configuración inicial del juego (opcional).
+ * @returns Objeto con el estado del juego y funciones para interactuar.
+ */
 export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][], initialConfig?: any) => {
   const { socket } = useAuth();
   const [jugadores, setJugadores] = useState<JugadorData[]>([]);
@@ -31,7 +54,12 @@ export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][
 
   const service = useMemo(() => (socket ? new SocketService(socket) : null), [socket]);
 
-  // Normaliza la matriz (por si viene flat)
+  /**
+   * Normaliza la matriz del tablero recibida del servidor.
+   * Si viene como array plano, lo convierte a matriz 2D.
+   * @param matrix - Datos del tablero crudos.
+   * @returns Matriz de celdas estructurada.
+   */
   const normalizeMatrix = (matrix: any): TableroCell[][] => {
     if (!Array.isArray(matrix)) return [];
 

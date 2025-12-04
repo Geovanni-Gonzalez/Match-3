@@ -1,13 +1,21 @@
-// server/src/api/jugador.api.ts
+/**
+ * @file jugador.api.ts
+ * @description Definición de endpoints REST relacionados con la entidad Jugador.
+ */
+
 import { Router, Request, Response } from 'express';
 import { PlayerRepo } from '../core/repositories/PlayerRepo.js';
 
 const router = Router();
 
 /**
- * POST /api/jugador/registrar
- * Body: { nickname: string }
- * Respuesta: { jugadorId, nickname }
+ * @route POST /api/jugador/registrar
+ * @description Registra un nuevo jugador o recupera uno existente por su nickname.
+ * 
+ * @body {string} nickname - Nombre de usuario deseado.
+ * @returns {object} 200 - { message, jugadorId, nickname }
+ * @returns {object} 400 - Error de validación.
+ * @returns {object} 500 - Error interno del servidor.
  */
 router.post('/registrar', async (req: Request, res: Response) => {
   const { nickname } = req.body;

@@ -1,4 +1,16 @@
-// client/src/views/CrearPartida.tsx
+/**
+ * @file CrearPartida.tsx
+ * @description Vista para la configuración y creación de nuevas partidas.
+ * 
+ * Permite al usuario seleccionar:
+ * - Tipo de juego (Match o Tiempo).
+ * - Temática visual.
+ * - Número máximo de jugadores.
+ * - Duración (si aplica).
+ * 
+ * Se comunica con el backend para instanciar la partida y redirige al lobby.
+ */
+
 import { useAuth } from '../context/AuthContext';
 import React, { useState } from 'react';
 import axios from 'axios';
@@ -11,10 +23,15 @@ import { API_URL } from '../config';
 // PROPS
 // -------------------------------
 interface CrearPartidaProps {
+  /** Función para volver al menú anterior. */
   onBack: () => void;
+  /** Callback ejecutado al crear exitosamente la partida. Recibe el ID de la partida. */
   onCreateSuccess: (partidaId: string) => void;
 }
 
+/**
+ * Componente de formulario para crear una nueva partida.
+ */
 export const CrearPartida: React.FC<CrearPartidaProps> = ({
   onBack,
   onCreateSuccess
@@ -47,6 +64,10 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({
   // -------------------------------
   // CREAR PARTIDA
   // -------------------------------
+  /**
+   * Envía la solicitud de creación de partida al servidor.
+   * Valida la sesión del usuario y maneja la respuesta.
+   */
   const handleCrearPartida = async () => {
     console.log('[CREAR PARTIDA] Iniciando...');
     console.log('[CREAR PARTIDA] Usuario actual:', currentUser);
