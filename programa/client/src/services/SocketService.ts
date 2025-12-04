@@ -23,6 +23,7 @@ export interface PartidaListItem {
   tipo: string;
   tematica: string;
   jugadores: number;
+  jugadoresNombres: string[];
   maxJugadores: number;
   tiempoRestante: number;
   duracionMinutos?: number;

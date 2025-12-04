@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { API_URL } from '../config';
 
 // --- 1. INTERFACES DE TIPOS ---
 
@@ -38,7 +39,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const login = async (nickname: string, idDB: number) => {
         return new Promise<void>((resolve, reject) => {
             // Conectamos al servidor real en el puerto 4000
-            const newSocket = io('http://localhost:4000');
+            // "ngrok-skip-browser-warning" evita la página de advertencia de Ngrok que rompe el socket
+            const newSocket = io(API_URL, {
+                extraHeaders: {
+                    "ngrok-skip-browser-warning": "true"
+                }
+            });
 
             newSocket.on('connect', () => {
                 console.log(`[Auth] Conectado al servidor con ID: ${newSocket.id}`);

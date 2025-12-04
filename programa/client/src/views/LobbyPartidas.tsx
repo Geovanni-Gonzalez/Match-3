@@ -200,7 +200,12 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
                     <td className="table-cell">{partida.id}</td>
                     <td className="table-cell">{partida.tematica}</td>
                     <td className="table-cell">{partida.tipo}</td>
-                    <td className="table-cell">{partida.jugadores}/{partida.maxJugadores}</td>
+                    <td className="table-cell">
+                      <div>{partida.jugadores}/{partida.maxJugadores}</div>
+                      <div style={{ fontSize: '11px', color: '#a78bfa', marginTop: '4px' }}>
+                        {partida.jugadoresNombres?.join(', ') || ''}
+                      </div>
+                    </td>
                     <td className="table-cell">{duracionTexto}</td>
                     <td className="table-cell" style={{ color: partida.tiempoRestante < 60 ? '#ff4444' : 'inherit' }}>
                       {formatTime(partida.tiempoRestante)}

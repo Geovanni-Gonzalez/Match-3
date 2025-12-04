@@ -1,6 +1,8 @@
 // client/src/views/RankingHistorico.tsx
 
 import React, { useState, useEffect } from 'react';
+import { API_URL } from '../config';
+
 import '../styles/RankingHistorico.css';
 
 // --- Interfaces de Tipos ---
@@ -11,14 +13,6 @@ interface JugadorRanking {
   tematica: string;
   tiempo: number;
   gameId: string;
-}
-
-interface EstadisticaPartida {
-  partidaId: string;
-  ganador: string;
-  puntaje: number;
-  tematica: string;
-  tiempoInvertidoSegundos: number;
   fecha: string;
 }
 
@@ -27,7 +21,7 @@ interface RankingHistoricoProps {
 }
 
 export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) => {
-  const [estadisticas, setEstadisticas] = useState<EstadisticaPartida[]>([]);
+  const [estadisticas, setEstadisticas] = useState<JugadorRanking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +33,7 @@ export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) =>
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:4000/api/partida/ranking');
+      const response = await fetch(`${API_URL}/api/partida/ranking`);
       const data = await response.json();
 
       if (data.ranking) {
@@ -61,6 +55,11 @@ export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) =>
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString();
   };
 
   return (
@@ -134,15 +133,15 @@ export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) =>
               <tbody>
                 {estadisticas.map((stat, index) => (
                   <tr 
-                    key={`${stat.partidaId}-${index}`}
+                    key={`${stat.gameId}-${index}`}
                     className="table-row"
                   >
-                    <td className="table-cell partida-cell">{stat.partidaId}</td>
-                    <td className="table-cell ganador-cell">{stat.ganador}</td>
+                    <td className="table-cell partida-cell">{stat.gameId}</td>
+                    <td className="table-cell ganador-cell">{stat.user}</td>
                     <td className="table-cell puntaje-cell">{stat.puntaje}</td>
                     <td className="table-cell">{stat.tematica}</td>
-                    <td className="table-cell">{formatTime(stat.tiempoInvertidoSegundos)}</td>
-                    <td className="table-cell">{stat.fecha}</td>
+                    <td className="table-cell">{formatTime(stat.tiempo)}</td>
+                    <td className="table-cell">{formatDate(stat.fecha)}</td>
                   </tr>
                 ))}
               </tbody>

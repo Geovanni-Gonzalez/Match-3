@@ -5,7 +5,7 @@ import axios from 'axios';
 import { useGameEvents } from '../hooks/useGameEvents';
 import '../styles/CrearPartida.css';
 
-const API_URL = 'http://localhost:4000/api';
+import { API_URL } from '../config';
 
 // -------------------------------
 // PROPS
@@ -71,10 +71,11 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({
 
 
     try {
-      const response = await axios.post(`${API_URL}/partida/crear_partida`, {
+      const response = await axios.post(`${API_URL}/api/partida/crear_partida`, {
         tipoJuego,
         tematica,
-        numJugadoresMax: numJugadores
+        numJugadoresMax: numJugadores,
+        duracion: tipoJuego === 'Tiempo' ? duracionMinutos : undefined
       });
 
       if (response.status !== 201 || !response.data.codigoPartida) {

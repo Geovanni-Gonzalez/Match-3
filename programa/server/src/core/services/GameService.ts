@@ -62,13 +62,14 @@ export class GameService {
    * @param tipoJuego 'Match' o 'Tiempo'
    * @param tematica Temática visual del juego
    * @param max Número máximo de jugadores
+   * @param duracion Duración en minutos (solo para Vs Tiempo)
    * @returns La instancia de la partida creada
    */
-  public async crearPartida(idPartida: string, tipoJuego: 'Match' | 'Tiempo', tematica: string, max: number) {
-    console.log('[GameService] Creando partida:', idPartida, tipoJuego, tematica, max);
+  public async crearPartida(idPartida: string, tipoJuego: 'Match' | 'Tiempo', tematica: string, max: number, duracion?: number) {
+    console.log('[GameService] Creando partida:', idPartida, tipoJuego, tematica, max, duracion);
 
     // Crear en memoria
-    const partida = this.servidor.crearPartida(idPartida, tipoJuego, tematica, max);
+    const partida = this.servidor.crearPartida(idPartida, tipoJuego, tematica, max, duracion);
 
     // Persistir en base de datos
     try {
@@ -252,8 +253,9 @@ export class GameService {
 
     // Iniciar condiciones de fin de juego
     if (partida.tipoJuego === 'Tiempo') {
-      // Usar un tiempo de juego por defecto (ej. 3 minutos) o el configurado
-      const duracionSegundos = 3 * 60; 
+      // Usar el tiempo configurado o por defecto 3 minutos
+      const duracionMinutos = partida.duracionPartida || 3;
+      const duracionSegundos = duracionMinutos * 60; 
       TimerManager.getInstance().startTimer(partidaId, duracionSegundos, () => {
         console.log(`[GameService] Tiempo de juego agotado para ${partidaId}`);
         this.finalizarPartida(partidaId);
@@ -497,8 +499,12 @@ export class GameService {
         tipo: p.tipoJuego,
         tematica: p.tematica,
         jugadores: p.jugadores.size,
+        jugadoresNombres: Array.from(p.jugadores.values()).map(j => j.nickname),
         maxJugadores: p.numJugadoresMax,
-        tiempoRestante: TimerManager.getInstance().getRemainingTime(p.idPartida)
+        tiempoRestante: TimerManager.getInstance().getRemainingTime(p.idPartida),
+        // Enviar configuración de duración/límite para mostrar en lobby
+        duracionMinutos: p.tipoJuego === 'Tiempo' ? (p.duracionPartida || 3) : undefined,
+        limiteMatches: p.tipoJuego === 'Match' ? config.MATCH_FINITO_LIMITE : undefined
       }));
   }
 

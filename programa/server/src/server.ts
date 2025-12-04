@@ -16,11 +16,24 @@ import { TimerManager } from './core/manager/TimerManager.js';
 const app = express();
 
 // ----------------------
-// CORS – FULL PROTECTION
+// CORS – FULL PROTECTION (Updated for Ngrok)
 // ----------------------
+const corsOrigin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+  // Permitir requests sin origen (ej. Postman o server-to-server)
+  if (!origin) return callback(null, true);
+  
+  // Permitir localhost y dominios de ngrok
+  if (origin.includes('localhost') || origin.includes('ngrok-free.app')) {
+    callback(null, true);
+  } else {
+    console.warn(`Bloqueado por CORS: ${origin}`);
+    callback(new Error('Not allowed by CORS'));
+  }
+};
+
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: corsOrigin,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
@@ -29,7 +42,7 @@ app.use(
 );
 
 // Manejar preflight (MUY IMPORTANTE)
-app.options('*', cors());
+app.options('*', cors({ origin: corsOrigin, credentials: true }));
 
 // Middlewares
 app.use(express.json());
@@ -38,7 +51,7 @@ app.use(express.json());
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: "*", // Permitir todo para evitar problemas con Ngrok
     methods: ["GET", "POST"],
     credentials: true,
   },

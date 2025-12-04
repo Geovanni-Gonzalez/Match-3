@@ -4,7 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import '../styles/Bienvenida.css';
 
-const API_URL = 'http://localhost:4000/api';
+import { API_URL } from '../config';
+
 
 export const Bienvenida: React.FC = () => {
   const { login } = useAuth();
@@ -22,9 +23,10 @@ export const Bienvenida: React.FC = () => {
     setIsLoading(true);
 
     try {
-      console.log("[Cliente] Registrando jugador...");
+      console.log("[Cliente] Registrando jugador... (v2)");
+      console.log("[Cliente] Usando API URL:", API_URL);
 
-      const res = await axios.post(`${API_URL}/jugador/registrar`, { nickname });
+      const res = await axios.post(`${API_URL}/api/jugador/registrar`, { nickname });
       const jugadorId = res.data.jugadorId;
 
       console.log(`[Cliente] Jugador registrado con ID DB: ${jugadorId}`);

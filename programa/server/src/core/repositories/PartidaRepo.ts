@@ -92,7 +92,8 @@ export class PartidaRepo {
                     pj.puntaje_final as puntaje, 
                     p.tematica, 
                     pj.tiempo_invertido, 
-                    p.codigo_partida as gameId
+                    p.codigo_partida as gameId,
+                    p.fecha_fin
                 FROM partida_jugador pj
                 JOIN jugador j ON pj.id_jugador = j.id_jugador
                 JOIN partida p ON pj.id_partida = p.id_partida
@@ -107,7 +108,8 @@ export class PartidaRepo {
                 puntaje: r.puntaje,
                 tematica: r.tematica,
                 tiempo: r.tiempo_invertido,
-                gameId: r.gameId
+                gameId: r.gameId,
+                fecha: r.fecha_fin
             }));
         } catch (err) {
             Logger.error('Error obteniendo ranking', { error: err });

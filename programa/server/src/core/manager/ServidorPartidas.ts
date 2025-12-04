@@ -18,8 +18,8 @@ return ServidorPartidas.instance;
 }
 
 
-public crearPartida(id: string, tipo: 'Match' | 'Tiempo', tematica: string, max: number) {
-const p = new Partida(id, tipo, tematica, max);
+public crearPartida(id: string, tipo: 'Match' | 'Tiempo', tematica: string, max: number, duracion?: number) {
+const p = new Partida(id, tipo, tematica, max, undefined, undefined, undefined, duracion);
 this.partidasActivas.set(id, p);
 return p;
 }

@@ -18,7 +18,7 @@ export function setGameService(serviceInstance: GameService) {
  * Respuesta: { partidaId, tipoJuego, tematica, numJugadoresMax }
  */
 router.post('/crear_partida', async (req: Request, res: Response) => {
-  const { tipoJuego, tematica, numJugadoresMax } = req.body;
+  const { tipoJuego, tematica, numJugadoresMax, duracion } = req.body;
   if (!tipoJuego || !tematica || !numJugadoresMax) {
     return res.status(400).json({ message: 'Datos de partida inválidos.' });
   }
@@ -30,7 +30,7 @@ router.post('/crear_partida', async (req: Request, res: Response) => {
     if (!gameService) {
       throw new Error('GameService no inicializado en API');
     }
-    await gameService.crearPartida(codigoPartida, tipoJuego, tematica, numJugadoresMax);
+    await gameService.crearPartida(codigoPartida, tipoJuego, tematica, numJugadoresMax, duracion);
 
     console.log('[API][Partida] Partida creada con ID:', codigoPartida);
     return res.status(201).json({ message: 'Partida creada exitosamente', codigoPartida, tipoJuego, tematica, numJugadoresMax });
