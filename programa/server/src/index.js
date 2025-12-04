@@ -229,8 +229,15 @@ io.on('connection', (socket) => {
             } else if (count === 0) {
                 io.to(partidaId).emit('countdown_update', { count: 0 });
                 
-                // Después de mostrar el 0, iniciar el juego
+                // Después de mostrar el 0, iniciar el juego y el cronómetro
                 setTimeout(() => {
+                    // Iniciar el cronómetro de la partida
+                    const juego = partidasActivas[partidaId];
+                    if (juego && juego.partida) {
+                        juego.partida.iniciarCronometro();
+                        console.log(`[Socket] Cronómetro iniciado para partida ${partidaId}`);
+                    }
+                    
                     io.to(partidaId).emit('game_actually_started');
                     console.log(`[Socket] ¡Partida ${partidaId} iniciada!`);
                 }, 1000);

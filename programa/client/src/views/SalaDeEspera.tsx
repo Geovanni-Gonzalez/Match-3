@@ -1,7 +1,8 @@
 // client/src/views/SalaDeEspera.tsx
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext'; 
+import { useAuth } from '../context/AuthContext';
+import './SalaDeEspera.css'; 
 
 interface JugadorSala {
   nickname: string;
@@ -163,170 +164,129 @@ export const SalaDeEspera: React.FC<SalaDeEsperaProps> = ({
   };
 
   return (
-    <div style={styles.windowFrame}>
+    <div className="sala-espera-container">
       {/* Notificación de timeout */}
       {showTimeoutNotification && (
-        <div style={styles.notificationOverlay}>
-          <div style={styles.notificationBubble}>
-            <div style={styles.notificationIcon}>⏰</div>
-            <div style={styles.notificationContent}>
-              <h3 style={styles.notificationTitle}>Partida Cancelada</h3>
-              <p style={styles.notificationMessage}>
+        <div className="notification-overlay">
+          <div className="notification-bubble">
+            <div className="notification-icon">⏰</div>
+            <div className="notification-content">
+              <h3 className="notification-title">Partida Cancelada</h3>
+              <p className="notification-message">
                 La partida ha sido cancelada por inactividad (3 minutos sin iniciar)
               </p>
-              <p style={styles.notificationSubtext}>Redirigiendo al menú principal...</p>
+              <p className="notification-subtext">Redirigiendo al menú principal...</p>
             </div>
           </div>
         </div>
       )}
 
-      <div style={styles.backButton} onClick={handleLeaveRoom}>&larr;</div>
+      {/* Fondo animado con gradiente */}
+      <div className="sala-espera-background"></div>
       
-      <h1 style={styles.title}>Sala de Espera</h1>
+      {/* Partículas flotantes */}
+      {Array.from({ length: 30 }).map((_, i) => (
+        <div
+          key={i}
+          className="sala-espera-particle"
+          style={{
+            left: `${Math.random() * 100}%`,
+            animationDuration: `${8 + Math.random() * 12}s`,
+            animationDelay: `${Math.random() * 10}s`,
+          }}
+        />
+      ))}
 
-      {/* Indicador de tiempo restante */}
-      <div style={{
-        ...styles.timeoutWarning,
-        backgroundColor: getTimeColor()
-      }}>
-        ⏱️ Tiempo restante: {formatTime(tiempoRestante)}
-        {tiempoRestante <= 60 && <span style={styles.urgentWarning}> - ¡Apúrate!</span>}
-      </div>
+      {/* Gemas decorativas */}
+      <div className="gem gem-red" style={{ top: '8%', left: '10%', animationDelay: '0s' }}>💎</div>
+      <div className="gem gem-blue" style={{ top: '15%', right: '12%', animationDelay: '1s' }}>💎</div>
+      <div className="gem gem-green" style={{ bottom: '18%', left: '8%', animationDelay: '2s' }}>💎</div>
+      <div className="gem gem-yellow" style={{ top: '45%', left: '5%', animationDelay: '1.5s' }}>💎</div>
+      <div className="gem gem-purple" style={{ bottom: '25%', right: '10%', animationDelay: '2.5s' }}>💎</div>
+      <div className="gem gem-orange" style={{ top: '60%', right: '7%', animationDelay: '0.8s' }}>💎</div>
 
-      <div style={styles.infoBar}>
-        <span style={styles.infoBox}>CÓDIGO: {partidaId.substring(0, 6).toUpperCase()}</span>
-        <span style={styles.infoBox}>Jugadores: {jugadores.length}/{maxJugadores}</span>
-        {esLider && <span style={styles.liderBadge}>👑 LÍDER</span>}
-      </div>
+      {/* Burbujas flotantes */}
+      {[...Array(8)].map((_, i) => (
+        <div
+          key={i}
+          className="bubble"
+          style={{
+            left: `${10 + i * 12}%`,
+            animationDuration: `${15 + Math.random() * 10}s`,
+            animationDelay: `${i * 2}s`,
+          }}
+        />
+      ))}
 
-      <div style={styles.playersList}>
-        {jugadores.map((jugador, index) => (
-          <div 
-            key={jugador.socketID || index} 
-            style={{
-              ...styles.playerItem,
-              ...(jugador.nickname === currentUserNickname ? styles.currentPlayer : {}),
-              ...(jugador.isReady ? styles.readyPlayer : {}),
-            }}
-          >
-            {index === 0 && '👑 '}{jugador.nickname} {jugador.nickname === currentUserNickname ? '(Tú)' : ''}
-            <span style={styles.readyStatus}>
-              {jugador.isReady ? '✅ LISTO' : '⏳ Esperando...'}
-            </span>
-          </div>
-        ))}
-        
-        {Array(Math.max(0, maxJugadores - jugadores.length)).fill(0).map((_, index) => (
-            <div key={`empty-${index}`} style={styles.emptyPlayerItem}>Esperando jugador...</div>
-        ))}
-      </div>
-      
-      <button 
-        onClick={handleToggleReady}
-        style={{
-          ...styles.readyButton,
-          backgroundColor: isReady ? '#4CAF50' : '#FF9800', 
-        }}
-      >
-        {isReady ? 'YA ESTOY LISTO' : 'MARCAR LISTO'}
+      {/* Botón de retroceso */}
+      <button className="back-button" onClick={handleLeaveRoom}>
+        ← Salir
       </button>
 
-      {puedeIniciar && (
-        <div style={{ marginTop: 20, textAlign: 'center' }}>
-            <p style={styles.startMessage}>¡Todos listos! La partida puede comenzar.</p>
-            <button 
-                onClick={handleEmitStartGame} 
-                style={styles.startButton}
-            >
-                INICIAR JUEGO
-            </button>
+      {/* Card principal */}
+      <div className="sala-espera-card">
+        <h1 className="sala-espera-title">Sala de Espera</h1>
+
+        {/* Indicador de tiempo restante */}
+        <div className={`timeout-warning ${
+          tiempoRestante > 120 ? 'green' : 
+          tiempoRestante > 60 ? 'orange' : 'red'
+        }`}>
+          ⏱️ Tiempo restante: {formatTime(tiempoRestante)}
+          {tiempoRestante <= 60 && <span className="urgent-warning"> - ¡Apúrate!</span>}
         </div>
-      )}
+
+        <div className="info-bar">
+          <span className="info-box">CÓDIGO: {partidaId.substring(0, 6).toUpperCase()}</span>
+          <span className="info-box">Jugadores: {jugadores.length}/{maxJugadores}</span>
+          {esLider && <span className="lider-badge">👑 LÍDER</span>}
+        </div>
+
+        <div className="players-list">
+          {jugadores.map((jugador, index) => (
+            <div 
+              key={jugador.socketID || index} 
+              className={`player-item ${
+                jugador.nickname === currentUserNickname ? 'current-player' : ''
+              } ${
+                jugador.isReady ? 'ready-player' : ''
+              }`}
+            >
+              <span>
+                {index === 0 && '👑 '}{jugador.nickname} {jugador.nickname === currentUserNickname ? '(Tú)' : ''}
+              </span>
+              <span className="ready-status">
+                {jugador.isReady ? '✅ LISTO' : '⏳ Esperando...'}
+              </span>
+            </div>
+          ))}
+          
+          {Array(Math.max(0, maxJugadores - jugadores.length)).fill(0).map((_, index) => (
+            <div key={`empty-${index}`} className="empty-player-item">Esperando jugador...</div>
+          ))}
+        </div>
+        
+        <button 
+          onClick={handleToggleReady}
+          className={`ready-button ${isReady ? 'is-ready' : 'not-ready'}`}
+        >
+          {isReady ? '✅ YA ESTOY LISTO' : '⏳ MARCAR LISTO'}
+        </button>
+
+        {puedeIniciar && (
+          <div className="start-section">
+            <p className="start-message">¡Todos listos! La partida puede comenzar.</p>
+            <button 
+              onClick={handleEmitStartGame} 
+              className="start-button"
+            >
+              🚀 INICIAR JUEGO
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
-const styles: { [key: string]: React.CSSProperties } = {
-  windowFrame: { padding: '30px', borderRadius: '10px', backgroundColor: '#333744', boxShadow: '0 8px 16px rgba(0, 0, 0, 0.5)', width: '450px', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', color: 'white' },
-  backButton: { position: 'absolute', top: '15px', left: '15px', fontSize: '24px', cursor: 'pointer', padding: '5px', borderRadius: '5px', color: '#FF6347', fontWeight: 'bold' },
-  title: { fontSize: '32px', color: '#61dafb', marginBottom: '20px' },
-  infoBar: { display: 'flex', justifyContent: 'space-around', width: '100%', padding: '10px 0', marginBottom: '20px', borderBottom: '1px solid #444', gap: '10px' },
-  infoBox: { backgroundColor: '#444857', padding: '8px 15px', borderRadius: '5px', fontWeight: 'bold', fontSize: '14px' },
-  liderBadge: { backgroundColor: '#FFD700', color: '#000', padding: '8px 15px', borderRadius: '5px', fontWeight: 'bold', fontSize: '14px' },
-  playersList: { width: '100%', maxHeight: '300px', overflowY: 'auto', marginBottom: '30px', padding: '0 10px' },
-  playerItem: { padding: '12px 15px', margin: '8px 0', borderRadius: '8px', backgroundColor: '#444857', borderLeft: '5px solid #FF9800', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold', transition: 'all 0.3s' },
-  currentPlayer: { backgroundColor: '#2196F3', borderLeft: '5px solid #1565C0' },
-  readyPlayer: { borderLeft: '5px solid #4CAF50', color: '#fff' },
-  readyStatus: { fontSize: '12px', fontWeight: 'normal' },
-  emptyPlayerItem: { padding: '12px 15px', margin: '8px 0', borderRadius: '8px', backgroundColor: '#555866', color: '#bbb', textAlign: 'center', borderLeft: '5px solid #777', fontStyle: 'italic' },
-  readyButton: { padding: '15px 40px', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '20px', fontWeight: 'bold', marginTop: '10px', transition: 'background-color 0.2s' },
-  startButton: { padding: '15px 40px', backgroundColor: '#61dafb', color: '#282c34', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '20px', fontWeight: 'bold', marginTop: '10px', animation: 'pulse 1.5s infinite' },
-  errorText: { color: '#ff6b6b' },
-  startMessage: { color: '#4CAF50', fontWeight: 'bold', marginTop: '5px' },
-  timeoutWarning: { 
-    padding: '12px 20px', 
-    borderRadius: '8px', 
-    marginBottom: '15px', 
-    fontWeight: 'bold', 
-    fontSize: '16px', 
-    color: '#FFF',
-    textAlign: 'center',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
-    transition: 'background-color 0.3s'
-  },
-  urgentWarning: {
-    fontSize: '14px',
-    fontWeight: 'bold',
-    animation: 'blink 1s infinite'
-  },
-  notificationOverlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 9999,
-    animation: 'fadeIn 0.3s ease-in'
-  },
-  notificationBubble: {
-    backgroundColor: '#2a2d3a',
-    borderRadius: '20px',
-    padding: '30px 40px',
-    maxWidth: '500px',
-    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '20px',
-    animation: 'slideDown 0.4s ease-out',
-    border: '3px solid #FF4444'
-  },
-  notificationIcon: {
-    fontSize: '60px',
-    animation: 'pulse 1s infinite'
-  },
-  notificationContent: {
-    flex: 1
-  },
-  notificationTitle: {
-    fontSize: '24px',
-    color: '#FF4444',
-    margin: '0 0 10px 0',
-    fontWeight: 'bold'
-  },
-  notificationMessage: {
-    fontSize: '16px',
-    color: '#FFF',
-    margin: '0 0 10px 0',
-    lineHeight: '1.5'
-  },
-  notificationSubtext: {
-    fontSize: '14px',
-    color: '#AAA',
-    margin: 0,
-    fontStyle: 'italic'
-  }
-};
+export default SalaDeEspera;

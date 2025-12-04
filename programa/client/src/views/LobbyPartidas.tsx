@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getSocket } from '../api/socket';
+import './LobbyPartidas.css';
 
 // --- Interfaces de Tipos ---
 interface PartidaDisponible {
@@ -140,36 +141,72 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({ onBack, onJoinSucc
   };
 
   return (
-    <div style={styles.windowFrame}>
-      {/* Botón de retroceso */}
-      <div style={styles.backButton} onClick={onBack}>
-        &larr;
-      </div>
+    <div className="lobby-partidas-container">
+      {/* Fondo animado con gradiente */}
+      <div className="lobby-partidas-background"></div>
       
-      <div style={styles.header}>
-        <h1 style={styles.title}>Partidas</h1>
-      </div>
+      {/* Partículas flotantes */}
+      {Array.from({ length: 30 }).map((_, i) => (
+        <div
+          key={i}
+          className="lobby-partidas-particle"
+          style={{
+            left: `${Math.random() * 100}%`,
+            animationDuration: `${8 + Math.random() * 12}s`,
+            animationDelay: `${Math.random() * 10}s`,
+          }}
+        />
+      ))}
 
-      <div style={styles.content}>
-        <h3 style={styles.subtitle}>Partidas disponibles:</h3>
+      {/* Gemas decorativas */}
+      <div className="gem gem-red" style={{ top: '8%', left: '10%', animationDelay: '0s' }}>💎</div>
+      <div className="gem gem-blue" style={{ top: '15%', right: '12%', animationDelay: '1s' }}>💎</div>
+      <div className="gem gem-green" style={{ bottom: '18%', left: '8%', animationDelay: '2s' }}>💎</div>
+      <div className="gem gem-yellow" style={{ top: '45%', left: '5%', animationDelay: '1.5s' }}>💎</div>
+      <div className="gem gem-purple" style={{ bottom: '25%', right: '10%', animationDelay: '2.5s' }}>💎</div>
+      <div className="gem gem-orange" style={{ top: '60%', right: '7%', animationDelay: '0.8s' }}>💎</div>
+
+      {/* Burbujas flotantes */}
+      {[...Array(8)].map((_, i) => (
+        <div
+          key={i}
+          className="bubble"
+          style={{
+            left: `${10 + i * 12}%`,
+            animationDuration: `${15 + Math.random() * 10}s`,
+            animationDelay: `${i * 2}s`,
+          }}
+        />
+      ))}
+
+      {/* Botón de retroceso */}
+      <button className="back-button" onClick={onBack}>
+        ← Volver
+      </button>
+      
+      {/* Card principal */}
+      <div className="lobby-partidas-card">
+        <h1 className="lobby-partidas-title">Partidas Disponibles</h1>
         
-        {loading && <p style={styles.loadingText}>Cargando partidas...</p>}
-        {error && <p style={styles.errorText}>Error: {error}</p>}
+        <h3 className="lobby-subtitle">📋 Lista de partidas:</h3>
+        
+        {loading && <p className="loading-text">⏳ Cargando partidas...</p>}
+        {error && <p className="error-text">❌ Error: {error}</p>}
 
         {!loading && !error && partidasDisponibles.length === 0 && (
-          <p style={styles.noPartidasText}>No hay partidas disponibles en este momento.</p>
+          <p className="no-partidas-text">No hay partidas disponibles en este momento.</p>
         )}
 
         {!loading && !error && partidasDisponibles.length > 0 && (
-          <div style={styles.tableWrapper}>
-            <table style={styles.table}>
+          <div className="table-wrapper">
+            <table className="partidas-table">
               <thead>
                 <tr>
-                  <th style={styles.tableHeader}>Código</th>
-                  <th style={styles.tableHeader}>Temática</th>
-                  <th style={styles.tableHeader}>Tipo</th>
-                  <th style={styles.tableHeader}>Jugadores</th>
-                  <th style={styles.tableHeader}>Duración/Tiempo</th>
+                  <th className="table-header">Código</th>
+                  <th className="table-header">Temática</th>
+                  <th className="table-header">Tipo</th>
+                  <th className="table-header">Jugadores</th>
+                  <th className="table-header">Duración/Tiempo</th>
                 </tr>
               </thead>
               <tbody>
@@ -185,17 +222,17 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({ onBack, onJoinSucc
                   return (
                   <tr 
                     key={partida.codigo} 
-                    style={selectedPartidaId === partida.codigo ? styles.tableRowSelected : styles.tableRow}
+                    className={`table-row ${selectedPartidaId === partida.codigo ? 'selected' : ''}`}
                     onClick={() => {
                       setSelectedPartidaId(partida.codigo);
                       setSelectedPartida(partida);
                     }}
                   >
-                    <td style={styles.tableCell}>{partida.codigo}</td>
-                    <td style={styles.tableCell}>{partida.tematica}</td>
-                    <td style={styles.tableCell}>{partida.tipo}</td>
-                    <td style={styles.tableCell}>{partida.jugadores}/{partida.maxJugadores}</td>
-                    <td style={styles.tableCell}>{duracionTexto}</td>
+                    <td className="table-cell">{partida.codigo}</td>
+                    <td className="table-cell">{partida.tematica}</td>
+                    <td className="table-cell">{partida.tipo}</td>
+                    <td className="table-cell">{partida.jugadores}/{partida.maxJugadores}</td>
+                    <td className="table-cell">{duracionTexto}</td>
                   </tr>
                   );
                 })}
@@ -207,117 +244,13 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({ onBack, onJoinSucc
         <button 
           onClick={handleUnirseClick} 
           disabled={!selectedPartidaId || loading} 
-          style={styles.unirseButton}
+          className="unirse-button"
         >
-          Unirse
+          🚀 Unirse a Partida
         </button>
       </div>
     </div>
   );
 };
 
-const styles: { [key: string]: React.CSSProperties } = {
-  windowFrame: {
-    padding: '20px',
-    borderRadius: '10px',
-    backgroundColor: '#333744',
-    boxShadow: '0 8px 16px rgba(0, 0, 0, 0.5)',
-    width: '600px', // Ancho ajustado para la tabla
-    position: 'relative',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    color: 'white',
-  },
-  backButton: {
-    position: 'absolute',
-    top: '15px',
-    left: '15px',
-    fontSize: '24px',
-    cursor: 'pointer',
-    padding: '5px',
-    borderRadius: '5px',
-    color: '#61dafb',
-  },
-  header: {
-    width: '100%',
-    textAlign: 'center',
-    marginBottom: '20px',
-  },
-  title: {
-    fontSize: '28px',
-    color: '#61dafb',
-    margin: '0',
-  },
-  content: {
-    width: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: '0 20px',
-  },
-  subtitle: {
-    fontSize: '18px',
-    fontWeight: 'bold',
-    marginBottom: '15px',
-    alignSelf: 'flex-start', // Alinea a la izquierda como en el wireframe
-  },
-  loadingText: {
-    color: '#61dafb',
-    margin: '20px 0',
-  },
-  errorText: {
-    color: '#ff6b6b',
-    margin: '20px 0',
-  },
-  noPartidasText: {
-    color: '#ccc',
-    margin: '20px 0',
-  },
-  tableWrapper: {
-    width: '100%',
-    maxHeight: '300px', // Para el scroll si hay muchas partidas
-    overflowY: 'auto',
-    border: '1px solid #555',
-    borderRadius: '5px',
-    marginBottom: '20px',
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-  },
-  tableHeader: {
-    backgroundColor: '#4CAF50', // Color verde
-    color: 'white',
-    padding: '10px',
-    textAlign: 'left',
-    position: 'sticky', // Para que el header se quede arriba al hacer scroll
-    top: 0,
-    zIndex: 1,
-  },
-  tableRow: {
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-  },
-  tableRowSelected: {
-    cursor: 'pointer',
-    backgroundColor: '#55596e', // Color ligeramente diferente al seleccionar
-    transition: 'background-color 0.2s',
-  },
-  tableCell: {
-    padding: '10px',
-    borderBottom: '1px solid #444',
-    textAlign: 'left',
-  },
-  unirseButton: {
-    padding: '12px 30px',
-    backgroundColor: '#4CAF50', // Verde como en el wireframe
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '18px',
-    fontWeight: 'bold',
-    transition: 'background-color 0.2s',
-  },
-};
+export default LobbyPartidas;

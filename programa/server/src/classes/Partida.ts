@@ -45,6 +45,10 @@ export class Partida {
 
     public iniciarJuego(): void {
         this.estado = 'jugando';
+        // El cronómetro se iniciará después de la cuenta regresiva
+    }
+
+    public iniciarCronometro(): void {
         if (this.tipoJuego === 'Tiempo' && this.duracionMinutos) {
             this.configurarCronometroTiempo();
         }
