@@ -1,6 +1,20 @@
+/**
+ * @file initDb.ts
+ * @description Script de inicialización de la base de datos.
+ * Se encarga de crear las tablas necesarias (jugador, partida, partida_jugador)
+ * si no existen en la base de datos configurada.
+ */
 import pool from '../core/repositories/dbPool.js';
 import Logger from '../utils/Logger.js';
 
+/**
+ * Inicializa el esquema de la base de datos.
+ * Crea las tablas 'jugador', 'partida' y 'partida_jugador' con sus respectivas
+ * claves primarias y foráneas.
+ * 
+ * @throws {Error} Si ocurre un error durante la creación de las tablas.
+ * @returns {Promise<void>}
+ */
 export async function initDb() {
     const conn = await pool.getConnection();
     try {

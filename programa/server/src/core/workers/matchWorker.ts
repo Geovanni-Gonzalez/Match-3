@@ -1,6 +1,16 @@
+/**
+ * @file matchWorker.ts
+ * @description Worker Thread encargado de validar la lógica de los matches.
+ * Recibe una lista de celdas y el estado del tablero para determinar si forman una secuencia válida
+ * según las reglas del juego (mismo color, adyacencia, línea recta, mínimo 3).
+ */
 import { parentPort } from 'worker_threads';
 
 if (parentPort) {
+    /**
+     * Escucha mensajes del hilo principal.
+     * Espera un objeto con la lista de celdas seleccionadas y una representación simplificada del tablero.
+     */
     parentPort.on('message', (data: { listaCeldas: any[], matrizTablero: any[][] }) => {
         const { listaCeldas, matrizTablero } = data;
         const result = validarCadena(listaCeldas, matrizTablero);
@@ -8,6 +18,18 @@ if (parentPort) {
     });
 }
 
+/**
+ * Valida si una secuencia de celdas constituye un match válido.
+ * Aplica las siguientes reglas:
+ * 1. Longitud mínima de 3 celdas.
+ * 2. Todas las celdas deben ser del mismo color.
+ * 3. Las celdas deben ser adyacentes y no repetirse.
+ * 4. La secuencia debe formar una línea recta (dirección constante).
+ * 
+ * @param listaCeldas Lista de objetos con coordenadas {r, c}.
+ * @param matrizTablero Matriz simplificada del tablero con información de colores.
+ * @returns Objeto con el resultado de la validación {valido, n, celdas}.
+ */
 function validarCadena(listaCeldas: any[], matrizTablero: any[][]) {
     const n = listaCeldas.length;
 
