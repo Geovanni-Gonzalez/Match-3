@@ -20,11 +20,13 @@ export interface TableroSerializedCell {
 
 export interface PartidaListItem {
   id: string;
+  codigo: string;
   tipo: string;
   tematica: string;
   jugadores: number;
   maxJugadores: number;
   tiempoRestante: number;
+  duracionMinutos?: number;
 }
 
 export class SocketService {

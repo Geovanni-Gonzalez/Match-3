@@ -54,10 +54,10 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
     const unsubscribeTimer = service.onTimerTick((data) => {
       // Si el evento viene con partidaId, actualizamos solo esa partida en la lista local
       if (data.partidaId) {
-        setPartidas(prevPartidas => 
-          prevPartidas.map(p => 
-            p.id === data.partidaId 
-              ? { ...p, tiempoRestante: data.secondsLeft } 
+        setPartidas(prevPartidas =>
+          prevPartidas.map(p =>
+            p.id === data.partidaId
+              ? { ...p, tiempoRestante: data.secondsLeft }
               : p
           )
         );
@@ -112,7 +112,7 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
     <div className="lobby-partidas-container">
       {/* Fondo animado con gradiente */}
       <div className="lobby-partidas-background"></div>
-      
+
       {/* Partículas flotantes */}
       {Array.from({ length: 30 }).map((_, i) => (
         <div
@@ -151,21 +151,21 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
       <button className="back-button" onClick={onBack}>
         ← Volver
       </button>
-      
+
       {/* Card principal */}
       <div className="lobby-partidas-card">
         <h1 className="lobby-partidas-title">Partidas Disponibles</h1>
-        
+
         <h3 className="lobby-subtitle">📋 Lista de partidas:</h3>
-        
+
         {loading && <p className="loading-text">⏳ Cargando partidas...</p>}
         {error && <p className="error-text">❌ Error: {error}</p>}
 
-        {!loading && !error && partidasDisponibles.length === 0 && (
+        {!loading && !error && partidas.length === 0 && (
           <p className="no-partidas-text">No hay partidas disponibles en este momento.</p>
         )}
 
-        {!loading && !error && partidasDisponibles.length > 0 && (
+        {!loading && !error && partidas.length > 0 && (
           <div className="table-wrapper">
             <table className="partidas-table">
               <thead>
@@ -178,7 +178,7 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {partidasDisponibles.map((partida) => {
+                {partidas.map((partida) => {
                   // Calcular el texto para la columna de duración/tiempo
                   let duracionTexto = 'N/A';
                   if (partida.tipo === 'Tiempo' && partida.duracionMinutos) {
@@ -186,22 +186,21 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
                   } else if (partida.tipo === 'Match') {
                     duracionTexto = 'N/A';
                   }
-                  
+
                   return (
-                  <tr 
-                    key={partida.codigo} 
-                    className={`table-row ${selectedPartidaId === partida.codigo ? 'selected' : ''}`}
-                    onClick={() => {
-                      setSelectedPartidaId(partida.codigo);
-                      setSelectedPartida(partida);
-                    }}
-                  >
-                    <td className="table-cell">{partida.codigo}</td>
-                    <td className="table-cell">{partida.tematica}</td>
-                    <td className="table-cell">{partida.tipo}</td>
-                    <td className="table-cell">{partida.jugadores}/{partida.maxJugadores}</td>
-                    <td className="table-cell">{duracionTexto}</td>
-                  </tr>
+                    <tr
+                      key={partida.codigo}
+                      className={`table-row ${selectedPartidaId === partida.codigo ? 'selected' : ''}`}
+                      onClick={() => {
+                        setSelectedPartidaId(partida.codigo);
+                      }}
+                    >
+                      <td className="table-cell">{partida.codigo}</td>
+                      <td className="table-cell">{partida.tematica}</td>
+                      <td className="table-cell">{partida.tipo}</td>
+                      <td className="table-cell">{partida.jugadores}/{partida.maxJugadores}</td>
+                      <td className="table-cell">{duracionTexto}</td>
+                    </tr>
                   );
                 })}
               </tbody>
@@ -209,9 +208,9 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
           </div>
         )}
 
-        <button 
-          onClick={handleUnirseClick} 
-          disabled={!selectedPartidaId || loading} 
+        <button
+          onClick={handleUnirseClick}
+          disabled={!selectedPartidaId || loading}
           className="unirse-button"
         >
           🚀 Unirse a Partida

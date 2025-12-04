@@ -1,6 +1,6 @@
 // client/src/views/Bienvenida.tsx
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext'; 
+import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 
 const API_URL = 'http://localhost:4000/api';
@@ -47,14 +47,20 @@ export const Bienvenida: React.FC = () => {
     }
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleLogin();
+    }
+  };
+
   return (
     <div style={styles.container}>
       {/* Fondo animado con gradiente dinámico */}
       <div className="animated-background"></div>
-      
+
       {/* Partículas brillantes flotantes */}
       {[...Array(30)].map((_, i) => (
-        <div 
+        <div
           key={`particle-${i}`}
           className="particle"
           style={{
@@ -65,18 +71,18 @@ export const Bienvenida: React.FC = () => {
           }}
         />
       ))}
-      
+
       {/* Gemas decorativas flotantes - estilo Match-3 */}
-      <div className="gem gem-red" style={{top: '10%', left: '10%', animationDelay: '0s'}}>💎</div>
-      <div className="gem gem-blue" style={{top: '15%', right: '15%', animationDelay: '1s'}}>💠</div>
-      <div className="gem gem-green" style={{bottom: '20%', left: '8%', animationDelay: '2s'}}>🔷</div>
-      <div className="gem gem-yellow" style={{top: '60%', right: '10%', animationDelay: '1.5s'}}>⭐</div>
-      <div className="gem gem-purple" style={{bottom: '10%', right: '20%', animationDelay: '0.5s'}}>🔮</div>
-      <div className="gem gem-orange" style={{top: '40%', left: '5%', animationDelay: '2.5s'}}>🧡</div>
-      
+      <div className="gem gem-red" style={{ top: '10%', left: '10%', animationDelay: '0s' }}>💎</div>
+      <div className="gem gem-blue" style={{ top: '15%', right: '15%', animationDelay: '1s' }}>💠</div>
+      <div className="gem gem-green" style={{ bottom: '20%', left: '8%', animationDelay: '2s' }}>🔷</div>
+      <div className="gem gem-yellow" style={{ top: '60%', right: '10%', animationDelay: '1.5s' }}>⭐</div>
+      <div className="gem gem-purple" style={{ bottom: '10%', right: '20%', animationDelay: '0.5s' }}>🔮</div>
+      <div className="gem gem-orange" style={{ top: '40%', left: '5%', animationDelay: '2.5s' }}>🧡</div>
+
       {/* Burbujas decorativas */}
       {[...Array(8)].map((_, i) => (
-        <div 
+        <div
           key={`bubble-${i}`}
           className="bubble"
           style={{
@@ -86,11 +92,11 @@ export const Bienvenida: React.FC = () => {
           }}
         />
       ))}
-      
+
       <div style={styles.card} className="welcome-card">
         {/* Brillo superior del card */}
         <div className="card-shine"></div>
-        
+
         {/* Logo/Título con efecto premium */}
         <div style={styles.titleContainer}>
           <div className="logo-container">
@@ -119,7 +125,7 @@ export const Bienvenida: React.FC = () => {
           />
           <div className="input-border-animation"></div>
         </div>
-        
+
         {/* Mensaje de error mejorado */}
         {error && (
           <div style={styles.errorContainer}>
@@ -129,16 +135,16 @@ export const Bienvenida: React.FC = () => {
         )}
 
         {/* Botón premium con efectos avanzados */}
-        <button 
-          onClick={handleLogin} 
-          disabled={nickname.trim().length < 3 || loading} 
+        <button
+          onClick={handleLogin}
+          disabled={nickname.trim().length < 3 || isLoading}
           className="button-shine premium-button"
           style={{
             ...styles.button,
-            ...(nickname.trim().length < 3 || loading ? styles.buttonDisabled : {})
+            ...(nickname.trim().length < 3 || isLoading ? styles.buttonDisabled : {})
           }}
           onMouseEnter={(e) => {
-            if (nickname.trim().length >= 3 && !loading) {
+            if (nickname.trim().length >= 3 && !isLoading) {
               e.currentTarget.style.transform = 'translateY(-4px) scale(1.03)';
             }
           }}
@@ -147,7 +153,7 @@ export const Bienvenida: React.FC = () => {
           }}
         >
           <div className="button-glow"></div>
-          {loading ? (
+          {isLoading ? (
             <>
               <span style={styles.spinner}></span>
               <span className="button-loading-text">Conectando al servidor...</span>
@@ -165,7 +171,7 @@ export const Bienvenida: React.FC = () => {
           <span style={styles.infoIcon}>💡</span>
           Crea tu identidad con mínimo 3 caracteres
         </div>
-        
+
         {/* Decoración inferior */}
         <div className="card-footer-decoration">
           <span>⚔️</span>

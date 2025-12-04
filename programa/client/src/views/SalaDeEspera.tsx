@@ -31,9 +31,10 @@ export const SalaDeEspera: React.FC<Props> = ({
   } = useGameEvents(partidaId);
 
   const [isReadyLocal, setIsReadyLocal] = useState(false);
+  const [showTimeoutNotification, setShowTimeoutNotification] = useState(false);
 
   // ----------------------------
-  // TIMER LOCAL (ANIMACI�N)
+  // TIMER LOCAL (ANIMACIÓN)
   // ----------------------------
   const [timeLeft, setTimeLeft] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -44,7 +45,7 @@ export const SalaDeEspera: React.FC<Props> = ({
     return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
-  // Sincronizar estado local de "listo" con la informaci�n del servidor
+  // Sincronizar estado local de "listo" con la información del servidor
   useEffect(() => {
     const me = jugadores.find(j => j.nickname === currentUser?.nickname);
     if (me) {
@@ -65,7 +66,7 @@ export const SalaDeEspera: React.FC<Props> = ({
     };
   }, [onAllPlayersReady]);
 
-  // Cuando el servidor fuerza la navegaci�n al tablero
+  // Cuando el servidor fuerza la navegación al tablero
   useEffect(() => {
     if (!onForceNavigateGame) return;
     const unsub = onForceNavigateGame(({ tablero, config }) => {
@@ -82,7 +83,7 @@ export const SalaDeEspera: React.FC<Props> = ({
     setReady?.(partidaId, next);
   };
 
-  // Cuando recibimos tiempo del server  sincronizamos
+  // Cuando recibimos tiempo del server sincronizamos
   useEffect(() => {
     if (lobbyTimer <= 0) return;
 
@@ -106,9 +107,13 @@ export const SalaDeEspera: React.FC<Props> = ({
     };
   }, []);
 
-  const handleStart = () => {
-    requestEnterGame?.(partidaId);
-  };
+  // Detectar timeout (si el tiempo llega a 0 y no ha iniciado)
+  useEffect(() => {
+    if (timeLeft === 0 && lobbyTimer > 0) { // lobbyTimer > 0 significa que alguna vez hubo tiempo
+      // Podríamos mostrar notificación aquí, pero mejor esperar evento del server
+    }
+  }, [timeLeft, lobbyTimer]);
+
 
   const allReady =
     jugadores.length >= 2 && jugadores.every((j) => j.isReady === true);
@@ -136,7 +141,7 @@ export const SalaDeEspera: React.FC<Props> = ({
 
       {/* Fondo animado con gradiente */}
       <div className="sala-espera-background"></div>
-      
+
       {/* Partículas flotantes */}
       {Array.from({ length: 30 }).map((_, i) => (
         <div
@@ -172,7 +177,7 @@ export const SalaDeEspera: React.FC<Props> = ({
       ))}
 
       {/* Botón de retroceso */}
-      <button className="back-button" onClick={handleLeaveRoom}>
+      <button className="back-button" onClick={onLeave}>
         ← Salir
       </button>
 
@@ -181,56 +186,53 @@ export const SalaDeEspera: React.FC<Props> = ({
         <h1 className="sala-espera-title">Sala de Espera</h1>
 
         {/* Indicador de tiempo restante */}
-        <div className={`timeout-warning ${
-          tiempoRestante > 120 ? 'green' : 
-          tiempoRestante > 60 ? 'orange' : 'red'
-        }`}>
-          ⏱️ Tiempo restante: {formatTime(tiempoRestante)}
-          {tiempoRestante <= 60 && <span className="urgent-warning"> - ¡Apúrate!</span>}
+        <div className={`timeout-warning ${timeLeft > 120 ? 'green' :
+            timeLeft > 60 ? 'orange' : 'red'
+          }`}>
+          ⏱️ Tiempo restante: {formatTime(timeLeft)}
+          {timeLeft <= 60 && <span className="urgent-warning"> - ¡Apúrate!</span>}
         </div>
 
         <div className="info-bar">
           <span className="info-box">CÓDIGO: {partidaId.substring(0, 6).toUpperCase()}</span>
-          <span className="info-box">Jugadores: {jugadores.length}/{maxJugadores}</span>
-          {esLider && <span className="lider-badge">👑 LÍDER</span>}
+          <span className="info-box">Jugadores: {jugadores.length}/{maxPlayers}</span>
+          {isHost && <span className="lider-badge">👑 LÍDER</span>}
         </div>
 
         <div className="players-list">
           {jugadores.map((jugador, index) => (
-            <div 
-              key={jugador.socketID || index} 
-              className={`player-item ${
-                jugador.nickname === currentUserNickname ? 'current-player' : ''
-              } ${
-                jugador.isReady ? 'ready-player' : ''
-              }`}
+            <div
+              key={jugador.socketID || index}
+              className={`player-item ${jugador.nickname === currentUser?.nickname ? 'current-player' : ''
+                } ${jugador.isReady ? 'ready-player' : ''
+                }`}
             >
               <span>
-                {index === 0 && '👑 '}{jugador.nickname} {jugador.nickname === currentUserNickname ? '(Tú)' : ''}
+                {index === 0 && '👑 '}{jugador.nickname} {jugador.nickname === currentUser?.nickname ? '(Tú)' : ''}
               </span>
               <span className="ready-status">
                 {jugador.isReady ? '✅ LISTO' : '⏳ Esperando...'}
               </span>
             </div>
           ))}
-          
-          {Array(Math.max(0, maxJugadores - jugadores.length)).fill(0).map((_, index) => (
+
+          {Array(Math.max(0, (maxPlayers || 6) - jugadores.length)).fill(0).map((_, index) => (
             <div key={`empty-${index}`} className="empty-player-item">Esperando jugador...</div>
           ))}
         </div>
-        
-        <button 
-          onClick={handleToggleReady}
-          className={`ready-button ${isReady ? 'is-ready' : 'not-ready'}`}
+
+        <button
+          onClick={toggleReady}
+          className={`ready-button ${isReadyLocal ? 'is-ready' : 'not-ready'}`}
         >
-          {isReady ? '✅ YA ESTOY LISTO' : '⏳ MARCAR LISTO'}
+          {isReadyLocal ? '✅ YA ESTOY LISTO' : '⏳ MARCAR LISTO'}
         </button>
 
-        {puedeIniciar && (
+        {allReady && isHost && (
           <div className="start-section">
             <p className="start-message">¡Todos listos! La partida puede comenzar.</p>
-            <button 
-              onClick={handleEmitStartGame} 
+            <button
+              onClick={() => startGame?.(partidaId)}
               className="start-button"
             >
               🚀 INICIAR JUEGO

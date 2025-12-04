@@ -33,6 +33,7 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({
   const [tipoJuego, setTipoJuego] = useState<'Match' | 'Tiempo'>('Match');
   const [tematica, setTematica] = useState<string>('Gemas');
   const [numJugadores, setNumJugadores] = useState<number>(2);
+  const [duracionMinutos, setDuracionMinutos] = useState<number>(5);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,7 +49,7 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({
   const handleCrearPartida = async () => {
     console.log('[CREAR PARTIDA] Iniciando...');
     console.log('[CREAR PARTIDA] Usuario actual:', currentUser);
-    
+
     if (!currentUser) {
       console.error('[CREAR PARTIDA] Error: currentUser es null');
       setError('Debes estar autenticado para crear una partida. Por favor, regresa e ingresa tu nickname.');
@@ -106,7 +107,7 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({
     <div className="crear-partida-container">
       {/* Fondo animado con gradiente */}
       <div className="crear-partida-background"></div>
-      
+
       {/* Partículas flotantes */}
       {Array.from({ length: 30 }).map((_, i) => (
         <div
@@ -156,8 +157,8 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({
           {/* Tipo de juego */}
           <div className="form-group">
             <label className="form-label">Tipo de juego:</label>
-            <select 
-              value={tipoJuego} 
+            <select
+              value={tipoJuego}
               onChange={(e) => setTipoJuego(e.target.value as 'Match' | 'Tiempo')}
               className="form-select"
             >
@@ -170,8 +171,8 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({
           {/* Temática */}
           <div className="form-group">
             <label className="form-label">Temática:</label>
-            <select 
-              value={tematica} 
+            <select
+              value={tematica}
               onChange={(e) => setTematica(e.target.value)}
               className="form-select"
             >
@@ -184,9 +185,9 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({
           {/* N° de jugadores */}
           <div className="form-group">
             <label className="form-label">N° de jugadores:</label>
-            <input 
-              type="number" 
-              value={numJugadores} 
+            <input
+              type="number"
+              value={numJugadores}
               onChange={(e) => setNumJugadores(Math.max(2, parseInt(e.target.value) || 2))} // Mínimo 2
               min="2" // REQ-008: Mínimo 2 jugadores
               max="8" // Máximo de 8 jugadores
@@ -198,9 +199,9 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({
           {tipoJuego === 'Tiempo' && (
             <div className="form-group">
               <label className="form-label">Duración (minutos):</label>
-              <input 
-                type="number" 
-                value={duracionMinutos} 
+              <input
+                type="number"
+                value={duracionMinutos}
                 onChange={(e) => setDuracionMinutos(Math.max(1, parseInt(e.target.value) || 5))}
                 min="1"
                 max="30"
@@ -218,9 +219,9 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({
           )}
 
           {/* Botón continuar */}
-          <button 
-            onClick={handleCrearPartida} 
-            disabled={loading} 
+          <button
+            onClick={handleCrearPartida}
+            disabled={loading}
             className="continue-button"
           >
             {loading ? '⏳ Creando...' : '🚀 Continuar'}

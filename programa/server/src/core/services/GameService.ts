@@ -75,7 +75,7 @@ export class GameService {
     // Configurar timer de expiración
     TimerManager.getInstance().startTimer(idPartida, config.TIEMPO_VIDA_PARTIDA_MIN * 60, () =>
       this.handleMatchExpiration(idPartida)
-    , 'lobby');
+      , 'lobby');
 
     this.emitirListaPartidas(); // Notificar al lobby
 
@@ -247,7 +247,7 @@ export class GameService {
     // Iniciar condiciones de fin de juego
     if (partida.tipoJuego === 'Tiempo') {
       // Usar un tiempo de juego por defecto (ej. 3 minutos) o el configurado
-      const duracionSegundos = 3 * 60; 
+      const duracionSegundos = 3 * 60;
       TimerManager.getInstance().startTimer(partidaId, duracionSegundos, () => {
         console.log(`[GameService] Tiempo de juego agotado para ${partidaId}`);
         this.finalizarPartida(partidaId);
@@ -350,7 +350,7 @@ export class GameService {
     if (partida.tipoJuego === 'Match') {
       const limite = config.MATCH_FINITO_LIMITE || 100;
       const matchesRestantes = Math.max(0, limite - partida.matchesRealizados);
-      
+
       this.io.to(partidaId).emit('game:match_update', { matchesLeft: matchesRestantes });
 
       if (partida.matchesRealizados >= limite) {
@@ -488,11 +488,13 @@ export class GameService {
       .filter(p => p.estado === 'espera' && !p.estaLlena())
       .map(p => ({
         id: p.idPartida,
+        codigo: p.idPartida,
         tipo: p.tipoJuego,
         tematica: p.tematica,
         jugadores: p.jugadores.size,
         maxJugadores: p.numJugadoresMax,
-        tiempoRestante: TimerManager.getInstance().getRemainingTime(p.idPartida)
+        tiempoRestante: TimerManager.getInstance().getRemainingTime(p.idPartida),
+        duracionMinutos: p.duracionPartida
       }));
   }
 

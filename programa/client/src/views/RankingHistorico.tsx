@@ -18,7 +18,7 @@ interface RankingHistoricoProps {
 }
 
 export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) => {
-  const [estadisticas, setEstadisticas] = useState<EstadisticaPartida[]>([]);
+  const [ranking, setRanking] = useState<JugadorRanking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,9 +34,9 @@ export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) =>
       const data = await response.json();
 
       if (data.ranking) {
-        setDatosRanking(data.ranking);
+        setRanking(data.ranking);
       } else {
-        setDatosRanking([]);
+        setRanking([]);
       }
       setLoading(false);
 
@@ -105,35 +105,35 @@ export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) =>
         {loading && <p className="loading-text">Cargando estadísticas...</p>}
         {error && <p className="error-text">Error: {error}</p>}
 
-        {!loading && !error && estadisticas.length === 0 && (
+        {!loading && !error && ranking.length === 0 && (
           <p className="no-data-text">No hay estadísticas disponibles. ¡Juega algunas partidas!</p>
         )}
 
-        {!loading && !error && estadisticas.length > 0 && (
+        {!loading && !error && ranking.length > 0 && (
           <div className="table-wrapper">
             <table className="ranking-table">
               <thead>
                 <tr>
+                  <th className="table-header">Rank</th>
                   <th className="table-header">Partida</th>
-                  <th className="table-header">Ganador</th>
+                  <th className="table-header">Jugador</th>
                   <th className="table-header">Puntaje</th>
                   <th className="table-header">Temática</th>
                   <th className="table-header">Tiempo</th>
-                  <th className="table-header">Fecha</th>
                 </tr>
               </thead>
               <tbody>
-                {estadisticas.map((stat, index) => (
-                  <tr 
-                    key={`${stat.partidaId}-${index}`}
+                {ranking.map((stat, index) => (
+                  <tr
+                    key={`${stat.gameId}-${index}`}
                     className="table-row"
                   >
-                    <td className="table-cell partida-cell">{stat.partidaId}</td>
-                    <td className="table-cell ganador-cell">{stat.ganador}</td>
+                    <td className="table-cell">{stat.rank}</td>
+                    <td className="table-cell partida-cell">{stat.gameId}</td>
+                    <td className="table-cell ganador-cell">{stat.user}</td>
                     <td className="table-cell puntaje-cell">{stat.puntaje}</td>
                     <td className="table-cell">{stat.tematica}</td>
-                    <td className="table-cell">{formatTiempo(stat.tiempoInvertidoSegundos)}</td>
-                    <td className="table-cell">{stat.fecha}</td>
+                    <td className="table-cell">{formatTime(stat.tiempo)}</td>
                   </tr>
                 ))}
               </tbody>
