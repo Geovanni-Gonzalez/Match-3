@@ -103,7 +103,7 @@ export class SocketService {
     return () => this.socket.off("partida:deleted_due_timeout", callback);
   }
 
-  public onTimerTick(callback: (data: { secondsLeft: number, partidaId: string }) => void) {
+  public onTimerTick(callback: (data: { secondsLeft: number, partidaId: string, type?: string }) => void) {
     this.socket.on("game:timer_tick", callback);
     return () => this.socket.off("game:timer_tick", callback);
   }

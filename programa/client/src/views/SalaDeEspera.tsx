@@ -19,7 +19,7 @@ export const SalaDeEspera: React.FC<Props> = ({
     jugadores,
     gameStatus,
     tablero,
-    timer,
+    lobbyTimer,
     setReady,
     startGame,
     onAllPlayersReady,
@@ -33,7 +33,7 @@ export const SalaDeEspera: React.FC<Props> = ({
   const [isReadyLocal, setIsReadyLocal] = useState(false);
 
   // ----------------------------
-  // TIMER LOCAL (ANIMACIÓN)
+  // TIMER LOCAL (ANIMACIï¿½N)
   // ----------------------------
   const [timeLeft, setTimeLeft] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -44,7 +44,7 @@ export const SalaDeEspera: React.FC<Props> = ({
     return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
-  // Sincronizar estado local de "listo" con la información del servidor
+  // Sincronizar estado local de "listo" con la informaciï¿½n del servidor
   useEffect(() => {
     const me = jugadores.find(j => j.nickname === currentUser?.nickname);
     if (me) {
@@ -65,7 +65,7 @@ export const SalaDeEspera: React.FC<Props> = ({
     };
   }, [onAllPlayersReady]);
 
-  // Cuando el servidor fuerza la navegación al tablero
+  // Cuando el servidor fuerza la navegaciï¿½n al tablero
   useEffect(() => {
     if (!onForceNavigateGame) return;
     const unsub = onForceNavigateGame(({ tablero, config }) => {
@@ -84,12 +84,12 @@ export const SalaDeEspera: React.FC<Props> = ({
 
   // Cuando recibimos tiempo del server  sincronizamos
   useEffect(() => {
-    if (timer <= 0) return;
+    if (lobbyTimer <= 0) return;
 
     // Reiniciar loop local
     if (intervalRef.current) clearInterval(intervalRef.current);
 
-    setTimeLeft(timer);
+    setTimeLeft(lobbyTimer);
 
     intervalRef.current = setInterval(() => {
       setTimeLeft(prev => {
@@ -97,7 +97,7 @@ export const SalaDeEspera: React.FC<Props> = ({
         return newVal;
       });
     }, 1000);
-  }, [timer]);
+  }, [lobbyTimer]);
 
   // Cleanup
   useEffect(() => {
@@ -140,7 +140,7 @@ export const SalaDeEspera: React.FC<Props> = ({
 
       <div style={styles.infoBar}>
         <span style={styles.infoBox}>
-          CÓDIGO: {partidaId.substring(0, 6).toUpperCase()}
+          Cï¿½DIGO: {partidaId.substring(0, 6).toUpperCase()}
         </span>
         <span style={styles.infoBox}>
           Jugadores: {jugadores.length}/{maxPlayers}
@@ -161,7 +161,7 @@ export const SalaDeEspera: React.FC<Props> = ({
             }}
           >
             {j.nickname}
-            {currentUser?.nickname === j.nickname ? " (Tú)" : ""}
+            {currentUser?.nickname === j.nickname ? " (Tï¿½)" : ""}
             {j.isHost && <span style={{ marginLeft: "5px", color: "#FFD700" }}></span>}
             <span style={styles.readyStatus}>
               {j.isReady ? " LISTO" : " Esperando"}
@@ -178,7 +178,7 @@ export const SalaDeEspera: React.FC<Props> = ({
           ))}
       </div>
 
-      {/* Botón listo/no listo */}
+      {/* Botï¿½n listo/no listo */}
       <button
         onClick={toggleReady}
         style={{
@@ -189,11 +189,11 @@ export const SalaDeEspera: React.FC<Props> = ({
         {isReadyLocal ? "YA ESTOY LISTO" : "MARCAR LISTO"}
       </button>
 
-      {/* Mostrar botón de iniciar si todos están listos */}
+      {/* Mostrar botï¿½n de iniciar si todos estï¿½n listos */}
       {allReady && (
         <div style={{ marginTop: 20 }}>
           <p style={styles.startMessage}>
-            ¡Todos listos! La partida puede comenzar.
+            ï¿½Todos listos! La partida puede comenzar.
           </p>
           {isHost ? (
             <button onClick={handleStart} style={styles.startButton}>
@@ -201,7 +201,7 @@ export const SalaDeEspera: React.FC<Props> = ({
             </button>
           ) : (
             <p style={{ color: "#ccc", fontStyle: "italic" }}>
-              Esperando a que el anfitrión inicie la partida...
+              Esperando a que el anfitriï¿½n inicie la partida...
             </p>
           )}
         </div>

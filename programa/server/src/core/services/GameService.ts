@@ -75,7 +75,7 @@ export class GameService {
     // Configurar timer de expiración
     TimerManager.getInstance().startTimer(idPartida, config.TIEMPO_VIDA_PARTIDA_MIN * 60, () =>
       this.handleMatchExpiration(idPartida)
-    );
+    , 'lobby');
 
     this.emitirListaPartidas(); // Notificar al lobby
 
@@ -121,6 +121,7 @@ export class GameService {
    * @param idPartida ID de la partida a eliminar
    */
   public eliminarPartida(idPartida: string) {
+    TimerManager.getInstance().clearTimer(idPartida);
     this.servidor.eliminarPartida(idPartida);
     this.emitirListaPartidas(); // Notificar eliminación
   }
@@ -250,7 +251,7 @@ export class GameService {
       TimerManager.getInstance().startTimer(partidaId, duracionSegundos, () => {
         console.log(`[GameService] Tiempo de juego agotado para ${partidaId}`);
         this.finalizarPartida(partidaId);
-      });
+      }, 'game');
     }
   }
 
@@ -376,7 +377,10 @@ export class GameService {
    */
   public async finalizarPartida(partidaId: string) {
     const partida = this.servidor.obtenerPartida(partidaId);
-    if (!partida) throw new Error('Partida no encontrada');
+    if (!partida) {
+      console.warn(`[GameService] finalizarPartida: Partida ${partidaId} no encontrada (posiblemente ya eliminada).`);
+      return;
+    }
     if (partida.estado === 'finalizada') return;
 
     partida.setEstado('finalizada');

@@ -20,6 +20,7 @@ export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][
   const [tablero, setTablero] = useState<TableroCell[][] | null>(initialTablero || null);
   const [error, setError] = useState<string | null>(null);
   const [timer, setTimer] = useState<number>(0);
+  const [lobbyTimer, setLobbyTimer] = useState<number>(0);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [matchesLeft, setMatchesLeft] = useState<number | null>(null);
   const [gameConfig, setGameConfig] = useState<any>(initialConfig || null);
@@ -99,8 +100,14 @@ export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][
       setGameStatus("errored");
     });
 
-    const unsubTimer = service.onTimerTick(({ secondsLeft }) => {
-      setTimer(secondsLeft);
+    const unsubTimer = service.onTimerTick(({ secondsLeft, partidaId: pid, type }) => {
+      if (pid && pid !== partidaId) return;
+
+      if (type === 'game') {
+        setTimer(secondsLeft);
+      } else if (type === 'lobby') {
+        setLobbyTimer(secondsLeft);
+      }
     });
 
     const unsubCountdown = service.onGameCountdown(({ seconds }) => {
@@ -175,15 +182,8 @@ export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][
   }, [service, partidaId, gameStatus]);
 
   // subscribe to room-level timer tick (useful for lobby if needed)
-  useEffect(() => {
-    if (!service || !partidaId) return;
-    const unsub = service.onTimerTick((data) => {
-      if (data.partidaId === partidaId) {
-        setTimer(data.secondsLeft);
-      }
-    });
-    return () => { unsub(); };
-  }, [service, partidaId]);
+  // Removed redundant useEffect
+
 
   return {
     jugadores,
@@ -191,6 +191,7 @@ export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][
     tablero,
     error,
     timer,
+    lobbyTimer,
     countdown,
     matchesLeft,
     gameConfig,

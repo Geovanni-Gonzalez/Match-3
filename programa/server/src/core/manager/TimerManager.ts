@@ -25,7 +25,7 @@ export class TimerManager {
         this.io = io;
     }
 
-    startTimer(partidaId: string, seconds: number, onExpire: () => void) {
+    startTimer(partidaId: string, seconds: number, onExpire: () => void, type: string = 'general') {
         this.clearTimer(partidaId);
 
         const expiresAt = Date.now() + seconds * 1000;
@@ -44,9 +44,10 @@ export class TimerManager {
             if (!this.io) return;
             const secondsLeft = Math.max(0, Math.round((expiresAt - Date.now()) / 1000));
             this.io.to(partidaId).emit("game:timer_tick", {
-                secondsLeft
+                secondsLeft,
+                type
             });
-            this.io.to("lobby").emit("game:timer_tick", { secondsLeft, partidaId });
+            this.io.to("lobby").emit("game:timer_tick", { secondsLeft, partidaId, type });
 
             if (secondsLeft <= 0) clearInterval(interval);
         }, 1000);
