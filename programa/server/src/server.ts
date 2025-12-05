@@ -41,17 +41,17 @@ const app = express();
 const corsOrigin = (origin: string | undefined, callback: (err: Error | null, origin?: string | boolean) => void) => {
   // Permitir requests sin origen (ej. Postman, curl, server-to-server)
   if (!origin) return callback(null, true);
-  
+
   // Permitir cualquier subdominio de ngrok
   if (origin.includes('ngrok-free.app') || origin.includes('ngrok.io')) {
     return callback(null, origin); // Reflejar el origen exacto
   }
-  
+
   // Permitir cualquier localhost con cualquier puerto
   if (origin.match(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/)) {
     return callback(null, origin); // Reflejar el origen exacto
   }
-  
+
   console.warn(`[CORS] Origen bloqueado: ${origin}`);
   callback(new Error('Not allowed by CORS'));
 };
@@ -102,6 +102,12 @@ TimerManager.getInstance().setSocketServer(io);
 registerLobbySockets(io, gameService);
 registerGameSockets(io, gameService);
 registerPlayerSockets(io, gameService);
+
+// Global Error Handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('[Server] Error no manejado:', err);
+  res.status(500).json({ message: 'Error interno del servidor', error: err.message });
+});
 
 // Exportar para uso en index
 export { server, io };

@@ -1,18 +1,90 @@
-🧩 MATCH-3 MULTIJUGADOR — README PROFESIONAL
-📌 Introducción
+# 🧩 Match-3 Multiplayer
 
-Este proyecto implementa un juego tipo Match-3 multijugador y simultáneo, donde varios jugadores pueden interactuar sobre el mismo tablero en tiempo real, conectándose mediante WebSockets.
+Un juego multijugador en tiempo real tipo Match-3, construido con **React**, **Node.js**, **Socket.IO** y **MySQL**.
 
-La arquitectura está diseñada para ser:
+![Match-3 Banner](https://via.placeholder.com/800x200?text=Match-3+Multiplayer)
 
-Modular (capas separadas por responsabilidad)
+## 🚀 Getting Started
 
-Escalable (uso eficiente de Socket.IO + Domain Driven Design básico)
+### Prerrequisitos
 
-Segura (la autoridad del juego reside 100% en el servidor)
+- Node.js (v18+)
+- Docker & Docker Compose (Opcional, para base de datos)
+- MySQL (si no usas Docker)
 
-Consistente (el servidor resuelve concurrencia y actualiza a todos)
+### Instalación Rápida
 
-Persistente (uso de MySQL para jugadores y partidas)
+1. **Clonar el repositorio**
 
-El cliente está desarrollado en React + Socket.IO client, y el servidor en Node.js + Express + Socket.IO + MySQL.
+   ```bash
+   git clone <repo-url>
+   cd Match-3
+   ```
+
+2. **Iniciar Base de Datos (Docker)**
+
+   ```bash
+   cd programa
+   docker-compose up -d db
+   ```
+
+3. **Instalar Dependencias**
+
+   ```bash
+   # Servidor
+   cd programa/server
+   npm install
+
+   # Cliente
+   cd ../client
+   npm install
+   ```
+
+4. **Ejecutar en Desarrollo**
+   - **Servidor**: `npm run dev` (Puerto 4000)
+   - **Cliente**: `npm start` (Puerto 3000)
+
+## 🏗️ Arquitectura
+
+El proyecto sigue una arquitectura cliente-servidor desacoplada.
+
+```mermaid
+graph TD
+    Client[React Client] <-->|Socket.IO Events| Server[Node.js Server]
+    Client <-->|REST API| Server
+    Server -->|TypeORM/MySQL2| DB[(MySQL Database)]
+    Server -->|Game Logic| GameService[Game Service]
+```
+
+### Tecnologías Clave
+
+- **Frontend**: React, TypeScript, React Router, Socket.IO Client.
+- **Backend**: Express, Socket.IO, TypeScript.
+- **Base de Datos**: MySQL.
+- **Comunicación**: Híbrida (REST para auth/inicio, WebSockets para juego en tiempo real).
+
+## 📚 API Summary
+
+### REST Endpoints
+
+- `POST /api/partida/crear_partida`: Crea una nueva sala.
+- `GET /api/partida/partidas`: Lista salas disponibles.
+- `GET /api/partida/ranking`: Top jugadores.
+
+### Socket Events
+
+- `join_game`: Unirse a una sala.
+- `make_move`: Realizar un movimiento (swap).
+- `board_update`: Recibir estado del tablero.
+
+## 🧪 Testing
+
+```bash
+# Servidor
+cd programa/server
+npm test
+
+# Cliente
+cd programa/client
+npm test
+```

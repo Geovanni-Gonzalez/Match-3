@@ -7,18 +7,10 @@
  */
 
 import { Socket } from 'socket.io-client';
+import { Jugador, Celda } from '../types/shared';
 
-/**
- * Datos públicos de un jugador en una partida.
- */
-export interface JugadorData {
-  nickname: string;
-  socketID: string;
-  isReady: boolean;
-  puntaje?: number;
-  conectado?: boolean;
-  isHost?: boolean;
-}
+// Re-exportar para compatibilidad si es necesario, o refactorizar consumidores
+export type JugadorData = Jugador;
 
 /**
  * Representación serializada de una celda del tablero para el cliente.
