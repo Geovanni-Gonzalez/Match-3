@@ -6,7 +6,7 @@
  */
 
 import React, { useState } from 'react';
-import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { Bienvenida } from './views/Bienvenida';
 import { MenuPrincipal } from './views/MenuPrincipal';
 import { LobbyPartidas } from './views/LobbyPartidas';
@@ -37,13 +37,7 @@ const App: React.FC = () => {
     navigate(`/juego/${partidaId}`);
   };
 
-  // Wrapper para proteger rutas
-  const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-    if (!currentUser) {
-      return <Navigate to="/" replace />;
-    }
-    return children;
-  };
+
 
   return (
     <div className="app-container">
@@ -116,7 +110,6 @@ const App: React.FC = () => {
 };
 
 // Wrappers para extraer params y props
-import { useParams } from 'react-router-dom';
 
 const SalaDeEsperaWrapper = ({ onLeave, onStartGame }: any) => {
   const { partidaId } = useParams();
@@ -142,6 +135,15 @@ const JuegoWrapper = ({ initialTablero, initialConfig, onLeave }: any) => {
       onLeave={onLeave}
     />
   );
+};
+
+// Wrapper para proteger rutas
+const ProtectedRoute = ({ children }: { children: React.ReactElement }) => {
+  const { currentUser } = useAuth();
+  if (!currentUser) {
+    return <Navigate to="/" replace />;
+  }
+  return children;
 };
 
 export default App;

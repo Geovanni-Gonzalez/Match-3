@@ -30,7 +30,7 @@ const checkServerHealth = async (url: string): Promise<boolean> => {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), HEALTH_CHECK_TIMEOUT);
-    
+
     const response = await fetch(`${url}/api/health`, {
       method: 'GET',
       signal: controller.signal,
@@ -38,7 +38,7 @@ const checkServerHealth = async (url: string): Promise<boolean> => {
         'ngrok-skip-browser-warning': 'true'
       }
     });
-    
+
     clearTimeout(timeoutId);
     return response.ok;
   } catch {
@@ -55,38 +55,38 @@ const checkServerHealth = async (url: string): Promise<boolean> => {
  * 4. Fallback a localhost
  */
 export const detectBackendUrl = async (): Promise<string> => {
-  const isAccessedViaNgrok = typeof window !== 'undefined' && 
+  const isAccessedViaNgrok = typeof window !== 'undefined' &&
     window.location.hostname.includes('ngrok');
-  
+
   // Si el cliente se accede via ngrok, necesitamos usar el backend de ngrok
   if (isAccessedViaNgrok && NGROK_URL) {
     console.log('[Config] Cliente accedido via ngrok, usando backend ngrok');
     detectedApiUrl = NGROK_URL;
     return NGROK_URL;
   }
-  
+
   // Intentar localhost primero
   console.log('[Config] Verificando localhost...');
   const localhostAvailable = await checkServerHealth(LOCALHOST_URL);
-  
+
   if (localhostAvailable) {
     console.log('[Config] ✅ Localhost disponible');
     detectedApiUrl = LOCALHOST_URL;
     return LOCALHOST_URL;
   }
-  
+
   // Si localhost no está disponible y hay URL de ngrok, intentar ngrok
   if (NGROK_URL) {
     console.log('[Config] Localhost no disponible, verificando ngrok...');
     const ngrokAvailable = await checkServerHealth(NGROK_URL);
-    
+
     if (ngrokAvailable) {
       console.log('[Config] ✅ Ngrok disponible');
       detectedApiUrl = NGROK_URL;
       return NGROK_URL;
     }
   }
-  
+
   // Fallback a localhost (aunque no responda, para mostrar error apropiado)
   console.log('[Config] ⚠️ Ningún servidor disponible, usando localhost por defecto');
   detectedApiUrl = LOCALHOST_URL;
@@ -106,9 +106,9 @@ export const getApiUrl = (): string => detectedApiUrl;
 export const API_URL = LOCALHOST_URL;
 
 // Log inicial
-if (typeof window !== 'undefined') {
-  console.log('[Config] Inicializando... URL por defecto:', LOCALHOST_URL);
-  if (NGROK_URL) {
-    console.log('[Config] URL ngrok configurada:', NGROK_URL);
-  }
-}
+// if (typeof window !== 'undefined') {
+//   console.log('[Config] Inicializando... URL por defecto:', LOCALHOST_URL);
+//   if (NGROK_URL) {
+//     console.log('[Config] URL ngrok configurada:', NGROK_URL);
+//   }
+// }

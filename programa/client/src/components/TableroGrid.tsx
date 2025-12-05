@@ -5,6 +5,7 @@
  * gestiona visualmente los estados de selección y bloqueo.
  */
 import React from 'react';
+import '../styles/TableroGrid.css';
 
 // Mapeo de temáticas a iconos/emojis
 const THEME_ICONS: Record<string, Record<string, string>> = {

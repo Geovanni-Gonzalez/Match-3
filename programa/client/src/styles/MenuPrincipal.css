@@ -18,37 +18,11 @@
 }
 
 /* ========== FONDO ANIMADO ========== */
-.menu-background {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: linear-gradient(135deg, 
-    #1e1b4b 0%, 
-    #312e81 15%, 
-    #4c1d95 30%, 
-    #5b21b6 45%,
-    #6d28d9 60%, 
-    #7c3aed 75%,
-    #8b5cf6 90%,
-    #a78bfa 100%
-  );
-  background-size: 400% 400%;
-  animation: gradientFlow 15s ease infinite;
-  z-index: 0;
-}
-
-@keyframes gradientFlow {
-  0% { background-position: 0% 50%; }
-  25% { background-position: 50% 100%; }
-  50% { background-position: 100% 50%; }
-  75% { background-position: 50% 0%; }
-  100% { background-position: 0% 50%; }
-}
+/* Usando utilidad global .animated-background en el componente */
 
 /* ========== PARTÍCULAS ========== */
 .menu-particle {
+  /* Usando utilidad global .particle */
   position: absolute;
   width: 5px;
   height: 5px;
@@ -60,51 +34,55 @@
   box-shadow: 0 0 15px rgba(167, 139, 250, 0.4);
 }
 
-@keyframes particleFloat {
-  0% {
-    transform: translateY(0) scale(0.5);
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  90% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-100vh) scale(1.2);
-    opacity: 0;
-  }
-}
-
 /* ========== GEMAS DECORATIVAS ========== */
 .gem {
   position: absolute;
   font-size: 48px;
   animation: gemFloat 4s ease-in-out infinite;
-  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.4))
-          drop-shadow(0 0 30px currentColor);
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 30px currentColor);
   pointer-events: none;
   z-index: 2;
 }
 
-.gem-red { color: #ef4444; }
-.gem-blue { color: #3b82f6; }
-.gem-green { color: #10b981; }
-.gem-yellow { color: #f59e0b; }
-.gem-purple { color: #a78bfa; }
-.gem-orange { color: #f97316; }
+.gem-red {
+  color: var(--color-danger);
+}
+
+.gem-blue {
+  color: #3b82f6;
+}
+
+.gem-green {
+  color: var(--color-success);
+}
+
+.gem-yellow {
+  color: var(--color-warning);
+}
+
+.gem-purple {
+  color: var(--color-accent-4);
+}
+
+.gem-orange {
+  color: #f97316;
+}
 
 @keyframes gemFloat {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0) rotate(0deg) scale(1);
   }
+
   25% {
     transform: translateY(-20px) rotate(10deg) scale(1.1);
   }
+
   50% {
     transform: translateY(-10px) rotate(-5deg) scale(1.05);
   }
+
   75% {
     transform: translateY(-25px) rotate(8deg) scale(1.08);
   }
@@ -116,15 +94,12 @@
   bottom: -100px;
   width: 60px;
   height: 60px;
-  background: radial-gradient(circle at 30% 30%, 
-    rgba(167, 139, 250, 0.3), 
-    rgba(139, 92, 246, 0.1));
+  background: radial-gradient(circle at 30% 30%, rgba(167, 139, 250, 0.3), rgba(139, 92, 246, 0.1));
   border-radius: 50%;
   animation: bubbleRise linear infinite;
   pointer-events: none;
   z-index: 1;
-  box-shadow: inset 0 0 20px rgba(167, 139, 250, 0.2),
-              0 0 30px rgba(139, 92, 246, 0.15);
+  box-shadow: inset 0 0 20px rgba(167, 139, 250, 0.2), 0 0 30px rgba(139, 92, 246, 0.15);
 }
 
 @keyframes bubbleRise {
@@ -132,9 +107,11 @@
     transform: translateY(0) scale(0.5);
     opacity: 0.4;
   }
+
   50% {
     opacity: 0.6;
   }
+
   100% {
     transform: translateY(-120vh) scale(1.2);
     opacity: 0;
@@ -143,39 +120,10 @@
 
 /* ========== CARD DEL MENÚ ========== */
 .menu-card {
-  position: relative;
-  padding: 60px 50px;
-  border-radius: 35px;
-  background: rgba(30, 27, 75, 0.85);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: 
-    0 30px 90px rgba(0, 0, 0, 0.6),
-    0 0 0 1px rgba(167, 139, 250, 0.3) inset,
-    0 0 60px rgba(139, 92, 246, 0.4);
+  /* Hereda de .premium-card */
   width: 550px;
   max-width: 92vw;
-  border: 3px solid transparent;
-  background-image: 
-    linear-gradient(rgba(30, 27, 75, 0.85), rgba(30, 27, 75, 0.9)),
-    linear-gradient(135deg, #7c3aed, #8b5cf6, #a78bfa, #c4b5fd);
-  background-origin: border-box;
-  background-clip: padding-box, border-box;
-  z-index: 10;
-  animation: menuCardEntrance 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-@keyframes menuCardEntrance {
-  0% {
-    transform: scale(0.8) translateY(50px);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.02) translateY(-5px);
-  }
-  100% {
-    transform: scale(1) translateY(0);
-    opacity: 1;
-  }
+  padding: 60px 50px;
 }
 
 /* ========== HEADER CON USUARIO ========== */
@@ -190,6 +138,7 @@
     transform: translateY(-30px);
     opacity: 0;
   }
+
   100% {
     transform: translateY(0);
     opacity: 1;
@@ -197,31 +146,23 @@
 }
 
 .menu-title {
-  font-size: 38px;
-  font-weight: 900;
-  background: linear-gradient(135deg, #a78bfa 0%, #c4b5fd 50%, #ddd6fe 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  /* Hereda de .premium-title */
   margin: 0 0 15px;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  filter: drop-shadow(0 4px 12px rgba(167, 139, 250, 0.5));
 }
 
 .menu-welcome {
   font-size: 18px;
-  color: #c4b5fd;
+  color: var(--color-accent-5);
   font-weight: 600;
   margin: 0;
   text-shadow: 0 2px 4px rgba(167, 139, 250, 0.3);
 }
 
 .menu-username {
-  color: #ede9fe;
+  color: var(--color-text-main);
   font-weight: 800;
   text-decoration: underline;
-  text-decoration-color: #8b5cf6;
+  text-decoration-color: var(--color-accent-3);
   text-decoration-thickness: 2px;
 }
 
@@ -237,13 +178,13 @@
   width: 100%;
   padding: 22px 35px;
   border: none;
-  border-radius: 18px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   font-size: 19px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 1px;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: var(--transition-bounce);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -254,21 +195,21 @@
 
 .menu-action-button:nth-child(1) {
   animation-delay: 0.5s;
-  background: linear-gradient(135deg, #059669 0%, #047857 50%, #065f46 100%);
+  background: var(--gradient-btn-green);
   color: white;
   box-shadow: 0 12px 35px rgba(5, 150, 105, 0.4);
 }
 
 .menu-action-button:nth-child(2) {
   animation-delay: 0.7s;
-  background: linear-gradient(135deg, #ea580c 0%, #c2410c 50%, #9a3412 100%);
+  background: var(--gradient-btn-orange);
   color: white;
   box-shadow: 0 12px 35px rgba(234, 88, 12, 0.4);
 }
 
 .menu-action-button:nth-child(3) {
   animation-delay: 0.9s;
-  background: linear-gradient(135deg, #0284c7 0%, #0369a1 50%, #075985 100%);
+  background: var(--gradient-btn-blue);
   color: white;
   box-shadow: 0 12px 35px rgba(2, 132, 199, 0.4);
 }
@@ -278,6 +219,7 @@
     transform: translateX(-50px);
     opacity: 0;
   }
+
   100% {
     transform: translateX(0);
     opacity: 1;
@@ -318,15 +260,195 @@
   top: 20px;
   right: 20px;
   padding: 12px 20px;
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  background: var(--gradient-btn-red);
   color: white;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: 14px;
   font-weight: 700;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+  transition: var(--transition-normal);
+  box-shadow: var(--shadow-sm);
+  z-index: 20;
+  position: absolute;
+  bottom: -100px;
+  width: 60px;
+  height: 60px;
+  background: radial-gradient(circle at 30% 30%, rgba(167, 139, 250, 0.3), rgba(139, 92, 246, 0.1));
+  border-radius: 50%;
+  animation: bubbleRise linear infinite;
+  pointer-events: none;
+  z-index: 1;
+  box-shadow: inset 0 0 20px rgba(167, 139, 250, 0.2), 0 0 30px rgba(139, 92, 246, 0.15);
+}
+
+@keyframes bubbleRise {
+  0% {
+    transform: translateY(0) scale(0.5);
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: translateY(-120vh) scale(1.2);
+    opacity: 0;
+  }
+}
+
+/* ========== CARD DEL MENÚ ========== */
+.menu-card {
+  /* Hereda de .premium-card */
+  width: 550px;
+  max-width: 92vw;
+  padding: 60px 50px;
+}
+
+/* ========== HEADER CON USUARIO ========== */
+.menu-header {
+  text-align: center;
+  margin-bottom: 50px;
+  animation: headerSlideIn 0.6s ease-out 0.3s backwards;
+}
+
+@keyframes headerSlideIn {
+  0% {
+    transform: translateY(-30px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.menu-title {
+  /* Hereda de .premium-title */
+  margin: 0 0 15px;
+}
+
+.menu-welcome {
+  font-size: 18px;
+  color: var(--color-accent-5);
+  font-weight: 600;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(167, 139, 250, 0.3);
+}
+
+.menu-username {
+  color: var(--color-text-main);
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-color: var(--color-accent-3);
+  text-decoration-thickness: 2px;
+}
+
+/* ========== BOTONES DE ACCIÓN ========== */
+.menu-options {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.menu-action-button {
+  position: relative;
+  width: 100%;
+  padding: 22px 35px;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 19px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: var(--transition-bounce);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  animation: buttonSlideIn 0.6s ease-out backwards;
+}
+
+.menu-action-button:nth-child(1) {
+  animation-delay: 0.5s;
+  background: var(--gradient-btn-green);
+  color: white;
+  box-shadow: 0 12px 35px rgba(5, 150, 105, 0.4);
+}
+
+.menu-action-button:nth-child(2) {
+  animation-delay: 0.7s;
+  background: var(--gradient-btn-orange);
+  color: white;
+  box-shadow: 0 12px 35px rgba(234, 88, 12, 0.4);
+}
+
+.menu-action-button:nth-child(3) {
+  animation-delay: 0.9s;
+  background: var(--gradient-btn-blue);
+  color: white;
+  box-shadow: 0 12px 35px rgba(2, 132, 199, 0.4);
+}
+
+@keyframes buttonSlideIn {
+  0% {
+    transform: translateX(-50px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.menu-action-button:hover {
+  transform: translateY(-4px) scale(1.02);
+}
+
+.menu-action-button:active {
+  transform: translateY(-2px) scale(0.98);
+}
+
+.menu-action-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.6s;
+}
+
+.menu-action-button:hover::before {
+  left: 100%;
+}
+
+.button-icon {
+  font-size: 24px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* ========== BOTÓN DE LOGOUT ========== */
+.logout-button {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  background: var(--gradient-btn-red);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  transition: var(--transition-normal);
+  box-shadow: var(--shadow-sm);
   z-index: 20;
   display: flex;
   align-items: center;
@@ -347,32 +469,29 @@
   .gem {
     font-size: 28px;
   }
-  
+
   .bubble {
     width: 35px;
     height: 35px;
   }
-  
+
   .menu-card {
     padding: 45px 35px;
-    width: 95vw;
+    width: 90vw;
+    max-width: 450px;
   }
-  
+
   .menu-title {
     font-size: 32px;
   }
-  
+
   .menu-welcome {
     font-size: 16px;
   }
-  
+
   .menu-action-button {
     padding: 18px 28px;
     font-size: 17px;
-  }
-  
-  .menu-decoration {
-    font-size: 32px;
   }
 }
 
@@ -380,27 +499,63 @@
   .gem {
     font-size: 24px;
   }
-  
+
   .bubble {
     width: 30px;
     height: 30px;
   }
-  
+
   .menu-card {
-    padding: 35px 25px;
+    padding: 30px 20px;
+    width: 95vw;
   }
-  
+
+  .menu-header {
+    margin-bottom: 30px;
+  }
+
   .menu-title {
-    font-size: 28px;
+    font-size: 26px;
   }
-  
+
+  .menu-welcome {
+    font-size: 15px;
+  }
+
   .menu-action-button {
-    padding: 16px 24px;
-    font-size: 16px;
+    padding: 15px 20px;
+    font-size: 15px;
+    gap: 8px;
   }
-  
+
+  .button-icon {
+    font-size: 20px;
+  }
+
   .logout-button {
-    padding: 10px 16px;
+    padding: 8px 14px;
     font-size: 12px;
+    top: 15px;
+    right: 15px;
+  }
+}
+
+@media (max-height: 600px) {
+  .menu-card {
+    padding: 20px;
+    max-height: 95vh;
+    overflow-y: auto;
+  }
+
+  .menu-header {
+    margin-bottom: 20px;
+  }
+
+  .menu-options {
+    gap: 12px;
+  }
+
+  .menu-action-button {
+    padding: 12px 20px;
   }
 }

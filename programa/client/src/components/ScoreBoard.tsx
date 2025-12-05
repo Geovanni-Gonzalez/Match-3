@@ -5,6 +5,7 @@
  */
 import React from 'react';
 import { JugadorData } from '../services/SocketService';
+import '../styles/ScoreBoard.css';
 
 interface ScoreBoardProps {
   jugadores: JugadorData[];

@@ -18,7 +18,7 @@ import { detectBackendUrl, getApiUrl } from '../config';
 export interface UserSession {
     nickname: string;
     socketID: string;
-    idDB: number; 
+    idDB: number;
 }
 
 /**
@@ -30,7 +30,7 @@ interface AuthContextType {
     /** Flag booleano de estado de autenticación. */
     isAuthenticated: boolean;
     /** Instancia global del socket conectado. */
-    socket: Socket | null; 
+    socket: Socket | null;
     /** URL del backend detectada */
     apiUrl: string;
     /** Si la detección del backend está en progreso */
@@ -44,7 +44,7 @@ interface AuthContextType {
 // --- 2. CREACIÓN DEL CONTEXTO ---
 
 // Definimos el contexto con un valor inicial nulo y tipado
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // --- 3. COMPONENTE PROVEEDOR ---
 
@@ -88,7 +88,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
      */
     const login = async (nickname: string, idDB: number) => {
         const currentApiUrl = getApiUrl();
-        
+
         return new Promise<void>((resolve, reject) => {
             // Conectamos al servidor detectado
             // "ngrok-skip-browser-warning" evita la página de advertencia de Ngrok
@@ -100,10 +100,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
             newSocket.on('connect', () => {
                 console.log(`[Auth] Conectado al servidor (${currentApiUrl}) con ID: ${newSocket.id}`);
-                
+
                 // Guardamos el socket y el usuario en el estado
                 setSocket(newSocket);
-                setCurrentUser({ nickname, socketID: newSocket.id || '' , idDB}); 
+                setCurrentUser({ nickname, socketID: newSocket.id || '', idDB });
                 resolve();
             });
 

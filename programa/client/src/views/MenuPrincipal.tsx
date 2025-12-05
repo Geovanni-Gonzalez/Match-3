@@ -26,7 +26,7 @@ interface MenuPrincipalProps {
   /** Función para cerrar sesión. */
   onLogout: () => void;
   /** Función para notificar al padre qué vista mostrar. */
-  onNavigate: (view: MenuViews) => void; 
+  onNavigate: (view: MenuViews) => void;
 }
 
 /**
@@ -34,35 +34,35 @@ interface MenuPrincipalProps {
  */
 export const MenuPrincipal: React.FC<MenuPrincipalProps> = ({ currentUser, onLogout, onNavigate }) => {
 
-  // ... (el resto del estado y la lógica)
+  // ... (el resto del estado y la lógica)
 
-  const handleUnirsePartida = () => {
-      // Usa onNavigate para cambiar a la vista del Lobby
-      onNavigate('lobby'); 
-      console.log("Navegar a vista de lobby de partidas.");
-  }
-  
-  const handleNuevoJuego = () => {
-      // Usa onNavigate para cambiar a la vista de Crear Partida
-      onNavigate('create_game'); 
-      console.log("Navegar a vista de creación de partida.");
-  };
+  const handleUnirsePartida = () => {
+    // Usa onNavigate para cambiar a la vista del Lobby
+    onNavigate('lobby');
+    console.log("Navegar a vista de lobby de partidas.");
+  }
+
+  const handleNuevoJuego = () => {
+    // Usa onNavigate para cambiar a la vista de Crear Partida
+    onNavigate('create_game');
+    console.log("Navegar a vista de creación de partida.");
+  };
 
   const handleVerRanking = () => {
-      onNavigate('ranking');
-      console.log("Navegar a vista de ranking.");
+    onNavigate('ranking');
+    console.log("Navegar a vista de ranking.");
   }
 
   return (
     <div className="menu-container">
       {/* Fondo animado */}
-      <div className="menu-background"></div>
-      
+      <div className="animated-background"></div>
+
       {/* Partículas decorativas */}
       {[...Array(30)].map((_, i) => (
-        <div 
+        <div
           key={`particle-${i}`}
-          className="menu-particle"
+          className="particle"
           style={{
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
@@ -71,18 +71,18 @@ export const MenuPrincipal: React.FC<MenuPrincipalProps> = ({ currentUser, onLog
           }}
         />
       ))}
-      
+
       {/* Gemas decorativas flotantes - estilo Match-3 */}
-      <div className="gem gem-red" style={{top: '10%', left: '10%', animationDelay: '0s'}}>💎</div>
-      <div className="gem gem-blue" style={{top: '15%', right: '15%', animationDelay: '1s'}}>💠</div>
-      <div className="gem gem-green" style={{bottom: '20%', left: '8%', animationDelay: '2s'}}>🔷</div>
-      <div className="gem gem-yellow" style={{top: '60%', right: '10%', animationDelay: '1.5s'}}>⭐</div>
-      <div className="gem gem-purple" style={{bottom: '10%', right: '20%', animationDelay: '0.5s'}}>🔮</div>
-      <div className="gem gem-orange" style={{top: '40%', left: '5%', animationDelay: '2.5s'}}>🧡</div>
-      
+      <div className="gem gem-red" style={{ top: '10%', left: '10%', animationDelay: '0s' }}>💎</div>
+      <div className="gem gem-blue" style={{ top: '15%', right: '15%', animationDelay: '1s' }}>💠</div>
+      <div className="gem gem-green" style={{ bottom: '20%', left: '8%', animationDelay: '2s' }}>🔷</div>
+      <div className="gem gem-yellow" style={{ top: '60%', right: '10%', animationDelay: '1.5s' }}>⭐</div>
+      <div className="gem gem-purple" style={{ bottom: '10%', right: '20%', animationDelay: '0.5s' }}>🔮</div>
+      <div className="gem gem-orange" style={{ top: '40%', left: '5%', animationDelay: '2.5s' }}>🧡</div>
+
       {/* Burbujas decorativas */}
       {[...Array(8)].map((_, i) => (
-        <div 
+        <div
           key={`bubble-${i}`}
           className="bubble"
           style={{
@@ -92,16 +92,16 @@ export const MenuPrincipal: React.FC<MenuPrincipalProps> = ({ currentUser, onLog
           }}
         />
       ))}
-      
-      <div className="menu-card">
+
+      <div className="menu-card premium-card">
         {/* Botón de cerrar sesión */}
         <button onClick={onLogout} className="logout-button">
           <span>Salir</span>
         </button>
-        
+
         {/* Header con bienvenida */}
         <div className="menu-header">
-          <h1 className="menu-title">Menu Principal</h1>
+          <h1 className="menu-title premium-title">Menu Principal</h1>
           <p className="menu-welcome">
             ¡Bienvenido, <span className="menu-username">{currentUser.nickname}</span>!
           </p>
@@ -113,12 +113,12 @@ export const MenuPrincipal: React.FC<MenuPrincipalProps> = ({ currentUser, onLog
             <span className="button-icon">➕</span>
             <span>Crear Partida Nueva</span>
           </button>
-          
+
           <button onClick={handleUnirsePartida} className="menu-action-button">
             <span className="button-icon">🎯</span>
             <span>Unirse a Partida</span>
           </button>
-          
+
           <button onClick={handleVerRanking} className="menu-action-button">
             <span className="button-icon">🏆</span>
             <span>Ver Ranking</span>

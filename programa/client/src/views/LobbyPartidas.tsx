@@ -67,17 +67,16 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
     // Escuchar actualizaciones
     const unsubscribe = service.onPartidasList((lista) => {
       setPartidas(lista);
-      if (loading) setLoading(false);
+      setLoading(false);
     });
 
     // Escuchar actualizaciones del timer del lobby
     const unsubscribeTimer = service.onTimerTick((data) => {
-      // Si el evento viene con partidaId, actualizamos solo esa partida en la lista local
       if (data.partidaId) {
-        setPartidas(prevPartidas => 
-          prevPartidas.map(p => 
-            p.id === data.partidaId 
-              ? { ...p, tiempoRestante: data.secondsLeft } 
+        setPartidas(prevPartidas =>
+          prevPartidas.map(p =>
+            p.id === data.partidaId
+              ? { ...p, tiempoRestante: data.secondsLeft }
               : p
           )
         );
@@ -136,7 +135,7 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
     <div className="lobby-partidas-container">
       {/* Fondo animado con gradiente */}
       <div className="lobby-partidas-background"></div>
-      
+
       {/* Partículas flotantes */}
       {Array.from({ length: 30 }).map((_, i) => (
         <div
@@ -175,13 +174,13 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
       <button className="back-button" onClick={onBack}>
         ← Volver
       </button>
-      
+
       {/* Card principal */}
       <div className="lobby-partidas-card">
         <h1 className="lobby-partidas-title">Partidas Disponibles</h1>
-        
+
         <h3 className="lobby-subtitle">📋 Lista de partidas:</h3>
-        
+
         {loading && <p className="loading-text">⏳ Cargando partidas...</p>}
         {error && <p className="error-text">❌ Error: {error}</p>}
 
@@ -199,41 +198,32 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
                   <th className="table-header">Tipo</th>
                   <th className="table-header">Jugadores</th>
                   <th className="table-header">Duración</th>
-                  <th className="table-header">Cierre Lobby</th>
+                  <th className="table-header">Cierre</th>
                 </tr>
               </thead>
               <tbody>
                 {partidas.map((partida) => {
-                  // Calcular el texto para la columna de duración/tiempo
-                  let duracionTexto = 'N/A';
-                  if (partida.tipo === 'Tiempo' && partida.duracionMinutos) {
-                    duracionTexto = `${partida.duracionMinutos} min`;
-                  } else if (partida.tipo === 'Match') {
-                    duracionTexto = 'N/A';
-                  }
-                  
+                  const duracionTexto = partida.duracionMinutos ? `${partida.duracionMinutos} min` : 'N/A';
                   return (
-                  <tr 
-                    key={partida.id} 
-                    className={`table-row ${selectedPartidaId === partida.id ? 'selected' : ''}`}
-                    onClick={() => {
-                      setSelectedPartidaId(partida.id);
-                    }}
-                  >
-                    <td className="table-cell">{partida.id}</td>
-                    <td className="table-cell">{partida.tematica}</td>
-                    <td className="table-cell">{partida.tipo}</td>
-                    <td className="table-cell">
-                      <div>{partida.jugadores}/{partida.maxJugadores}</div>
-                      <div style={{ fontSize: '11px', color: '#a78bfa', marginTop: '4px' }}>
-                        {partida.jugadoresNombres?.join(', ') || ''}
-                      </div>
-                    </td>
-                    <td className="table-cell">{duracionTexto}</td>
-                    <td className="table-cell" style={{ color: partida.tiempoRestante < 60 ? '#ff4444' : 'inherit' }}>
-                      {formatTime(partida.tiempoRestante)}
-                    </td>
-                  </tr>
+                    <tr
+                      key={partida.id}
+                      className={`table-row ${selectedPartidaId === partida.id ? 'selected' : ''}`}
+                      onClick={() => setSelectedPartidaId(partida.id)}
+                    >
+                      <td className="table-cell" data-label="Código">#{partida.id.slice(0, 6)}</td>
+                      <td className="table-cell" data-label="Temática">{partida.tematica}</td>
+                      <td className="table-cell" data-label="Tipo">{partida.tipo}</td>
+                      <td className="table-cell" data-label="Jugadores">
+                        <div>{partida.jugadores}/{partida.maxJugadores}</div>
+                        <div style={{ fontSize: '11px', color: '#a78bfa', marginTop: '4px' }}>
+                          {partida.jugadoresNombres?.join(', ') || ''}
+                        </div>
+                      </td>
+                      <td className="table-cell" data-label="Duración">{duracionTexto}</td>
+                      <td className="table-cell" data-label="Cierre" style={{ color: partida.tiempoRestante < 60 ? '#ff4444' : 'inherit' }}>
+                        {formatTime(partida.tiempoRestante)}
+                      </td>
+                    </tr>
                   );
                 })}
               </tbody>
@@ -241,9 +231,9 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
           </div>
         )}
 
-        <button 
-          onClick={handleUnirseClick} 
-          disabled={!selectedPartidaId || loading} 
+        <button
+          onClick={handleUnirseClick}
+          disabled={!selectedPartidaId || loading}
           className="unirse-button"
         >
           🚀 Unirse a Partida

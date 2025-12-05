@@ -73,10 +73,11 @@ const corsOrigin = (origin: string | undefined, callback: (err: Error | null, or
 };
 
 const corsOptions = {
-  origin: corsOrigin,
+  origin: true, // Reflect request origin
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "ngrok-skip-browser-warning"],
+  allowedHeaders: ["Content-Type", "Authorization", "ngrok-skip-browser-warning", "X-Requested-With", "Accept"],
   credentials: true,
+  optionsSuccessStatus: 200
 };
 
 app.use(cors(corsOptions));

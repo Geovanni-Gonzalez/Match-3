@@ -14,7 +14,7 @@
   --color-success: #10b981;
   --color-success-dark: #059669;
   --color-success-light: #d1fae5;
-  
+
   --color-danger: #ef4444;
   --color-danger-dark: #b91c1c;
   --color-danger-light: #fecaca;
@@ -25,7 +25,7 @@
 
   --color-info: #06b6d4;
   --color-info-dark: #0e7490;
-  
+
   --color-text-main: #e0e7ff;
   --color-text-muted: #94a3b8;
   --color-white: #ffffff;
@@ -36,11 +36,24 @@
   --gradient-border: linear-gradient(135deg, #7c3aed, #8b5cf6, #a78bfa, #c4b5fd);
   --gradient-text-gold: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
   --gradient-text-purple: linear-gradient(135deg, #a78bfa 0%, #c4b5fd 50%, #ddd6fe 100%);
-  
+
   --gradient-btn-green: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
   --gradient-btn-red: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%);
   --gradient-btn-blue: linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #0e7490 100%);
   --gradient-btn-orange: linear-gradient(135deg, #ea580c 0%, #c2410c 50%, #9a3412 100%);
+
+  /* Premium Gradients */
+  --gradient-neon: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  --gradient-holographic: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%);
+  --gradient-metallic: linear-gradient(135deg, #bdc3c7 0%, #2c3e50 100%);
+  --gradient-sunset: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  --gradient-ocean: linear-gradient(135deg, #2e3192 0%, #1bffff 100%);
+
+  /* Glassmorphism */
+  --glass-bg: rgba(30, 27, 75, 0.7);
+  --glass-border: rgba(167, 139, 250, 0.2);
+  --glass-blur: blur(20px);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
 
   /* --- SHADOWS --- */
   --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -48,6 +61,22 @@
   --shadow-lg: 0 30px 90px rgba(0, 0, 0, 0.6);
   --shadow-glow-purple: 0 0 60px rgba(139, 92, 246, 0.4);
   --shadow-glow-gold: 0 0 30px rgba(251, 191, 36, 0.6);
+
+  /* 3D Shadows & Elevation */
+  --shadow-3d-sm: 0 2px 4px rgba(0, 0, 0, 0.2), 0 4px 8px rgba(0, 0, 0, 0.15);
+  --shadow-3d-md: 0 4px 8px rgba(0, 0, 0, 0.2), 0 8px 16px rgba(0, 0, 0, 0.15), 0 12px 24px rgba(0, 0, 0, 0.1);
+  --shadow-3d-lg: 0 8px 16px rgba(0, 0, 0, 0.2), 0 16px 32px rgba(0, 0, 0, 0.15), 0 24px 48px rgba(0, 0, 0, 0.1);
+  --shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  --shadow-elevated: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+
+  /* Z-Index System */
+  --z-background: 0;
+  --z-particles: 1;
+  --z-content: 10;
+  --z-card: 20;
+  --z-overlay: 100;
+  --z-modal: 200;
+  --z-notification: 300;
 
   /* --- BORDERS --- */
   --radius-sm: 12px;
@@ -59,31 +88,83 @@
   --transition-fast: 0.2s ease;
   --transition-normal: 0.3s ease;
   --transition-bounce: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition-smooth: 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Micro-interactions */
+  --hover-lift: translateY(-2px);
+  --hover-lift-lg: translateY(-4px);
+  --active-press: scale(0.97);
+  --active-press-sm: scale(0.98);
 }
 
 /* --- GLOBAL KEYFRAMES (Reusable) --- */
 @keyframes gradientFlow {
-  0% { background-position: 0% 50%; }
-  25% { background-position: 50% 100%; }
-  50% { background-position: 100% 50%; }
-  75% { background-position: 50% 0%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  25% {
+    background-position: 50% 100%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  75% {
+    background-position: 50% 0%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 @keyframes particleFloat {
-  0% { transform: translateY(0) scale(0.5); opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { transform: translateY(-100vh) scale(1.2); opacity: 0; }
+  0% {
+    transform: translateY(0) scale(0.5);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  90% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(-100vh) scale(1.2);
+    opacity: 0;
+  }
 }
 
 @keyframes cardEntrance {
-  0% { transform: scale(0.9) translateY(30px); opacity: 0; }
-  50% { transform: scale(1.01) translateY(-3px); }
-  100% { transform: scale(1) translateY(0); opacity: 1; }
+  0% {
+    transform: scale(0.9) translateY(30px);
+    opacity: 0;
+  }
+
+  50% {
+    transform: scale(1.01) translateY(-3px);
+  }
+
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
 }
 
 @keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
 }

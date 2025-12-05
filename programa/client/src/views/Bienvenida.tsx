@@ -10,7 +10,7 @@
  */
 
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext'; 
+import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import '../styles/Bienvenida.css';
 
@@ -84,10 +84,10 @@ export const Bienvenida: React.FC = () => {
     <div className="bienvenida-container">
       {/* Fondo animado con gradiente dinámico */}
       <div className="animated-background"></div>
-      
+
       {/* Partículas brillantes flotantes */}
       {[...Array(30)].map((_, i) => (
-        <div 
+        <div
           key={`particle-${i}`}
           className="particle"
           style={{
@@ -98,18 +98,18 @@ export const Bienvenida: React.FC = () => {
           }}
         />
       ))}
-      
+
       {/* Gemas decorativas flotantes - estilo Match-3 */}
-      <div className="gem gem-red" style={{top: '10%', left: '10%', animationDelay: '0s'}}>💎</div>
-      <div className="gem gem-blue" style={{top: '15%', right: '15%', animationDelay: '1s'}}>💠</div>
-      <div className="gem gem-green" style={{bottom: '20%', left: '8%', animationDelay: '2s'}}>🔷</div>
-      <div className="gem gem-yellow" style={{top: '60%', right: '10%', animationDelay: '1.5s'}}>⭐</div>
-      <div className="gem gem-purple" style={{bottom: '10%', right: '20%', animationDelay: '0.5s'}}>🔮</div>
-      <div className="gem gem-orange" style={{top: '40%', left: '5%', animationDelay: '2.5s'}}>🧡</div>
-      
+      <div className="gem gem-red" style={{ top: '10%', left: '10%', animationDelay: '0s' }}>💎</div>
+      <div className="gem gem-blue" style={{ top: '15%', right: '15%', animationDelay: '1s' }}>💠</div>
+      <div className="gem gem-green" style={{ bottom: '20%', left: '8%', animationDelay: '2s' }}>🔷</div>
+      <div className="gem gem-yellow" style={{ top: '60%', right: '10%', animationDelay: '1.5s' }}>⭐</div>
+      <div className="gem gem-purple" style={{ bottom: '10%', right: '20%', animationDelay: '0.5s' }}>🔮</div>
+      <div className="gem gem-orange" style={{ top: '40%', left: '5%', animationDelay: '2.5s' }}>🧡</div>
+
       {/* Burbujas decorativas */}
       {[...Array(8)].map((_, i) => (
-        <div 
+        <div
           key={`bubble-${i}`}
           className="bubble"
           style={{
@@ -119,11 +119,11 @@ export const Bienvenida: React.FC = () => {
           }}
         />
       ))}
-      
+
       <div className="welcome-card">
         {/* Brillo superior del card */}
         <div className="card-shine"></div>
-        
+
         {/* Logo/Título con efecto premium */}
         <div className="title-container">
           <div className="logo-container">
@@ -151,7 +151,7 @@ export const Bienvenida: React.FC = () => {
           />
           <div className="input-border-animation"></div>
         </div>
-        
+
         {/* Mensaje de error mejorado */}
         {error && (
           <div className="error-container">
@@ -161,9 +161,9 @@ export const Bienvenida: React.FC = () => {
         )}
 
         {/* Botón premium con efectos avanzados */}
-        <button 
-          onClick={handleLogin} 
-          disabled={nickname.trim().length < 3 || isLoading} 
+        <button
+          onClick={handleLogin}
+          disabled={nickname.trim().length < 3 || isLoading}
           className="premium-button"
           onMouseEnter={(e) => {
             if (nickname.trim().length >= 3 && !isLoading) {
@@ -193,7 +193,7 @@ export const Bienvenida: React.FC = () => {
           <span className="info-icon">💡</span>
           Crea tu identidad con mínimo 3 caracteres
         </div>
-        
+
         {/* Decoración inferior */}
         <div className="card-footer-decoration">
           <span>⚔️</span>

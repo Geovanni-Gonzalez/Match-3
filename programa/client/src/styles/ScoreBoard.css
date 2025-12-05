@@ -1,0 +1,149 @@
+/* ============================================
+   🏆 SCOREBOARD - PREMIUM LEADERBOARD
+   Strict UI/UX Enhancement
+   ============================================ */
+
+.score-panel {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(12px);
+    border-radius: 20px;
+    padding: 0;
+    /* Padding handled by children */
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.5),
+        inset 0 0 0 1px rgba(167, 139, 250, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    min-width: 280px;
+    max-width: 320px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* HEADER */
+.score-header-row {
+    background: linear-gradient(90deg, rgba(76, 29, 149, 0.8), rgba(30, 27, 75, 0.8));
+    padding: 15px 20px;
+    border-bottom: 2px solid rgba(167, 139, 250, 0.3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.score-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--color-accent-3);
+    margin: 0;
+}
+
+/* TABLE */
+.score-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+/* FILAS */
+.score-row {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.2s;
+}
+
+.score-row:last-child {
+    border-bottom: none;
+}
+
+.score-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* CELDAS */
+.score-cell {
+    padding: 12px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #cbd5e1;
+}
+
+.score-cell.name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.score-cell.points {
+    text-align: right;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    color: var(--color-warning);
+    font-size: 18px;
+}
+
+/* USUARIO ACTUAL */
+.current-user-row {
+    background: linear-gradient(90deg, rgba(79, 70, 229, 0.2), rgba(67, 56, 202, 0.1));
+    border-left: 4px solid #6366f1;
+}
+
+.current-user-row .score-cell {
+    color: #e0e7ff;
+    font-weight: 700;
+}
+
+/* RANKING ICONS */
+.rank-icon {
+    font-size: 18px;
+    width: 24px;
+    text-align: center;
+    display: inline-block;
+}
+
+/* TOP 3 STYLES */
+.score-row:nth-child(1) .score-cell.points {
+    color: #fbbf24;
+    text-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+}
+
+.score-row:nth-child(2) .score-cell.points {
+    color: #94a3b8;
+}
+
+.score-row:nth-child(3) .score-cell.points {
+    color: #b45309;
+}
+
+/* ANIMACIONES */
+@keyframes scorePop {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.2);
+        color: #fff;
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.score-cell.updating {
+    animation: scorePop 0.4s ease-out;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    .score-panel {
+        min-width: 100%;
+        border-radius: 12px;
+    }
+
+    .score-cell {
+        padding: 10px 15px;
+        font-size: 14px;
+    }
+}
