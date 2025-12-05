@@ -4,7 +4,7 @@
     "target": "ES2022",                     
     "module": "NodeNext",                   
     "moduleResolution": "NodeNext",       
-    "rootDir": "./src",                    
+    // "rootDir": "./src",                    
     "outDir": "./dist",                    
 
     /* ----- Imports & Interop ----- */
@@ -21,15 +21,15 @@
     "sourceMap": true,                      
 
     /* ----- Node Types Support ----- */
-    "types": ["node"],                      
+    "types": ["node", "jest"],                      
 
     /* ----- Disable JSX (backend only) ----- */
-    "jsx": "react"                           
+    "jsx": "react",
+    "isolatedModules": true
   },
 
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "tests/**/*.ts"],
   "exclude": [
-    "node_modules",
-    "**/*.spec.ts"
+    "node_modules"
   ]
 }

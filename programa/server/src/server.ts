@@ -27,45 +27,46 @@ import { TimerManager } from './core/manager/TimerManager.js';
 const app = express();
 
 // ----------------------
-// CORS – FULL PROTECTION (Updated for Ngrok)
+// CORS – Configuración dinámica para localhost y Ngrok
 // ----------------------
 
 /**
  * Función dinámica para validar el origen de las peticiones CORS.
- * Permite conexiones desde localhost y dominios de Ngrok.
+ * Permite conexiones desde localhost (cualquier puerto) y dominios de Ngrok.
+ * Retorna el origen si es válido (para reflejarlo en la respuesta).
  * 
  * @param origin - El origen de la petición HTTP.
- * @param callback - Función de retorno para permitir o denegar el acceso.
+ * @param callback - Función de retorno con el origen permitido.
  */
-const corsOrigin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-  // Permitir requests sin origen (ej. Postman o server-to-server)
+const corsOrigin = (origin: string | undefined, callback: (err: Error | null, origin?: string | boolean) => void) => {
+  // Permitir requests sin origen (ej. Postman, curl, server-to-server)
   if (!origin) return callback(null, true);
   
-  // Permitir localhost y dominios de ngrok
-  if (origin.includes('localhost') || origin.includes('ngrok-free.app')) {
-    callback(null, true);
-  } else {
-    console.warn(`Bloqueado por CORS: ${origin}`);
-    callback(new Error('Not allowed by CORS'));
+  // Permitir cualquier subdominio de ngrok
+  if (origin.includes('ngrok-free.app') || origin.includes('ngrok.io')) {
+    return callback(null, origin); // Reflejar el origen exacto
   }
+  
+  // Permitir cualquier localhost con cualquier puerto
+  if (origin.match(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/)) {
+    return callback(null, origin); // Reflejar el origen exacto
+  }
+  
+  console.warn(`[CORS] Origen bloqueado: ${origin}`);
+  callback(new Error('Not allowed by CORS'));
 };
 
-app.use(
-  cors({
-    origin: corsOrigin,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "ngrok-skip-browser-warning"],
-    credentials: true,
-    preflightContinue: false,
-  })
-);
+const corsOptions = {
+  origin: corsOrigin,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "ngrok-skip-browser-warning"],
+  credentials: true,
+};
 
-// Manejar preflight (MUY IMPORTANTE)
-app.options('*', cors({ 
-  origin: corsOrigin, 
-  credentials: true, 
-  allowedHeaders: ["Content-Type", "Authorization", "ngrok-skip-browser-warning"] 
-}));
+app.use(cors(corsOptions));
+
+// Manejar preflight explícitamente
+app.options('*', cors(corsOptions));
 
 // Middlewares
 app.use(express.json());

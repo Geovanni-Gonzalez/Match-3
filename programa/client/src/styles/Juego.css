@@ -219,6 +219,7 @@
 .cell {
   width: 40px;
   height: 40px;
+  background-color: #282c34;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -233,6 +234,24 @@
 .cell:hover {
   transform: scale(1.08);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 5;
+}
+
+.cell-content {
+  font-size: 24px;
+  animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  user-select: none;
+}
+
+@keyframes popIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .cell.locked-by-me {
@@ -749,6 +768,22 @@
   margin-bottom: 20px;
   justify-content: center;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.info-item {
+  color: #fff;
+  margin-right: 20px;
+}
+
+.waiting-subtitle {
+  color: #c4b5fd;
+  font-size: 20px;
+}
+
+.waiting-instruction {
+  color: #fbbf24;
+  font-size: 24px;
+  font-weight: bold;
 }
 
 .overlay {

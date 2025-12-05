@@ -13,6 +13,7 @@
 import { Server } from 'socket.io';
 import { ServidorPartidas } from '../manager/ServidorPartidas.js';
 import { Jugador } from '../domain/Jugador.js';
+import { Partida } from '../domain/Partida.js';
 import { MatchService } from './MatchService.js';
 import config from '../../config/config.js';
 import { Coordenada } from '../../interfaces.js';
@@ -259,7 +260,7 @@ export class GameService {
    * 
    * @param partida - Instancia de la partida.
    */
-  private comenzarJuegoReal(partida: any) {
+  private comenzarJuegoReal(partida: Partida) {
     const partidaId = partida.idPartida;
     partida.setEstado('jugando');
     partida.startTime = Date.now();
@@ -499,7 +500,7 @@ export class GameService {
    * @returns Objeto con ID de partida y resumen de jugadores si tiene éxito, o null.
    */
   public async reconnectPlayer(partidaId: string | undefined, jugadorDBId: number, nuevoSocketID: string) {
-    const buscarEnPartida = (p: any): Jugador | null => {
+    const buscarEnPartida = (p: Partida): Jugador | null => {
       for (const j of Array.from(p.jugadores.values()) as Jugador[]) {
         if (j.idDB === jugadorDBId) return j;
       }

@@ -13,6 +13,8 @@
 import React, { useEffect } from "react";
 import { useGameEvents } from "../hooks/useGameEvents";
 import { ResultadoPartida } from "./ResultadoPartida";
+import { TableroGrid } from "../components/TableroGrid";
+import { ScoreBoard } from "../components/ScoreBoard";
 import '../styles/Juego.css';
 
 interface JuegoProps {
@@ -27,22 +29,6 @@ interface JuegoProps {
   /** Función para salir de la partida. */
   onLeave: () => void;
 }
-
-// Mapeo de temáticas a iconos/emojis
-const THEME_ICONS: Record<string, Record<string, string>> = {
-  'Gemas': {
-    red: '🔴', blue: '🔵', green: '🟢', yellow: '🟡', purple: '🟣', orange: '🟠'
-  },
-  'Animales': {
-    red: '🐞', blue: '🐳', green: '🐸', yellow: '🐝', purple: '🦄', orange: '🦊'
-  },
-  'Frutas': {
-    red: '🍎', blue: '🫐', green: '🥝', yellow: '🍌', purple: '🍇', orange: '🍊'
-  },
-  'Monstruos': {
-    red: '👹', blue: '👾', green: '🧟', yellow: '💀', purple: '👿', orange: '🎃'
-  }
-};
 
 /**
  * Componente principal de la vista de juego.
@@ -200,7 +186,7 @@ export const Juego: React.FC<JuegoProps> = ({
 
         {/* Game Info Bar */}
         <div className="info-bar">
-          <span style={{ marginRight: '20px', color: '#fff' }}>Tema: {gameConfig?.tematica || 'Gemas'}</span>
+          <span className="info-item">Tema: {gameConfig?.tematica || 'Gemas'}</span>
           {gameConfig?.tipoJuego === 'Tiempo' && (
             <span>Tiempo: {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}</span>
           )}
@@ -222,88 +208,39 @@ export const Juego: React.FC<JuegoProps> = ({
               <div style={{textAlign: 'center'}}>
                 <h1 className="waiting-title">Partida Lista</h1>
                 {isHost ? (
-                   <p style={{color: '#fbbf24', fontSize: '24px', fontWeight: 'bold'}}>Presiona 'U' para iniciar</p>
+                   <p className="waiting-instruction">Presiona 'U' para iniciar</p>
                 ) : (
-                   <p style={{color: '#c4b5fd', fontSize: '20px'}}>Esperando al anfitrión...</p>
+                   <p className="waiting-subtitle">Esperando al anfitrión...</p>
                 )}
               </div>
            </div>
         )}
 
-        {/* Scoreboard */}
+        {/* Scoreboard & Tablero */}
         <div className="game-area">
-          <div className="score-panel">
-            <table className="score-table">
-              <thead>
-                <tr>
-                  <th className="score-header">Nombre</th>
-                  <th className="score-header">Puntaje</th>
-                </tr>
-              </thead>
-              <tbody>
-                {jugadores.map(j => (
-                  <tr
-                    key={j.socketID}
-                    className={j.nickname === currentUserNickname ? "current-user-row" : ""}
-                  >
-                    <td className="score-cell">{j.nickname}</td>
-                    <td className="score-cell">{j.puntaje ?? 0}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ScoreBoard 
+            jugadores={jugadores} 
+            currentUserNickname={currentUserNickname} 
+          />
 
-          {/* Tablero */}
-          <div className="board-container">
-            <div
-              className="board-grid"
-              style={{
-                gridTemplateRows: `repeat(${tablero.length}, 1fr)`,
-                gridTemplateColumns: `repeat(${tablero[0].length}, 1fr)`
-              }}
-            >
-              {tablero.map((row, r) =>
-                row.map((celda, c) => {
-                  const mySocketId = rawSocket?.()?.id;
-                  const isPropia = celda.seleccionadoPor === mySocketId;
-                  const isOtro = celda.seleccionadoPor && celda.seleccionadoPor !== mySocketId;
-
-                  // Determinar icono según temática
-                  const currentTheme = gameConfig?.tematica || 'Gemas';
-                  const iconSet = THEME_ICONS[currentTheme] || THEME_ICONS['Gemas'];
-                  const icon = iconSet[celda.colorID] || celda.colorID;
-
-                  return (
-                    <div
-                      key={`${r}-${c}`}
-                      className={`cell ${isPropia ? 'locked-by-me' : ''} ${isOtro ? 'locked-by-other' : ''}`}
-                      style={{
-                        backgroundColor: '#282c34', // Fondo neutro para resaltar el icono
-                        cursor: gameStatus === "active" ? "pointer" : "default",
-                        fontSize: '24px'
-                      }}
-                      onClick={() => handleCellClick(r, c)}
-                    >
-                      {icon}
-                      {isOtro && <div className="lock-icon">🔒</div>}
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
+          <TableroGrid
+            tablero={tablero}
+            onCellClick={handleCellClick}
+            gameStatus={gameStatus}
+            mySocketId={rawSocket?.()?.id}
+            theme={gameConfig?.tematica}
+          />
         </div>
 
         {gameStatus === "active" && (
-          <button onClick={handleMatch} className="match-button">
-            Hacer Match
-          </button>
+          <div className="button-container">
+            <button onClick={handleMatch} className="match-button">
+              ¡MATCH!
+            </button>
+          </div>
         )}
 
-        <button onClick={onLeave} className="leave-button">
-          Salir
-        </button>
+        <button onClick={onLeave} className="leave-button">Abandonar Partida</button>
       </div>
     </div>
   );

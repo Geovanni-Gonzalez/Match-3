@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # Base de datos MySQL
+  db:
+    image: mysql:8.0
+    container_name: match3_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: matchdb
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - match3-network
+
+  # Servidor Node.js (Backend)
+  server:
+    build: ./server
+    container_name: match3_server
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - DB_HOST=db
+      - DB_USER=user
+      - DB_PASSWORD=password
+      - DB_DATABASE=matchdb
+      - LOG_LEVEL=info
+    depends_on:
+      - db
+    networks:
+      - match3-network
+
+  # Cliente React (Frontend)
+  client:
+    build: ./client
+    container_name: match3_client
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - server
+    networks:
+      - match3-network
+
+volumes:
+  db_data:
+
+networks:
+  match3-network:
+    driver: bridge

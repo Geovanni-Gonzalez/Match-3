@@ -14,13 +14,11 @@ import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import '../styles/Bienvenida.css';
 
-import { API_URL } from '../config';
-
 /**
  * Componente de pantalla de bienvenida y login.
  */
 export const Bienvenida: React.FC = () => {
-  const { login } = useAuth();
+  const { login, apiUrl, isDetectingBackend } = useAuth();
   const [nickname, setNickname] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -41,10 +39,14 @@ export const Bienvenida: React.FC = () => {
     setIsLoading(true);
 
     try {
-      console.log("[Cliente] Registrando jugador... (v2)");
-      console.log("[Cliente] Usando API URL:", API_URL);
+      console.log("[Cliente] Registrando jugador...");
+      console.log("[Cliente] Usando API URL:", apiUrl);
 
-      const res = await axios.post(`${API_URL}/api/jugador/registrar`, { nickname });
+      const res = await axios.post(`${apiUrl}/api/jugador/registrar`, { nickname }, {
+        headers: {
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
       const jugadorId = res.data.jugadorId;
 
       console.log(`[Cliente] Jugador registrado con ID DB: ${jugadorId}`);
@@ -59,7 +61,7 @@ export const Bienvenida: React.FC = () => {
 
       const errMsg =
         axios.isAxiosError(err)
-          ? err.response?.data?.message || "Error en el servidor."
+          ? err.response?.data?.message || "Error en el servidor. ¿Está el servidor corriendo?"
           : "Error desconocido.";
 
       setError(errMsg);

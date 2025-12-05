@@ -6,9 +6,9 @@
  * a toda la aplicación. Maneja el ciclo de vida de la conexión (login/logout).
  */
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { API_URL } from '../config';
+import { detectBackendUrl, getApiUrl } from '../config';
 
 // --- 1. INTERFACES DE TIPOS ---
 
@@ -31,6 +31,10 @@ interface AuthContextType {
     isAuthenticated: boolean;
     /** Instancia global del socket conectado. */
     socket: Socket | null; 
+    /** URL del backend detectada */
+    apiUrl: string;
+    /** Si la detección del backend está en progreso */
+    isDetectingBackend: boolean;
     /** Función para iniciar sesión y conectar socket. */
     login: (nickname: string, idDB: number) => Promise<void>;
     /** Función para cerrar sesión y desconectar socket. */
@@ -55,7 +59,27 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
     const [socket, setSocket] = useState<Socket | null>(null);
+    const [apiUrl, setApiUrl] = useState<string>('http://localhost:4000');
+    const [isDetectingBackend, setIsDetectingBackend] = useState<boolean>(true);
     const isAuthenticated = currentUser !== null;
+
+    // Detectar backend automáticamente al iniciar
+    useEffect(() => {
+        const detect = async () => {
+            setIsDetectingBackend(true);
+            try {
+                const detectedUrl = await detectBackendUrl();
+                setApiUrl(detectedUrl);
+                console.log(`[Auth] Backend detectado: ${detectedUrl}`);
+            } catch (error) {
+                console.error('[Auth] Error detectando backend:', error);
+                setApiUrl('http://localhost:4000');
+            } finally {
+                setIsDetectingBackend(false);
+            }
+        };
+        detect();
+    }, []);
 
     /**
      * Inicia la conexión con el servidor Socket.IO y establece la sesión.
@@ -63,17 +87,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
      * @param idDB - ID del usuario en base de datos.
      */
     const login = async (nickname: string, idDB: number) => {
+        const currentApiUrl = getApiUrl();
+        
         return new Promise<void>((resolve, reject) => {
-            // Conectamos al servidor real en el puerto 4000
-            // "ngrok-skip-browser-warning" evita la página de advertencia de Ngrok que rompe el socket
-            const newSocket = io(API_URL, {
+            // Conectamos al servidor detectado
+            // "ngrok-skip-browser-warning" evita la página de advertencia de Ngrok
+            const newSocket = io(currentApiUrl, {
                 extraHeaders: {
                     "ngrok-skip-browser-warning": "true"
                 }
             });
 
             newSocket.on('connect', () => {
-                console.log(`[Auth] Conectado al servidor con ID: ${newSocket.id}`);
+                console.log(`[Auth] Conectado al servidor (${currentApiUrl}) con ID: ${newSocket.id}`);
                 
                 // Guardamos el socket y el usuario en el estado
                 setSocket(newSocket);
@@ -104,6 +130,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         currentUser,
         isAuthenticated,
         socket,
+        apiUrl,
+        isDetectingBackend,
         login,
         logout,
     };

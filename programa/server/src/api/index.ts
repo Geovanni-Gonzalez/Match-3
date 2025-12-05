@@ -21,4 +21,13 @@ router.get('/', (_, res) => {
     res.json({ message: 'API Match-3 OK' });
 });
 
+// Health check endpoint para detección automática
+router.get('/health', (_, res) => {
+    res.json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development'
+    });
+});
+
 export default router;
