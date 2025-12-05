@@ -1,0 +1,89 @@
+:root {
+  /* --- COLORS: PRIMARY (Purple/Indigo) --- */
+  --color-primary-dark: #1e1b4b;
+  --color-primary-medium: #312e81;
+  --color-primary-light: #4c1d95;
+  --color-accent-1: #6d28d9;
+  --color-accent-2: #7c3aed;
+  --color-accent-3: #8b5cf6;
+  --color-accent-4: #a78bfa;
+  --color-accent-5: #c4b5fd;
+  --color-accent-6: #ddd6fe;
+
+  /* --- COLORS: FUNCTIONAL --- */
+  --color-success: #10b981;
+  --color-success-dark: #059669;
+  --color-success-light: #d1fae5;
+  
+  --color-danger: #ef4444;
+  --color-danger-dark: #b91c1c;
+  --color-danger-light: #fecaca;
+
+  --color-warning: #f59e0b;
+  --color-warning-dark: #d97706;
+  --color-warning-light: #fcd34d;
+
+  --color-info: #06b6d4;
+  --color-info-dark: #0e7490;
+  
+  --color-text-main: #e0e7ff;
+  --color-text-muted: #94a3b8;
+  --color-white: #ffffff;
+
+  /* --- GRADIENTS --- */
+  --gradient-bg: linear-gradient(135deg, #1e1b4b 0%, #312e81 15%, #4c1d95 30%, #5b21b6 45%, #6d28d9 60%, #7c3aed 75%, #8b5cf6 90%, #a78bfa 100%);
+  --gradient-card: linear-gradient(rgba(30, 27, 75, 0.85), rgba(30, 27, 75, 0.9));
+  --gradient-border: linear-gradient(135deg, #7c3aed, #8b5cf6, #a78bfa, #c4b5fd);
+  --gradient-text-gold: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  --gradient-text-purple: linear-gradient(135deg, #a78bfa 0%, #c4b5fd 50%, #ddd6fe 100%);
+  
+  --gradient-btn-green: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+  --gradient-btn-red: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%);
+  --gradient-btn-blue: linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #0e7490 100%);
+  --gradient-btn-orange: linear-gradient(135deg, #ea580c 0%, #c2410c 50%, #9a3412 100%);
+
+  /* --- SHADOWS --- */
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 10px 40px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 30px 90px rgba(0, 0, 0, 0.6);
+  --shadow-glow-purple: 0 0 60px rgba(139, 92, 246, 0.4);
+  --shadow-glow-gold: 0 0 30px rgba(251, 191, 36, 0.6);
+
+  /* --- BORDERS --- */
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 35px;
+  --border-glass: 1px solid rgba(167, 139, 250, 0.3);
+
+  /* --- ANIMATIONS --- */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+  --transition-bounce: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* --- GLOBAL KEYFRAMES (Reusable) --- */
+@keyframes gradientFlow {
+  0% { background-position: 0% 50%; }
+  25% { background-position: 50% 100%; }
+  50% { background-position: 100% 50%; }
+  75% { background-position: 50% 0%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes particleFloat {
+  0% { transform: translateY(0) scale(0.5); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(-100vh) scale(1.2); opacity: 0; }
+}
+
+@keyframes cardEntrance {
+  0% { transform: scale(0.9) translateY(30px); opacity: 0; }
+  50% { transform: scale(1.01) translateY(-3px); }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}

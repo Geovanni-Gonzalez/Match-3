@@ -14,6 +14,8 @@ import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 
 // IMPORTANTE: importar rutas y sockets siempre con extensión .js (por NodeNext)
 import apiRoutes from './api/index.js';
@@ -25,6 +27,20 @@ import { GameService } from './core/services/GameService.js';
 import { TimerManager } from './core/manager/TimerManager.js';
 
 const app = express();
+
+// ----------------------
+// Security Middleware
+// ----------------------
+app.use(helmet());
+
+// Rate Limiting: 100 requests per 15 minutes
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+app.use('/api', limiter);
 
 // ----------------------
 // CORS – Configuración dinámica para localhost y Ngrok

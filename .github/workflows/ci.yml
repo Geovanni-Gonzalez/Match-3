@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: '**/package-lock.json'
+
+    # --- SERVER ---
+    - name: Install Server Dependencies
+      run: |
+        cd programa/server
+        npm ci
+
+    - name: Lint Server
+      run: |
+        cd programa/server
+        npm run lint
+
+    - name: Test Server
+      run: |
+        cd programa/server
+        npm test
+
+    - name: Build Server
+      run: |
+        cd programa/server
+        npm run build
+
+    # --- CLIENT ---
+    - name: Install Client Dependencies
+      run: |
+        cd programa/client
+        npm ci
+
+    # (Optional) Lint Client if script exists
+    # - name: Lint Client
+    #   run: |
+    #     cd programa/client
+    #     npm run lint
+
+    - name: Test Client
+      run: |
+        cd programa/client
+        npm test -- --watchAll=false
+
+    - name: Build Client
+      run: |
+        cd programa/client
+        npm run build
