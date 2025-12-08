@@ -13,6 +13,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../context/AuthContext";
 import { SocketService, PartidaListItem } from "../services/SocketService";
+import { Loading } from "../components/Loading";
 import '../styles/LobbyPartidas.css';
 
 interface LobbyPartidasProps {
@@ -181,7 +182,7 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
 
         <h3 className="lobby-subtitle">📋 Lista de partidas:</h3>
 
-        {loading && <p className="loading-text">⏳ Cargando partidas...</p>}
+        {loading && <Loading fullScreen={false} message="Buscando partidas" />}
         {error && <p className="error-text">❌ Error: {error}</p>}
 
         {!loading && !error && partidas.length === 0 && (

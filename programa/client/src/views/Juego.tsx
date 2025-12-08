@@ -15,6 +15,7 @@ import { useGameEvents } from "../hooks/useGameEvents";
 import { ResultadoPartida } from "./ResultadoPartida";
 import { TableroGrid } from "../components/TableroGrid";
 import { ScoreBoard } from "../components/ScoreBoard";
+import { Loading } from "../components/Loading";
 import '../styles/Juego.css';
 
 interface JuegoProps {
@@ -59,6 +60,12 @@ export const Juego: React.FC<JuegoProps> = ({
   } = useGameEvents(partidaId, initialTablero, initialConfig);
 
   const isHost = jugadores.find(j => j.nickname === currentUserNickname)?.isHost;
+
+  // Contar celdas seleccionadas por el usuario actual
+  const mySocketId = rawSocket?.()?.id;
+  const selectedCellsCount = tablero?.reduce((count, row) =>
+    count + row.filter(cell => cell.seleccionadoPor === mySocketId).length, 0
+  ) ?? 0;
 
   // ---- CALLBACKS ----
 
@@ -146,14 +153,7 @@ export const Juego: React.FC<JuegoProps> = ({
   }
 
   if (!tablero || tablero.length === 0) {
-    return (
-      <div className="juego-container">
-        <div className="juego-background"></div>
-        <div className="juego-card">
-          <h1 className="juego-title">Cargando partida...</h1>
-        </div>
-      </div>
-    );
+    return <Loading message="Sincronizando tablero" />;
   }
 
   return (
@@ -181,6 +181,9 @@ export const Juego: React.FC<JuegoProps> = ({
         <div className="info-bar">
           <span className="info-item">
             <span>🎨</span> {gameConfig?.tematica || 'Gemas'}
+          </span>
+          <span className="info-item">
+            <span>🏆</span> {jugadores.find(j => j.nickname === currentUserNickname)?.puntaje || 0}
           </span>
           {gameConfig?.tipoJuego === 'Tiempo' && (
             <span className="info-item">
@@ -215,48 +218,75 @@ export const Juego: React.FC<JuegoProps> = ({
       </div>
 
       {/* RIGHT PANEL: ACTIONS */}
-      <div className="game-right-panel">
+      <div className="game-right-panel" role="complementary" aria-label="Controles del juego">
         {gameStatus === "active" && (
-          <button onClick={handleMatch} className="match-button">
-            MATCH
-          </button>
+          <div className="match-button-container">
+            <button
+              onClick={handleMatch}
+              className="match-button"
+              aria-label="Activar match con celdas seleccionadas"
+              title="Presiona para validar tu selección"
+              disabled={selectedCellsCount < 3}
+            >
+              <span className="match-text">MATCH</span>
+              {selectedCellsCount > 0 && (
+                <span className="selection-counter" aria-live="polite">
+                  {selectedCellsCount}
+                </span>
+              )}
+            </button>
+            {selectedCellsCount > 0 && selectedCellsCount < 3 && (
+              <span className="selection-hint">Selecciona al menos 3</span>
+            )}
+          </div>
         )}
 
-        <button onClick={onLeave} className="leave-button">
-          Abandonar
+        <button
+          onClick={onLeave}
+          className="leave-button"
+          aria-label="Abandonar partida"
+          title="Salir de la partida actual"
+        >
+          🚪 Abandonar
         </button>
       </div>
 
       {/* NOTIFICATIONS & OVERLAYS */}
       {notification && (
-        <div className="notification" style={{
-          backgroundColor: notification.type === 'error' ? 'rgba(239, 68, 68, 0.9)' : 'rgba(16, 185, 129, 0.9)',
-          borderColor: notification.type === 'error' ? '#dc2626' : '#059669',
-          color: 'white'
-        }}>
-          {notification.type === 'error' ? '⚠️' : '✅'} {notification.message}
+        <div
+          className={`notification notification-${notification.type}`}
+          role="alert"
+          aria-live="assertive"
+        >
+          <span className="notification-icon">
+            {notification.type === 'error' ? '⚠️' : notification.type === 'success' ? '✅' : 'ℹ️'}
+          </span>
+          <span className="notification-message">{notification.message}</span>
         </div>
       )}
 
       {/* Countdown Overlay */}
       {countdown !== null && (
-        <div className="overlay">
-          <h1 className="countdown-number">{countdown}</h1>
+        <div className="overlay" role="dialog" aria-label="Cuenta regresiva">
+          <h1 className="countdown-number" aria-live="polite">{countdown}</h1>
+          <p className="countdown-subtitle">¡Prepárate!</p>
         </div>
       )}
 
       {/* Waiting for start Overlay */}
       {gameStatus === 'ready_to_start' && countdown === null && (
-        <div className="overlay">
-          <h1 className="waiting-title">Partida Lista</h1>
+        <div className="overlay" role="dialog" aria-label="Esperando inicio">
+          <h1 className="waiting-title">🎮 Partida Lista</h1>
           {isHost ? (
             <div style={{ textAlign: 'center' }}>
-              <p className="waiting-instruction">Presiona 'U' para iniciar</p>
-              <p style={{ color: '#94a3b8', marginTop: '10px' }}>o espera a los demás jugadores</p>
+              <p className="waiting-instruction" role="status">
+                <kbd className="key-badge">U</kbd> Presiona para iniciar
+              </p>
+              <p className="waiting-subtitle">o espera a los demás jugadores</p>
             </div>
           ) : (
-            <p className="waiting-instruction" style={{ borderColor: '#6366f1', color: '#818cf8' }}>
-              Esperando al anfitrión...
+            <p className="waiting-instruction non-host" role="status">
+              ⏳ Esperando al anfitrión...
             </p>
           )}
         </div>

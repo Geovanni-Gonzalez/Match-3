@@ -78,9 +78,13 @@ export const ResultadoPartida: React.FC<ResultadoPartidaProps> = ({
 
         {/* Mensaje de Resultado Personal */}
         {currentUserResult && (
-          <div className="personal-result">
+          <div className="personal-result" role="status" aria-live="polite">
+            <span className="personal-icon">
+              {currentUserResult.posicion === 1 ? '🏆' : currentUserResult.posicion <= 3 ? '🎉' : '🎯'}
+            </span>
             <span className="personal-text">Tu Posición: </span>
             <span className="personal-rank">{currentUserResult.posicion}°</span>
+            <span className="personal-score">{currentUserResult.puntaje} pts</span>
           </div>
         )}
 
@@ -95,14 +99,22 @@ export const ResultadoPartida: React.FC<ResultadoPartidaProps> = ({
               </tr>
             </thead>
             <tbody>
-              {resultadosOrdenados.map((resultado) => (
+              {resultadosOrdenados.map((resultado, index) => (
                 <tr
                   key={resultado.nickname}
-                  className={resultado.isCurrentUser ? "current-user-row" : ""}
+                  className={`score-row ${resultado.isCurrentUser ? "current-user-row" : ""}`}
+                  style={{ animationDelay: `${0.1 * index}s` }}
+                  aria-current={resultado.isCurrentUser ? "true" : undefined}
                 >
-                  <td className="table-cell position-cell">{resultado.posicion}°</td>
-                  <td className="table-cell">{resultado.nickname}</td>
-                  <td className="table-cell">{resultado.puntaje}</td>
+                  <td className="table-cell position-cell">
+                    {resultado.posicion === 1 && <span className="winner-crown">👑</span>}
+                    {resultado.posicion === 1 ? '🥇' : resultado.posicion === 2 ? '🥈' : resultado.posicion === 3 ? '🥉' : `${resultado.posicion}°`}
+                  </td>
+                  <td className="table-cell name-cell">
+                    {resultado.nickname}
+                    {resultado.isCurrentUser && <span className="you-badge">TÚ</span>}
+                  </td>
+                  <td className="table-cell score-cell">{resultado.puntaje}</td>
                 </tr>
               ))}
 
@@ -122,8 +134,9 @@ export const ResultadoPartida: React.FC<ResultadoPartidaProps> = ({
         <button
           onClick={onContinue}
           className="continue-button"
+          aria-label="Volver al menú principal"
         >
-          Continuar
+          ✨ Continuar
         </button>
       </div>
     </div>
