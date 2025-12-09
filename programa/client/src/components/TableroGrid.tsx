@@ -4,7 +4,7 @@
  * Muestra las celdas con sus iconos correspondientes según la temática y
  * gestiona visualmente los estados de selección y bloqueo.
  */
-import React from 'react';
+import React, { memo } from 'react';
 import '../styles/TableroGrid.css';
 
 // Mapeo de temáticas a iconos/emojis
@@ -31,7 +31,7 @@ interface TableroGridProps {
   theme?: string;
 }
 
-export const TableroGrid: React.FC<TableroGridProps> = ({
+const TableroGridComponent: React.FC<TableroGridProps> = ({
   tablero,
   onCellClick,
   gameStatus,
@@ -75,3 +75,14 @@ export const TableroGrid: React.FC<TableroGridProps> = ({
     </div>
   );
 };
+
+// Optimización con React.memo para evitar re-renders innecesarios
+export const TableroGrid = memo(TableroGridComponent, (prevProps, nextProps) => {
+  // Solo re-renderizar si cambia el tablero, gameStatus o mySocketId
+  return (
+    prevProps.tablero === nextProps.tablero &&
+    prevProps.gameStatus === nextProps.gameStatus &&
+    prevProps.mySocketId === nextProps.mySocketId &&
+    prevProps.theme === nextProps.theme
+  );
+});

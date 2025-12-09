@@ -54,11 +54,11 @@ export class GameService {
       if (players.length >= 2) {
         // Si hay suficientes jugadores, iniciar la partida automáticamente
         console.log(`[GameService] Tiempo de espera agotado para partida ${matchId}. Iniciando con ${players.length} jugadores.`);
-        
+
         // 1. Preparar la partida (cambia estado a 'ready_to_start' y notifica clientes)
         // Pasamos undefined como socketID para indicar que es una acción del sistema
         this.prepararPartida(matchId);
-        
+
         // 2. Iniciar la cuenta regresiva
         this.iniciarPartida(matchId);
       } else {
@@ -101,7 +101,7 @@ export class GameService {
     // Configurar timer de expiración
     TimerManager.getInstance().startTimer(idPartida, config.TIEMPO_VIDA_PARTIDA_MIN * 60, () =>
       this.handleMatchExpiration(idPartida)
-    , 'lobby');
+      , 'lobby');
 
     this.emitirListaPartidas(); // Notificar al lobby
 
@@ -132,6 +132,11 @@ export class GameService {
     const partida = this.servidor.obtenerPartida(idPartida);
     if (!partida) throw new Error('Partida no encontrada');
 
+    // Verificar si el jugador ya está en la partida
+    if (partida.tieneJugadorPorDBId(jugadorDBId)) {
+      throw new Error('Ya estás en esta partida');
+    }
+
     const nuevoJugador = new Jugador(nickname, jugadorDBId, socketID);
     partida.agregarJugador(nuevoJugador);
 
@@ -147,6 +152,7 @@ export class GameService {
 
     return nuevoJugador;
   }
+
 
   /**
    * Elimina una partida de la memoria del servidor y limpia sus timers asociados.
@@ -286,7 +292,7 @@ export class GameService {
     if (partida.tipoJuego === 'Tiempo') {
       // Usar el tiempo configurado o por defecto 3 minutos
       const duracionMinutos = partida.duracionPartida || 3;
-      const duracionSegundos = duracionMinutos * 60; 
+      const duracionSegundos = duracionMinutos * 60;
       TimerManager.getInstance().startTimer(partidaId, duracionSegundos, () => {
         console.log(`[GameService] Tiempo de juego agotado para ${partidaId}`);
         this.finalizarPartida(partidaId);
@@ -393,7 +399,7 @@ export class GameService {
     if (partida.tipoJuego === 'Match') {
       const limite = config.MATCH_FINITO_LIMITE || 100;
       const matchesRestantes = Math.max(0, limite - partida.matchesRealizados);
-      
+
       this.io.to(partidaId).emit('game:match_update', { matchesLeft: matchesRestantes });
 
       if (partida.matchesRealizados >= limite) {
@@ -467,6 +473,7 @@ export class GameService {
   /**
    * Maneja la desconexión de un socket.
    * Marca al jugador como desconectado y actualiza el estado de la partida.
+   * Si el host se desconecta durante la fase de espera, elimina la partida completa.
    * Si la partida queda vacía, la elimina.
    * 
    * @param socketID - ID del socket desconectado.
@@ -475,15 +482,33 @@ export class GameService {
     for (const [id, partida] of this.servidor.partidasActivas.entries()) {
       if (partida.jugadores.has(socketID)) {
         const jugador = partida.obtenerJugador(socketID)!;
+        const esHost = partida.hostSocketID === socketID;
+        const enEspera = partida.estado === 'espera';
+
         jugador.conectado = false;
         partida.removerJugador(socketID);
 
-        this.io.to(id).emit('players_update', partida.getJugadoresResumen());
-        this.emitirListaPartidas(); // Actualizar lobby si alguien se desconecta de una partida en espera
+        // Si el host se desconecta durante la fase de espera, eliminar la partida completa
+        if (esHost && enEspera) {
+          console.log(`[GameService] Host desconectado de partida ${id} en espera. Eliminando partida.`);
 
-        if (partida.jugadores.size === 0) {
-          this.servidor.eliminarPartida(id);
-          this.emitirListaPartidas(); // Actualizar lobby si se elimina
+          // Notificar a todos los jugadores restantes que la partida fue cancelada
+          this.io.to(id).emit('partida:host_left', {
+            message: 'El anfitrión ha abandonado la partida. La sala ha sido cerrada.'
+          });
+
+          // Eliminar la partida
+          this.eliminarPartida(id);
+        } else {
+          // Comportamiento normal: actualizar jugadores
+          this.io.to(id).emit('players_update', partida.getJugadoresResumen());
+          this.emitirListaPartidas(); // Actualizar lobby si alguien se desconecta de una partida en espera
+
+          // Si la partida queda vacía, eliminarla
+          if (partida.jugadores.size === 0) {
+            this.servidor.eliminarPartida(id);
+            this.emitirListaPartidas(); // Actualizar lobby si se elimina
+          }
         }
         break;
       }

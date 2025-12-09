@@ -18,7 +18,7 @@ import '../styles/Bienvenida.css';
  * Componente de pantalla de bienvenida y login.
  */
 export const Bienvenida: React.FC = () => {
-  const { login, apiUrl, isDetectingBackend } = useAuth();
+  const { login, apiUrl } = useAuth();
   const [nickname, setNickname] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);

@@ -62,11 +62,11 @@ export class Partida {
     public agregarJugador(jugador: Jugador) {
         if (this.estado !== 'espera') throw new Error('No se puede unir: partida ya iniciada');
         if (this.jugadores.size >= this.numJugadoresMax) throw new Error('Sala llena');
-        
+
         if (this.jugadores.size === 0) {
             this.hostSocketID = jugador.socketID;
         }
-        
+
         this.jugadores.set(jugador.socketID, jugador);
     }
 
@@ -132,11 +132,21 @@ export class Partida {
      */
     public getJugadoresResumen() {
         return Array.from(this.jugadores.values()).map(j => ({
-        nickname: j.nickname,
-        socketID: j.socketID,
-        isReady: j.isReady,
-        puntaje: j.puntaje,
-        isHost: j.socketID === this.hostSocketID
+            nickname: j.nickname,
+            socketID: j.socketID,
+            isReady: j.isReady,
+            puntaje: j.puntaje,
+            isHost: j.socketID === this.hostSocketID
         }));
+    }
+
+    /**
+     * Verifica si un jugador con el ID de base de datos especificado ya está en la partida.
+     * 
+     * @param jugadorDBId - ID del jugador en la base de datos.
+     * @returns true si el jugador ya está en la partida, false en caso contrario.
+     */
+    public tieneJugadorPorDBId(jugadorDBId: number): boolean {
+        return Array.from(this.jugadores.values()).some(j => j.jugadorDBId === jugadorDBId);
     }
 }

@@ -11,6 +11,9 @@ import { PartidaRepo } from '../core/repositories/PartidaRepo.js';
 import { v4 as uuidv4 } from 'uuid';
 import { GameService } from '../core/services/GameService.js';
 import { GameConfig } from '../types/shared.js';
+import { validateBody } from '../utils/validate.middleware.js';
+import { crearPartidaSchema, agregarJugadorSchema } from '../utils/validation.schemas.js';
+import Logger from '../utils/Logger.js';
 
 const router = Router();
 let gameService: GameService;
@@ -37,7 +40,7 @@ const ensureGameService = (req: Request, res: Response, next: NextFunction) => {
  * @route POST /api/partida/crear_partida
  * @description Crea una nueva partida en el sistema.
  */
-router.post('/crear_partida', ensureGameService, async (req: Request, res: Response) => {
+router.post('/crear_partida', ensureGameService, validateBody(crearPartidaSchema), async (req: Request, res: Response) => {
   const { tipoJuego, tematica, numJugadoresMax, duracion } = req.body as GameConfig;
 
   if (!tipoJuego || !tematica || !numJugadoresMax) {
@@ -48,7 +51,12 @@ router.post('/crear_partida', ensureGameService, async (req: Request, res: Respo
     const codigoPartida = uuidv4().split('-')[0].toUpperCase();
     await gameService.crearPartida(codigoPartida, tipoJuego, tematica, numJugadoresMax, duracion);
 
-    console.log('[API][Partida] Partida creada con ID:', codigoPartida);
+    Logger.info('[API][Partida] Partida creada', {
+      codigoPartida,
+      tipoJuego,
+      tematica,
+      numJugadoresMax
+    });
     return res.status(201).json({
       message: 'Partida creada exitosamente',
       codigoPartida,
@@ -65,7 +73,7 @@ router.post('/crear_partida', ensureGameService, async (req: Request, res: Respo
 /**
  * @route POST /api/partida/agregar_jugador
  */
-router.post('/agregar_jugador', async (req: Request, res: Response) => {
+router.post('/agregar_jugador', validateBody(agregarJugadorSchema), async (req: Request, res: Response) => {
   const { codigoPartida, jugadorId } = req.body;
   if (!codigoPartida || !jugadorId) {
     return res.status(400).json({ message: 'Datos inválidos para agregar jugador a partida.' });

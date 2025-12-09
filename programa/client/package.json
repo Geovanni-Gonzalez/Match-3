@@ -26,8 +26,13 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:coverage": "react-scripts test --coverage --watchAll=false",
     "eject": "react-scripts eject",
-    "lint": "eslint src/**/*.{ts,tsx}"
+    "lint": "eslint src/**/*.{ts,tsx}",
+    "lint:fix": "eslint src/**/*.{ts,tsx} --fix",
+    "format": "prettier --write src/**/*.{ts,tsx,css}",
+    "format:check": "prettier --check src/**/*.{ts,tsx,css}",
+    "prepare": "cd ../.. && husky install programa/client/.husky"
   },
   "eslintConfig": {
     "extends": [
@@ -50,9 +55,33 @@
   "jest": {
     "transformIgnorePatterns": [
       "node_modules/(?!(axios)/)"
-    ]
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.{ts,tsx}",
+      "!src/**/*.d.ts",
+      "!src/index.tsx"
+    ],
+    "coverageThresholds": {
+      "global": {
+        "branches": 50,
+        "functions": 50,
+        "lines": 50,
+        "statements": 50
+      }
+    }
   },
   "devDependencies": {
-    "@types/jest": "^30.0.0"
+    "@types/jest": "^30.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.css": [
+      "prettier --write"
+    ]
   }
 }

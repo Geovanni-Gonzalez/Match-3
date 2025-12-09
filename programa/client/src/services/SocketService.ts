@@ -7,7 +7,7 @@
  */
 
 import { Socket } from 'socket.io-client';
-import { Jugador, Celda } from '../types/shared';
+import { Jugador } from '../types/shared';
 
 // Re-exportar para compatibilidad si es necesario, o refactorizar consumidores
 export type JugadorData = Jugador;
@@ -125,6 +125,11 @@ export class SocketService {
   public onPartidaDeleted(callback: (data: { partidaId: string }) => void) {
     this.socket.on("partida:deleted_due_timeout", callback);
     return () => this.socket.off("partida:deleted_due_timeout", callback);
+  }
+
+  public onHostLeft(callback: (data: { message: string }) => void) {
+    this.socket.on("partida:host_left", callback);
+    return () => this.socket.off("partida:host_left", callback);
   }
 
   public onTimerTick(callback: (data: { secondsLeft: number, partidaId: string, type?: string }) => void) {

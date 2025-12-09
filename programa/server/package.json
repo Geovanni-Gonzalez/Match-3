@@ -10,8 +10,11 @@
     "dev": "tsx watch src/index.ts",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
     "format": "prettier --write src/**/*.ts",
-    "ngrok": "node scripts/start-ngrok.js"
+    "format:check": "prettier --check src/**/*.ts",
+    "ngrok": "node scripts/start-ngrok.js",
+    "prepare": "cd ../.. && husky install programa/server/.husky"
   },
   "keywords": [],
   "author": "",
@@ -22,6 +25,7 @@
     "express": "^4.18.2",
     "express-rate-limit": "^8.2.1",
     "helmet": "^8.1.0",
+    "joi": "^18.0.2",
     "mysql2": "^3.15.3",
     "ngrok": "^5.0.0-beta.2",
     "socket.io": "^4.7.2",
@@ -40,11 +44,19 @@
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
+    "husky": "^9.1.7",
     "jest": "^30.2.0",
+    "lint-staged": "^15.2.0",
     "nodemon": "^3.0.1",
     "prettier": "^3.7.4",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ]
   }
 }

@@ -116,7 +116,7 @@ export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][
       setTimeout(() => setNotification(null), 3000);
     });
 
-    const unsubCellBlocked = service.onCellBlocked(({ by }) => {
+    const unsubCellBlocked = service.onCellBlocked(({ by: _by }) => {
       setNotification({ message: "Celda bloqueada por otro jugador", type: "error" });
       setTimeout(() => setNotification(null), 2000);
     });
@@ -175,8 +175,13 @@ export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][
       }
     });
 
+    const unsubHostLeft = service.onHostLeft(({ message }) => {
+      setError(message);
+      setGameStatus("errored");
+    });
+
     const unsubPlayerStatus = service.onPlayerStatusChanged(({ socketID, isReady }) => {
-      setJugadores(prev => prev.map(j => 
+      setJugadores(prev => prev.map(j =>
         j.socketID === socketID ? { ...j, isReady } : j
       ));
     });
@@ -206,6 +211,7 @@ export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][
       unsubPartidaDeleted();
       unsubPlayerStatus();
       unsubForceNavigate();
+      unsubHostLeft();
     };
   }, [service, partidaId, gameStatus]);
 
@@ -238,5 +244,6 @@ export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][
     onAllPlayersReady: service?.onAllPlayersReady.bind(service),
     requestEnterGame: (pid: string) => service?.requestEnterGame(pid),
     onForceNavigateGame: service?.onForceNavigateGame.bind(service),
+    onHostLeft: service?.onHostLeft.bind(service),
   };
 };

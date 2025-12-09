@@ -14,10 +14,11 @@ import { LobbyPartidas } from './views/LobbyPartidas';
 import { CrearPartida } from './views/CrearPartida';
 import { RankingHistorico } from './views/RankingHistorico';
 import { SalaDeEspera } from './views/SalaDeEspera';
-import { Juego } from './views/Juego';
 import { useAuth } from './context/AuthContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles/App.css';
 import { Celda } from './types/shared';
+import { Juego } from './views/Juego';
 
 const App: React.FC = () => {
   const { currentUser, logout } = useAuth();
@@ -50,70 +51,72 @@ const App: React.FC = () => {
           timeout={300}
         >
           <div ref={nodeRef} className="page-transition-wrapper">
-            <Routes location={location}>
-              <Route path="/" element={
-                currentUser ? <Navigate to="/menu" replace /> : <Bienvenida />
-              } />
+            <ErrorBoundary>
+              <Routes location={location}>
+                <Route path="/" element={
+                  currentUser ? <Navigate to="/menu" replace /> : <Bienvenida />
+                } />
 
-              <Route path="/menu" element={
-                <ProtectedRoute>
-                  <MenuPrincipal
-                    currentUser={currentUser!}
-                    onLogout={handleLogout}
-                    onNavigate={(view) => {
-                      if (view === 'lobby') navigate('/lobby');
-                      if (view === 'create_game') navigate('/crear');
-                      if (view === 'ranking') navigate('/ranking');
-                    }}
-                  />
-                </ProtectedRoute>
-              } />
+                <Route path="/menu" element={
+                  <ProtectedRoute>
+                    <MenuPrincipal
+                      currentUser={currentUser!}
+                      onLogout={handleLogout}
+                      onNavigate={(view) => {
+                        if (view === 'lobby') navigate('/lobby');
+                        if (view === 'create_game') navigate('/crear');
+                        if (view === 'ranking') navigate('/ranking');
+                      }}
+                    />
+                  </ProtectedRoute>
+                } />
 
-              <Route path="/lobby" element={
-                <ProtectedRoute>
-                  <LobbyPartidas
-                    onBack={() => navigate('/menu')}
-                    onJoinSuccess={(id) => navigate(`/sala/${id}`)}
-                  />
-                </ProtectedRoute>
-              } />
+                <Route path="/lobby" element={
+                  <ProtectedRoute>
+                    <LobbyPartidas
+                      onBack={() => navigate('/menu')}
+                      onJoinSuccess={(id) => navigate(`/sala/${id}`)}
+                    />
+                  </ProtectedRoute>
+                } />
 
-              <Route path="/crear" element={
-                <ProtectedRoute>
-                  <CrearPartida
-                    onBack={() => navigate('/menu')}
-                    onCreateSuccess={(id) => navigate(`/sala/${id}`)}
-                  />
-                </ProtectedRoute>
-              } />
+                <Route path="/crear" element={
+                  <ProtectedRoute>
+                    <CrearPartida
+                      onBack={() => navigate('/menu')}
+                      onCreateSuccess={(id) => navigate(`/sala/${id}`)}
+                    />
+                  </ProtectedRoute>
+                } />
 
-              <Route path="/ranking" element={
-                <ProtectedRoute>
-                  <RankingHistorico onBack={() => navigate('/menu')} />
-                </ProtectedRoute>
-              } />
+                <Route path="/ranking" element={
+                  <ProtectedRoute>
+                    <RankingHistorico onBack={() => navigate('/menu')} />
+                  </ProtectedRoute>
+                } />
 
-              <Route path="/sala/:partidaId" element={
-                <ProtectedRoute>
-                  <SalaDeEsperaWrapper
-                    onLeave={() => navigate('/menu')}
-                    onStartGame={handleStartGame}
-                  />
-                </ProtectedRoute>
-              } />
+                <Route path="/sala/:partidaId" element={
+                  <ProtectedRoute>
+                    <SalaDeEsperaWrapper
+                      onLeave={() => navigate('/menu')}
+                      onStartGame={handleStartGame}
+                    />
+                  </ProtectedRoute>
+                } />
 
-              <Route path="/juego/:partidaId" element={
-                <ProtectedRoute>
-                  <JuegoWrapper
-                    initialTablero={initialBoard}
-                    initialConfig={initialConfig}
-                    onLeave={() => navigate('/menu')}
-                  />
-                </ProtectedRoute>
-              } />
+                <Route path="/juego/:partidaId" element={
+                  <ProtectedRoute>
+                    <JuegoWrapper
+                      initialTablero={initialBoard}
+                      initialConfig={initialConfig}
+                      onLeave={() => navigate('/menu')}
+                    />
+                  </ProtectedRoute>
+                } />
 
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </ErrorBoundary>
           </div>
         </CSSTransition>
       </TransitionGroup>

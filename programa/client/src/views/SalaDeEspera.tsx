@@ -40,11 +40,11 @@ export const SalaDeEspera: React.FC<Props> = ({
     requestEnterGame,
     onAllPlayersReady,
     maxPlayers,
-    onForceNavigateGame
+    onForceNavigateGame,
+    onHostLeft
   } = useGameEvents(partidaId);
 
   const [isReadyLocal, setIsReadyLocal] = useState(false);
-  const [showTimeoutNotification, setShowTimeoutNotification] = useState(false);
 
   // ----------------------------
   // TIMER LOCAL (ANIMACIN)
@@ -88,6 +88,19 @@ export const SalaDeEspera: React.FC<Props> = ({
     });
     return () => { unsub(); };
   }, [onForceNavigateGame, onStartGame, partidaId]);
+
+  // Manejar cuando el host abandona la partida
+  useEffect(() => {
+    if (!onHostLeft) return;
+
+    const unsub = onHostLeft(({ message }) => {
+      console.log("[SalaDeEspera] Host ha abandonado:", message);
+      alert(message);
+      onLeave(); // Redirigir al menú
+    });
+
+    return () => { if (typeof unsub === 'function') unsub(); };
+  }, [onHostLeft, onLeave]);
 
   const toggleReady = () => {
     const next = !isReadyLocal;
@@ -143,22 +156,6 @@ export const SalaDeEspera: React.FC<Props> = ({
 
   return (
     <div className="sala-espera-container">
-      {/* Notificación de timeout */}
-      {showTimeoutNotification && (
-        <div className="notification-overlay">
-          <div className="notification-bubble">
-            <div className="notification-icon">⏰</div>
-            <div className="notification-content">
-              <h3 className="notification-title">Partida Cancelada</h3>
-              <p className="notification-message">
-                La partida ha sido cancelada por inactividad (3 minutos sin iniciar)
-              </p>
-              <p className="notification-subtext">Redirigiendo al menú principal...</p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Fondo animado con gradiente */}
       <div className="sala-espera-background"></div>
 
