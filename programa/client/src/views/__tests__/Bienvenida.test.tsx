@@ -1,11 +1,11 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import axios from 'axios';
 import { Bienvenida } from './Bienvenida';
 import { AuthContext } from '../context/AuthContext';
 
 // Mock de axios
 jest.mock('axios');
-import axios from 'axios';
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 // Mock del contexto de autenticación

@@ -7,9 +7,8 @@
  * Representa una posición en el tablero de juego (fila, columna).
  */
 export interface Coordenada {
-    /** Índice de la fila (0-based) */
-    r: number;
-    /** Índice de la columna (0-based) */
-    c: number;
+  /** Índice de la fila (0-based) */
+  r: number;
+  /** Índice de la columna (0-based) */
+  c: number;
 }
-

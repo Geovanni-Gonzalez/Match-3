@@ -1,7 +1,7 @@
 /**
  * @file lobby.sockets.ts
  * @description Manejador de eventos de Socket.IO relacionados con el Lobby y la gestión de salas.
- * 
+ *
  * Escucha eventos para:
  * - Listar partidas disponibles.
  * - Unirse a una partida existente.
@@ -10,24 +10,17 @@
 
 import { Server, Socket } from 'socket.io';
 import { GameService } from '../core/services/GameService.js';
-import { ServidorPartidas } from '../core/manager/ServidorPartidas.js';
-import { TimerManager } from '../core/manager/TimerManager.js';
-import { Console } from 'console';
 
 /**
  * Registra los listeners de eventos del lobby en el servidor Socket.IO.
- * 
+ *
  * @param io - Instancia del servidor Socket.IO.
  * @param gameService - Servicio de juego para delegar la lógica.
  */
 export function registerLobbySockets(io: Server, gameService: GameService) {
-  const servidor = ServidorPartidas.getInstance();
-  const timerManager = TimerManager.getInstance();
-  timerManager.setSocketServer(io);
-
   io.on('connection', (socket: Socket) => {
     // Al conectar, unirse al canal "lobby" y enviar lista actual
-    socket.join("lobby");
+    socket.join('lobby');
     const partidasDisponibles = gameService.listarPartidasDisponibles();
     socket.emit('partidas:list', partidasDisponibles);
 
@@ -49,7 +42,7 @@ export function registerLobbySockets(io: Server, gameService: GameService) {
       try {
         const { idPartida, nickName, jugadorDBId } = data;
         const nuevoJugador = gameService.unirseAPartida(idPartida, nickName, socket.id, jugadorDBId);
-        const segundosRestantes = timerManager.getRemainingTime(idPartida);
+        const segundosRestantes = gameService.getRemainingTime(idPartida);
 
         // Unirse a la sala de Socket.io
         socket.join(idPartida);
@@ -59,12 +52,12 @@ export function registerLobbySockets(io: Server, gameService: GameService) {
         socket.emit('game:timer_tick', { secondsLeft: segundosRestantes });
 
         // Emitir lista actualizada
-        const partida = servidor.obtenerPartida(idPartida);
+        const partida = gameService.obtenerPartida(idPartida);
         if (partida) {
-          socket.emit('game_info', { 
-            maxJugadores: partida.numJugadoresMax, 
-            tematica: partida.tematica, 
-            tipoJuego: partida.tipoJuego 
+          socket.emit('game_info', {
+            maxJugadores: partida.numJugadoresMax,
+            tematica: partida.tematica,
+            tipoJuego: partida.tipoJuego,
           });
           io.to(idPartida).emit('players_update', partida.getJugadoresResumen());
         }
@@ -81,12 +74,12 @@ export function registerLobbySockets(io: Server, gameService: GameService) {
      */
     socket.on('request_game_info', (data) => {
       const { partidaId } = data;
-      const partida = servidor.obtenerPartida(partidaId);
+      const partida = gameService.obtenerPartida(partidaId);
       if (partida) {
         socket.emit('game_info', {
           maxJugadores: partida.numJugadoresMax,
           tematica: partida.tematica,
-          tipoJuego: partida.tipoJuego
+          tipoJuego: partida.tipoJuego,
         });
         socket.emit('players_update', partida.getJugadoresResumen());
       }

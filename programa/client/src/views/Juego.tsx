@@ -10,13 +10,14 @@
  * - Muestra notificaciones y estados de transición (cuenta regresiva, fin de juego).
  */
 
-import React, { useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
 import { useGameEvents } from "../hooks/useGameEvents";
 import { ResultadoPartida } from "./ResultadoPartida";
 import { TableroGrid } from "../components/TableroGrid";
 import { ScoreBoard } from "../components/ScoreBoard";
 import { Loading } from "../components/Loading";
 import '../styles/Juego.css';
+import { Celda } from "@match3/shared";
 
 interface JuegoProps {
   /** ID de la partida actual. */
@@ -24,7 +25,7 @@ interface JuegoProps {
   /** Nickname del usuario actual. */
   currentUserNickname: string;
   /** Estado inicial del tablero (opcional). */
-  initialTablero?: any[][];
+  initialTablero?: Celda[][];
   /** Configuración inicial de la partida (opcional). */
   initialConfig?: any;
   /** Función para salir de la partida. */
@@ -82,9 +83,9 @@ export const Juego: React.FC<JuegoProps> = ({
   /**
    * Solicita al servidor validar el match con las celdas seleccionadas.
    */
-  const handleMatch = () => {
+  const handleMatch = useCallback(() => {
     activateMatch?.(partidaId);
-  };
+  }, [activateMatch, partidaId]);
 
   // Auto-match por inactividad (2 segundos)
   useEffect(() => {
@@ -104,7 +105,7 @@ export const Juego: React.FC<JuegoProps> = ({
     }, 2000); // Requerimiento: 2 segundos de inactividad
 
     return () => clearTimeout(timerId);
-  }, [tablero, gameStatus, partidaId, rawSocket]); // Se reinicia cada vez que cambia el tablero (selección)
+  }, [tablero, gameStatus, partidaId, rawSocket, handleMatch]); // Se reinicia cada vez que cambia el tablero (selección)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

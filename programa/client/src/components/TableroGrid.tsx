@@ -6,6 +6,7 @@
  */
 import React, { memo } from 'react';
 import '../styles/TableroGrid.css';
+import { Celda } from '@match3/shared';
 
 // Mapeo de temáticas a iconos/emojis
 const THEME_ICONS: Record<string, Record<string, string>> = {
@@ -24,7 +25,7 @@ const THEME_ICONS: Record<string, Record<string, string>> = {
 };
 
 interface TableroGridProps {
-  tablero: any[][];
+  tablero: Celda[][];
   onCellClick: (r: number, c: number) => void;
   gameStatus: string;
   mySocketId?: string;

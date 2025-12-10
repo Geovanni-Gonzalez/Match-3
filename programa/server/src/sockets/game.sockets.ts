@@ -1,7 +1,7 @@
 /**
  * @file game.sockets.ts
  * @description Manejador de eventos de Socket.IO relacionados con la jugabilidad.
- * 
+ *
  * Escucha eventos emitidos por el cliente durante una partida activa, como:
  * - Selección de celdas.
  * - Activación de matches.
@@ -13,13 +13,12 @@ import { GameService } from '../core/services/GameService.js';
 
 /**
  * Registra los listeners de eventos de juego en el servidor Socket.IO.
- * 
+ *
  * @param io - Instancia del servidor Socket.IO.
  * @param gameService - Servicio de juego para delegar la lógica.
  */
 export function registerGameSockets(io: Server, gameService: GameService) {
   io.on('connection', (socket: Socket) => {
-    
     /**
      * Evento: set_ready
      * Descripción: El jugador cambia su estado a "listo" en la sala de espera.
@@ -81,7 +80,7 @@ export function registerGameSockets(io: Server, gameService: GameService) {
     socket.on('activate_match', (data) => {
       const { partidaId } = data || {};
       if (!partidaId) return;
-      gameService.activarMatch(partidaId, socket.id).catch(err => {
+      gameService.activarMatch(partidaId, socket.id).catch((err) => {
         console.error('activarMatch error', err);
       });
     });

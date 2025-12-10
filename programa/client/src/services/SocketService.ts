@@ -7,7 +7,7 @@
  */
 
 import { Socket } from 'socket.io-client';
-import { Jugador } from '../types/shared';
+import { Jugador } from '@match3/shared';
 
 // Re-exportar para compatibilidad si es necesario, o refactorizar consumidores
 export type JugadorData = Jugador;

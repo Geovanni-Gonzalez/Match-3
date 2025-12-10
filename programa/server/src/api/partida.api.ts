@@ -1,7 +1,7 @@
 /**
  * @file partida.api.ts
  * @description Definición de endpoints REST relacionados con la entidad Partida.
- * 
+ *
  * Maneja la creación de partidas, listado, unión de jugadores y consulta de rankings.
  * Utiliza inyección de dependencias para acceder a GameService.
  */
@@ -10,10 +10,10 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { PartidaRepo } from '../core/repositories/PartidaRepo.js';
 import { v4 as uuidv4 } from 'uuid';
 import { GameService } from '../core/services/GameService.js';
-import { GameConfig } from '../types/shared.js';
 import { validateBody } from '../utils/validate.middleware.js';
 import { crearPartidaSchema, agregarJugadorSchema } from '../utils/validation.schemas.js';
 import Logger from '../utils/Logger.js';
+import { GameConfig } from '@match3/shared';
 
 const router = Router();
 let gameService: GameService;
@@ -40,35 +40,40 @@ const ensureGameService = (req: Request, res: Response, next: NextFunction) => {
  * @route POST /api/partida/crear_partida
  * @description Crea una nueva partida en el sistema.
  */
-router.post('/crear_partida', ensureGameService, validateBody(crearPartidaSchema), async (req: Request, res: Response) => {
-  const { tipoJuego, tematica, numJugadoresMax, duracion } = req.body as GameConfig;
+router.post(
+  '/crear_partida',
+  ensureGameService,
+  validateBody(crearPartidaSchema),
+  async (req: Request, res: Response) => {
+    const { tipoJuego, tematica, numJugadoresMax, duracion } = req.body as GameConfig;
 
-  if (!tipoJuego || !tematica || !numJugadoresMax) {
-    return res.status(400).json({ message: 'Datos de partida inválidos.' });
+    if (!tipoJuego || !tematica || !numJugadoresMax) {
+      return res.status(400).json({ message: 'Datos de partida inválidos.' });
+    }
+
+    try {
+      const codigoPartida = uuidv4().split('-')[0].toUpperCase();
+      await gameService.crearPartida(codigoPartida, tipoJuego, tematica, numJugadoresMax, duracion);
+
+      Logger.info('[API][Partida] Partida creada', {
+        codigoPartida,
+        tipoJuego,
+        tematica,
+        numJugadoresMax,
+      });
+      return res.status(201).json({
+        message: 'Partida creada exitosamente',
+        codigoPartida,
+        tipoJuego,
+        tematica,
+        numJugadoresMax,
+      });
+    } catch (err) {
+      console.error('[API][Partida] Error crear_partida:', err);
+      return res.status(500).json({ message: 'Error interno al crear partida.' });
+    }
   }
-
-  try {
-    const codigoPartida = uuidv4().split('-')[0].toUpperCase();
-    await gameService.crearPartida(codigoPartida, tipoJuego, tematica, numJugadoresMax, duracion);
-
-    Logger.info('[API][Partida] Partida creada', {
-      codigoPartida,
-      tipoJuego,
-      tematica,
-      numJugadoresMax
-    });
-    return res.status(201).json({
-      message: 'Partida creada exitosamente',
-      codigoPartida,
-      tipoJuego,
-      tematica,
-      numJugadoresMax
-    });
-  } catch (err) {
-    console.error('[API][Partida] Error crear_partida:', err);
-    return res.status(500).json({ message: 'Error interno al crear partida.' });
-  }
-});
+);
 
 /**
  * @route POST /api/partida/agregar_jugador

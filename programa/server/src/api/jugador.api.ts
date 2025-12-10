@@ -13,7 +13,7 @@ const router = Router();
 /**
  * @route POST /api/jugador/registrar
  * @description Registra un nuevo jugador o recupera uno existente por su nickname.
- * 
+ *
  * @body {string} nickname - Nombre de usuario deseado.
  * @returns {object} 200 - { message, jugadorId, nickname }
  * @returns {object} 400 - Error de validación.

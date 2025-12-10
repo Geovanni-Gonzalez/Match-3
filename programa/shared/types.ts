@@ -9,7 +9,9 @@ export interface Coordenada {
 }
 
 export interface Celda {
-    tipo: number; // ID del tipo de gema (o color)
+    fila: number;
+    columna: number;
+    colorID: string; // ID del tipo de gema (o color)
     estado?: 'libre' | 'seleccion_propia' | 'seleccion_otro' | 'bloqueada';
     seleccionadoPor?: string | null; // ID del socket del jugador
 }

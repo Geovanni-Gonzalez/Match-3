@@ -24,7 +24,9 @@ services:
 
   # Servidor Node.js (Backend)
   server:
-    build: ./server
+    build:
+      context: .
+      dockerfile: server/Dockerfile
     container_name: match3_server
     restart: always
     ports:
@@ -43,7 +45,9 @@ services:
 
   # Cliente React (Frontend)
   client:
-    build: ./client
+    build:
+      context: .
+      dockerfile: client/Dockerfile
     container_name: match3_client
     restart: always
     ports:

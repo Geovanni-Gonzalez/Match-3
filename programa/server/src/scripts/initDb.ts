@@ -11,17 +11,17 @@ import Logger from '../utils/Logger.js';
  * Inicializa el esquema de la base de datos.
  * Crea las tablas 'jugador', 'partida' y 'partida_jugador' con sus respectivas
  * claves primarias y foráneas.
- * 
+ *
  * @throws {Error} Si ocurre un error durante la creación de las tablas.
  * @returns {Promise<void>}
  */
 export async function initDb() {
-    const conn = await pool.getConnection();
-    try {
-        Logger.info('[DB] Inicializando base de datos...');
+  const conn = await pool.getConnection();
+  try {
+    Logger.info('[DB] Inicializando base de datos...');
 
-        // 1. Tabla de Jugadores
-        await conn.query(`
+    // 1. Tabla de Jugadores
+    await conn.query(`
             CREATE TABLE IF NOT EXISTS jugador (
                 id_jugador INT AUTO_INCREMENT PRIMARY KEY,
                 nombre VARCHAR(50) NOT NULL UNIQUE,
@@ -29,8 +29,8 @@ export async function initDb() {
             );
         `);
 
-        // 2. Tabla de Partidas
-        await conn.query(`
+    // 2. Tabla de Partidas
+    await conn.query(`
             CREATE TABLE IF NOT EXISTS partida (
                 id_partida INT AUTO_INCREMENT PRIMARY KEY,
                 codigo_partida VARCHAR(50) NOT NULL UNIQUE,
@@ -44,8 +44,8 @@ export async function initDb() {
             );
         `);
 
-        // 3. Tabla Intermedia (Resultados y Relación)
-        await conn.query(`
+    // 3. Tabla Intermedia (Resultados y Relación)
+    await conn.query(`
             CREATE TABLE IF NOT EXISTS partida_jugador (
                 id_partida INT,
                 id_jugador INT,
@@ -58,11 +58,11 @@ export async function initDb() {
             );
         `);
 
-        Logger.info('[DB] Tablas verificadas/creadas correctamente.');
-    } catch (error) {
-        Logger.error('[DB] Error inicializando base de datos:', error);
-        throw error;
-    } finally {
-        conn.release();
-    }
+    Logger.info('[DB] Tablas verificadas/creadas correctamente.');
+  } catch (error) {
+    Logger.error('[DB] Error inicializando base de datos:', error);
+    throw error;
+  } finally {
+    conn.release();
+  }
 }

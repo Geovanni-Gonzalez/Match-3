@@ -9,22 +9,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { SocketService, JugadorData } from "../services/SocketService";
-
-/**
- * Representación de una celda en el tablero del cliente.
- */
-export interface TableroCell {
-  /** Fila de la celda (0-indexed). */
-  r: number;
-  /** Columna de la celda (0-indexed). */
-  c: number;
-  /** Identificador del color (hex o nombre). */
-  colorID: string;
-  /** Estado de la celda ('libre', 'seleccionado', 'bloqueado', etc.). */
-  estado: string;
-  /** ID del socket del jugador que seleccionó la celda (opcional). */
-  seleccionadoPor?: string | null;
-}
+import { Celda } from "@match3/shared";
 
 /**
  * Hook principal para la lógica de juego en tiempo real.
@@ -34,13 +19,13 @@ export interface TableroCell {
  * @param initialConfig - Configuración inicial del juego (opcional).
  * @returns Objeto con el estado del juego y funciones para interactuar.
  */
-export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][], initialConfig?: any) => {
+export const useGameEvents = (partidaId: string, initialTablero?: Celda[][], initialConfig?: any) => {
   const { socket } = useAuth();
   const [jugadores, setJugadores] = useState<JugadorData[]>([]);
   const [gameStatus, setGameStatus] = useState<"loading" | "waiting" | "ready_to_start" | "active" | "errored" | "finished">(
     initialTablero ? "ready_to_start" : "loading"
   );
-  const [tablero, setTablero] = useState<TableroCell[][] | null>(initialTablero || null);
+  const [tablero, setTablero] = useState<Celda[][] | null>(initialTablero || null);
   const [error, setError] = useState<string | null>(null);
   const [timer, setTimer] = useState<number>(0);
   const [lobbyTimer, setLobbyTimer] = useState<number>(0);
@@ -60,21 +45,21 @@ export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][
    * @param matrix - Datos del tablero crudos.
    * @returns Matriz de celdas estructurada.
    */
-  const normalizeMatrix = (matrix: any): TableroCell[][] => {
+  const normalizeMatrix = (matrix: any): Celda[][] => {
     if (!Array.isArray(matrix)) return [];
 
-    if (Array.isArray(matrix[0])) return matrix as TableroCell[][];
+    if (Array.isArray(matrix[0])) return matrix as Celda[][];
 
     // flat → intentar chunk
-    const maxR = Math.max(...matrix.map((c: TableroCell) => c.r));
-    const maxC = Math.max(...matrix.map((c: TableroCell) => c.c));
+    const maxR = Math.max(...matrix.map((c: Celda) => c.fila));
+    const maxC = Math.max(...matrix.map((c: Celda) => c.columna));
 
-    const newM: TableroCell[][] = [];
+    const newM: Celda[][] = [];
     for (let r = 0; r <= maxR; r++) {
       newM[r] = [];
       for (let c = 0; c <= maxC; c++) {
-        newM[r][c] = matrix.find((x: TableroCell) => x.r === r && x.c === c)
-          ?? { r, c, colorID: "#000", estado: "libre" };
+        newM[r][c] = matrix.find((x: Celda) => x.fila === r && x.columna === c)
+          ?? { fila: r, columna: c, colorID: "#000", estado: "libre" };
       }
     }
     return newM;
@@ -218,6 +203,19 @@ export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][
   // subscribe to room-level timer tick (useful for lobby if needed)
   // Removed redundant useEffect
 
+  const actions = useMemo(() => ({
+    joinGame: service?.joinGame.bind(service),
+    leaveGame: service?.leaveGame.bind(service),
+    setReady: (pid: string, ready: boolean) => service?.setReady(pid, ready),
+    startGame: (pid: string) => service?.startGame(pid),
+    selectCell: (pid: string, r: number, c: number) => service?.selectCell(pid, r, c),
+    activateMatch: (pid: string) => service?.activateMatch(pid),
+    rawSocket: () => service?.rawSocket(),
+    onAllPlayersReady: service?.onAllPlayersReady.bind(service),
+    requestEnterGame: (pid: string) => service?.requestEnterGame(pid),
+    onForceNavigateGame: service?.onForceNavigateGame.bind(service),
+    onHostLeft: service?.onHostLeft.bind(service),
+  }), [service]);
 
   return {
     jugadores,
@@ -234,16 +232,6 @@ export const useGameEvents = (partidaId: string, initialTablero?: TableroCell[][
     notification,
 
     // acciones expuestas
-    joinGame: service?.joinGame.bind(service),
-    leaveGame: service?.leaveGame.bind(service),
-    setReady: (pid: string, ready: boolean) => service?.setReady(pid, ready),
-    startGame: (pid: string) => service?.startGame(pid),
-    selectCell: (pid: string, r: number, c: number) => service?.selectCell(pid, r, c),
-    activateMatch: (pid: string) => service?.activateMatch(pid),
-    rawSocket: () => service?.rawSocket(),
-    onAllPlayersReady: service?.onAllPlayersReady.bind(service),
-    requestEnterGame: (pid: string) => service?.requestEnterGame(pid),
-    onForceNavigateGame: service?.onForceNavigateGame.bind(service),
-    onHostLeft: service?.onHostLeft.bind(service),
+    ...actions
   };
 };

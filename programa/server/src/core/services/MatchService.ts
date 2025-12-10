@@ -1,7 +1,7 @@
 /**
  * @file MatchService.ts
  * @description Servicio encargado de la validación lógica de las jugadas (matches).
- * 
+ *
  * Implementa las reglas del juego para determinar si una secuencia de celdas
  * seleccionadas constituye un match válido.
  */
@@ -12,7 +12,7 @@ import { Celda } from '../domain/Celda.js';
 export class MatchService {
   /**
    * Valida una cadena de celdas de forma síncrona.
-   * 
+   *
    * @param celdas - Lista de coordenadas seleccionadas por el jugador.
    * @param tablero - Matriz actual del tablero de juego.
    * @returns Promesa con el resultado de la validación (valido, n, celdas).
@@ -24,14 +24,14 @@ export class MatchService {
 
   /**
    * Implementa la lógica core de validación de matches.
-   * 
+   *
    * Reglas aplicadas:
    * 1. Tamaño Mínimo: Al menos 3 celdas.
    * 2. Uniformidad de Color: Todas las celdas deben ser del mismo color.
    * 3. No Repetición: Una celda no puede estar dos veces en la selección.
    * 4. Adyacencia: Cada celda debe ser adyacente a la anterior.
    * 5. Linealidad: La secuencia debe formar una línea recta (horizontal, vertical o diagonal).
-   * 
+   *
    * @param listaCeldas - Lista de coordenadas a validar.
    * @param tablero - Referencia al tablero para consultar colores.
    * @returns Objeto con flag de validez, número de celdas y la lista procesada.
@@ -41,24 +41,24 @@ export class MatchService {
 
     // Regla 1: Tamaño Mínimo (n >= 3)
     if (n < 3) {
-        return { valido: false, n: 0, celdas: [] };
+      return { valido: false, n: 0, celdas: [] };
     }
 
     // Obtener el color objetivo de la primera celda
     const { r: r0, c: c0 } = listaCeldas[0];
     const celdaInicial = tablero[r0]?.[c0];
     if (!celdaInicial) return { valido: false, n: 0, celdas: [] };
-    
+
     const colorObjetivo = celdaInicial.colorID;
 
     // Regla 2: Uniformidad de Color
     for (let i = 1; i < n; i++) {
-        const { r, c } = listaCeldas[i];
-        const celdaActual = tablero[r]?.[c];
-        
-        if (!celdaActual || celdaActual.colorID !== colorObjetivo) {
-            return { valido: false, n: 0, celdas: [] };
-        }
+      const { r, c } = listaCeldas[i];
+      const celdaActual = tablero[r]?.[c];
+
+      if (!celdaActual || celdaActual.colorID !== colorObjetivo) {
+        return { valido: false, n: 0, celdas: [] };
+      }
     }
 
     // -----------------------------------------------------
@@ -72,39 +72,39 @@ export class MatchService {
     let dirC: number | null = null;
 
     for (let i = 1; i < n; i++) {
-        const celdaAnterior = listaCeldas[i - 1];
-        const celdaActual = listaCeldas[i];
-        
-        // 3a. Prohibición de Repetición
-        const claveActual = `${celdaActual.r},${celdaActual.c}`;
-        if (celdasVistas.has(claveActual)) {
-             return { valido: false, n: 0, celdas: [] }; 
-        }
-        celdasVistas.add(claveActual);
+      const celdaAnterior = listaCeldas[i - 1];
+      const celdaActual = listaCeldas[i];
 
-        // 3b. Adyacencia y Dirección
-        const deltaR = celdaActual.r - celdaAnterior.r;
-        const deltaC = celdaActual.c - celdaAnterior.c;
+      // 3a. Prohibición de Repetición
+      const claveActual = `${celdaActual.r},${celdaActual.c}`;
+      if (celdasVistas.has(claveActual)) {
+        return { valido: false, n: 0, celdas: [] };
+      }
+      celdasVistas.add(claveActual);
 
-        // Verificar adyacencia básica (distancia 1 en cualquier dirección válida)
-        const esAdyacente = (Math.abs(deltaR) <= 1 && Math.abs(deltaC) <= 1) && (deltaR !== 0 || deltaC !== 0);
-        if (!esAdyacente) {
-            return { valido: false, n: 0, celdas: [] }; 
-        }
+      // 3b. Adyacencia y Dirección
+      const deltaR = celdaActual.r - celdaAnterior.r;
+      const deltaC = celdaActual.c - celdaAnterior.c;
 
-        // 3c. Consistencia de Dirección (Línea Recta)
-        if (dirR === null || dirC === null) {
-            // Establecer la dirección esperada con el primer par
-            dirR = deltaR;
-            dirC = deltaC;
-        } else {
-            // Verificar que los siguientes pares sigan la misma dirección
-            if (deltaR !== dirR || deltaC !== dirC) {
-                return { valido: false, n: 0, celdas: [] };
-            }
+      // Verificar adyacencia básica (distancia 1 en cualquier dirección válida)
+      const esAdyacente = Math.abs(deltaR) <= 1 && Math.abs(deltaC) <= 1 && (deltaR !== 0 || deltaC !== 0);
+      if (!esAdyacente) {
+        return { valido: false, n: 0, celdas: [] };
+      }
+
+      // 3c. Consistencia de Dirección (Línea Recta)
+      if (dirR === null || dirC === null) {
+        // Establecer la dirección esperada con el primer par
+        dirR = deltaR;
+        dirC = deltaC;
+      } else {
+        // Verificar que los siguientes pares sigan la misma dirección
+        if (deltaR !== dirR || deltaC !== dirC) {
+          return { valido: false, n: 0, celdas: [] };
         }
+      }
     }
 
-    return { valido: true, n: n, celdas: listaCeldas }; 
+    return { valido: true, n: n, celdas: listaCeldas };
   }
 }

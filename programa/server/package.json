@@ -9,8 +9,8 @@
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "lint": "eslint src --ext .ts",
-    "lint:fix": "eslint src --ext .ts --fix",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
     "format": "prettier --write src/**/*.ts",
     "format:check": "prettier --check src/**/*.ts",
     "ngrok": "node scripts/start-ngrok.js",
@@ -31,7 +31,8 @@
     "socket.io": "^4.7.2",
     "tsconfig-paths": "^4.2.0",
     "uuid": "^9.0.1",
-    "winston": "^3.18.3"
+    "winston": "^3.18.3",
+    "@match3/shared": "*"
   },
   "devDependencies": {
     "@types/express": "^5.0.5",

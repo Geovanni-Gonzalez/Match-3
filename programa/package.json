@@ -3,17 +3,22 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm run test --workspaces",
+    "dev:server": "npm run dev -w server",
+    "start:client": "npm start -w client",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces",
+    "lint:fix": "npm run lint:fix --workspaces"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
-  "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^5.1.0",
-    "socket.io": "^4.8.1"
-  },
+  "workspaces": [
+    "client",
+    "server",
+    "shared"
+  ],
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",

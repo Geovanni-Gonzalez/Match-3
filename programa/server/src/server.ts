@@ -1,7 +1,7 @@
 /**
  * @file server.ts
  * @description Configuración principal de la aplicación Express y Socket.IO.
- * 
+ *
  * Este módulo:
  * - Configura los middlewares de Express (CORS, JSON).
  * - Inicializa el servidor HTTP.
@@ -25,6 +25,7 @@ import { registerGameSockets } from './sockets/game.sockets.js';
 import { registerPlayerSockets } from './sockets/player.sockets.js';
 import { GameService } from './core/services/GameService.js';
 import { TimerManager } from './core/manager/TimerManager.js';
+import { ServidorPartidas } from './core/manager/ServidorPartidas.js';
 
 const app = express();
 
@@ -46,38 +47,12 @@ app.use('/api', limiter);
 // CORS – Configuración dinámica para localhost y Ngrok
 // ----------------------
 
-/**
- * Función dinámica para validar el origen de las peticiones CORS.
- * Permite conexiones desde localhost (cualquier puerto) y dominios de Ngrok.
- * Retorna el origen si es válido (para reflejarlo en la respuesta).
- * 
- * @param origin - El origen de la petición HTTP.
- * @param callback - Función de retorno con el origen permitido.
- */
-const corsOrigin = (origin: string | undefined, callback: (err: Error | null, origin?: string | boolean) => void) => {
-  // Permitir requests sin origen (ej. Postman, curl, server-to-server)
-  if (!origin) return callback(null, true);
-
-  // Permitir cualquier subdominio de ngrok
-  if (origin.includes('ngrok-free.app') || origin.includes('ngrok.io')) {
-    return callback(null, origin); // Reflejar el origen exacto
-  }
-
-  // Permitir cualquier localhost con cualquier puerto
-  if (origin.match(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/)) {
-    return callback(null, origin); // Reflejar el origen exacto
-  }
-
-  console.warn(`[CORS] Origen bloqueado: ${origin}`);
-  callback(new Error('Not allowed by CORS'));
-};
-
 const corsOptions = {
   origin: true, // Reflect request origin
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "ngrok-skip-browser-warning", "X-Requested-With", "Accept"],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning', 'X-Requested-With', 'Accept'],
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
 };
 
 app.use(cors(corsOptions));
@@ -89,31 +64,33 @@ app.options('*', cors(corsOptions));
 app.use(express.json());
 
 // HTTP + Socket.IO (crear ANTES de iniciar GameService)
-const server = http.createServer(app);
+const httpServer = http.createServer(app);
 
 /**
  * Instancia principal de Socket.IO.
  * Configurada para permitir conexiones desde cualquier origen (*) temporalmente
  * para facilitar el uso de túneles como Ngrok sin bloqueos estrictos.
  */
-const io = new Server(server, {
+const io = new Server(httpServer, {
   cors: {
-    origin: "*", // Permitir todo para evitar problemas con Ngrok
-    methods: ["GET", "POST"],
+    origin: true,
+    methods: ['GET', 'POST'],
     credentials: true,
   },
 });
 
-// Iniciar lógica de juego (inyección)
-const gameService = new GameService(io);
+// 1. Instanciar dependencias base
+const servidorPartidas = new ServidorPartidas();
+const timerManager = new TimerManager();
 
-// Inyectar GameService en el router de partidas
+// 2. Instanciar servicio principal inyectando dependencias
+const gameService = new GameService(io, servidorPartidas, timerManager);
+
+// 3. Inyectar servicio en controladores y sockets
 setGameService(gameService);
 
 // API REST (ahora con GameService inyectado)
 app.use('/api', apiRoutes);
-
-TimerManager.getInstance().setSocketServer(io);
 
 // Registrar sockets
 registerLobbySockets(io, gameService);
@@ -121,10 +98,10 @@ registerGameSockets(io, gameService);
 registerPlayerSockets(io, gameService);
 
 // Global Error Handler
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('[Server] Error no manejado:', err);
   res.status(500).json({ message: 'Error interno del servidor', error: err.message });
 });
 
 // Exportar para uso en index
-export { server, io };
+export { httpServer as server, io };

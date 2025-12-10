@@ -317,6 +317,14 @@ Response: Array<{ nickname, puntaje, partidasJugadas }>
 
 ### Scripts Disponibles
 
+#### Globales (Raíz)
+
+```bash
+npm run lint       # Ejecutar linting en todos los paquetes
+npm run build      # Compilar todos los paquetes
+npm test           # Ejecutar tests en todos los paquetes
+```
+
 #### Cliente
 
 ```bash
@@ -402,9 +410,17 @@ Este proyecto está bajo la Licencia MIT. Ver [LICENSE](./LICENSE) para más inf
 
 ---
 
-## 👥 Autores
+## 👥 Créditos
 
-- **Tu Nombre** - *Desarrollo inicial* - [@usuario](https://github.com/usuario)
+**Instituto Tecnológico de Costa Rica**  
+Ingeniería en Computación  
+Lenguajes de Programación - Semestre II, 2025  
+Profesor: Allan Rodríguez Dávila  
+
+**Equipo de Desarrollo:**
+- Gerny Diaz Hall - 2022172980
+- Geovanni Gonzalez Aguilar - 2022163324
+- Quiriat Mata Araya
 
 ---
 
