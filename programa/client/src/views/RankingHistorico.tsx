@@ -15,6 +15,8 @@ import React, { useState, useEffect } from 'react';
 import { API_URL } from '../config';
 
 import '../styles/RankingHistorico.css';
+import { Logger } from '../utils/Logger';
+import { Background } from '../components/Background';
 
 // --- Interfaces de Tipos ---
 
@@ -66,7 +68,7 @@ export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) =>
 
     } catch (e) {
       setError('Fallo de conexión con el servidor de Ranking.');
-      console.error(e);
+      Logger.error(e instanceof Error ? e.message : String(e));
       setLoading(false);
     }
   };
@@ -85,42 +87,7 @@ export const RankingHistorico: React.FC<RankingHistoricoProps> = ({ onBack }) =>
 
   return (
     <div className="ranking-historico-container">
-      {/* Fondo Animado */}
-      <div className="ranking-historico-background" />
-
-      {/* Partículas */}
-      {Array.from({ length: 30 }).map((_, i) => (
-        <div
-          key={`particle-${i}`}
-          className="ranking-historico-particle"
-          style={{
-            left: `${Math.random() * 100}%`,
-            animationDuration: `${8 + Math.random() * 10}s`,
-            animationDelay: `${Math.random() * 5}s`,
-          }}
-        />
-      ))}
-
-      {/* Gemas decorativas */}
-      <div className="gem gem-red" style={{ top: '8%', left: '10%', animationDelay: '0s' }}>💎</div>
-      <div className="gem gem-blue" style={{ top: '15%', right: '12%', animationDelay: '0.8s' }}>💎</div>
-      <div className="gem gem-green" style={{ bottom: '18%', left: '8%', animationDelay: '1.6s' }}>💎</div>
-      <div className="gem gem-yellow" style={{ bottom: '12%', right: '15%', animationDelay: '2.4s' }}>💎</div>
-      <div className="gem gem-purple" style={{ top: '50%', left: '5%', animationDelay: '3.2s' }}>💎</div>
-      <div className="gem gem-orange" style={{ top: '45%', right: '8%', animationDelay: '4s' }}>💎</div>
-
-      {/* Burbujas */}
-      {Array.from({ length: 8 }).map((_, i) => (
-        <div
-          key={`bubble-${i}`}
-          className="bubble"
-          style={{
-            left: `${10 + i * 12}%`,
-            animationDuration: `${10 + Math.random() * 8}s`,
-            animationDelay: `${i * 1.2}s`,
-          }}
-        />
-      ))}
+      <Background />
 
       {/* Botón de retroceso */}
       <button className="back-button" onClick={onBack}>

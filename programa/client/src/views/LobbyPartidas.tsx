@@ -15,6 +15,8 @@ import { useAuth } from "../context/AuthContext";
 import { SocketService, PartidaListItem } from "../services/SocketService";
 import { Loading } from "../components/Loading";
 import '../styles/LobbyPartidas.css';
+import { Logger } from "../utils/Logger";
+import { Background } from "../components/Background";
 
 interface LobbyPartidasProps {
   /** Función para volver al menú principal. */
@@ -119,12 +121,13 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
     socket!.once(
       "joined_game",
       (data: { idPartida: string; nickname: string; socketID: string }) => {
-        console.log("[LobbyPartidas] joined_game received, navigating...");
+        Logger.info("[LobbyPartidas] joined_game received, navigating...");
         onJoinSuccess(data.idPartida);
       }
     );
 
     socket!.once("error_join", (data: { message: string }) => {
+      Logger.error("No se pudo entrar: " + data.message);
       alert("No se pudo entrar: " + data.message);
     });
   };
@@ -134,42 +137,7 @@ export const LobbyPartidas: React.FC<LobbyPartidasProps> = ({
   // ============================
   return (
     <div className="lobby-partidas-container">
-      {/* Fondo animado con gradiente */}
-      <div className="lobby-partidas-background"></div>
-
-      {/* Partículas flotantes */}
-      {Array.from({ length: 30 }).map((_, i) => (
-        <div
-          key={i}
-          className="lobby-partidas-particle"
-          style={{
-            left: `${Math.random() * 100}%`,
-            animationDuration: `${8 + Math.random() * 12}s`,
-            animationDelay: `${Math.random() * 10}s`,
-          }}
-        />
-      ))}
-
-      {/* Gemas decorativas */}
-      <div className="gem gem-red" style={{ top: '8%', left: '10%', animationDelay: '0s' }}>💎</div>
-      <div className="gem gem-blue" style={{ top: '15%', right: '12%', animationDelay: '1s' }}>💎</div>
-      <div className="gem gem-green" style={{ bottom: '18%', left: '8%', animationDelay: '2s' }}>💎</div>
-      <div className="gem gem-yellow" style={{ top: '45%', left: '5%', animationDelay: '1.5s' }}>💎</div>
-      <div className="gem gem-purple" style={{ bottom: '25%', right: '10%', animationDelay: '2.5s' }}>💎</div>
-      <div className="gem gem-orange" style={{ top: '60%', right: '7%', animationDelay: '0.8s' }}>💎</div>
-
-      {/* Burbujas flotantes */}
-      {[...Array(8)].map((_, i) => (
-        <div
-          key={i}
-          className="bubble"
-          style={{
-            left: `${10 + i * 12}%`,
-            animationDuration: `${15 + Math.random() * 10}s`,
-            animationDelay: `${i * 2}s`,
-          }}
-        />
-      ))}
+      <Background />
 
       {/* Botón de retroceso */}
       <button className="back-button" onClick={onBack}>

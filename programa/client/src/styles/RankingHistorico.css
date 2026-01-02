@@ -18,97 +18,15 @@
 }
 
 /* ========== FONDO ANIMADO ========== */
-.ranking-historico-background {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: linear-gradient(135deg, 
-    #1e1b4b 0%, 
-    #312e81 15%, 
-    #4c1d95 30%, 
-    #5b21b6 45%,
-    #6d28d9 60%, 
-    #7c3aed 75%,
-    #8b5cf6 90%,
-    #a78bfa 100%
-  );
-  background-size: 400% 400%;
-  animation: gradientFlow 15s ease infinite;
-  z-index: 0;
-}
-
-@keyframes gradientFlow {
-  0% { background-position: 0% 50%; }
-  25% { background-position: 50% 100%; }
-  50% { background-position: 100% 50%; }
-  75% { background-position: 50% 0%; }
-  100% { background-position: 0% 50%; }
-}
+/* Usando utilidad global .animated-background */
 
 /* ========== PARTÍCULAS ========== */
-.ranking-historico-particle {
-  position: absolute;
-  width: 5px;
-  height: 5px;
-  background: radial-gradient(circle, rgba(167, 139, 250, 0.8) 0%, rgba(139, 92, 246, 0.3) 70%, transparent 100%);
-  border-radius: 50%;
-  pointer-events: none;
-  animation: particleFloat linear infinite;
-  z-index: 1;
-  box-shadow: 0 0 15px rgba(167, 139, 250, 0.4);
-}
+/* Usando utilidad global .particle */
 
-@keyframes particleFloat {
-  0% {
-    transform: translateY(0) scale(0.5);
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  90% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-100vh) scale(1.2);
-    opacity: 0;
-  }
-}
 
 /* ========== GEMAS DECORATIVAS ========== */
-.gem {
-  position: absolute;
-  font-size: 48px;
-  animation: gemFloat 4s ease-in-out infinite;
-  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.4))
-          drop-shadow(0 0 30px currentColor);
-  pointer-events: none;
-  z-index: 2;
-}
+/* Usando utilidad global .gem */
 
-.gem-red { color: #ef4444; }
-.gem-blue { color: #3b82f6; }
-.gem-green { color: #10b981; }
-.gem-yellow { color: #f59e0b; }
-.gem-purple { color: #a78bfa; }
-.gem-orange { color: #f97316; }
-
-@keyframes gemFloat {
-  0%, 100% {
-    transform: translateY(0) rotate(0deg) scale(1);
-  }
-  25% {
-    transform: translateY(-20px) rotate(10deg) scale(1.1);
-  }
-  50% {
-    transform: translateY(-10px) rotate(-5deg) scale(1.05);
-  }
-  75% {
-    transform: translateY(-25px) rotate(8deg) scale(1.08);
-  }
-}
 
 /* ========== BURBUJAS DECORATIVAS ========== */
 .bubble {
@@ -116,15 +34,15 @@
   bottom: -100px;
   width: 60px;
   height: 60px;
-  background: radial-gradient(circle at 30% 30%, 
-    rgba(167, 139, 250, 0.3), 
-    rgba(139, 92, 246, 0.1));
+  background: radial-gradient(circle at 30% 30%,
+      rgba(167, 139, 250, 0.3),
+      rgba(139, 92, 246, 0.1));
   border-radius: 50%;
   animation: bubbleRise linear infinite;
   pointer-events: none;
   z-index: 1;
   box-shadow: inset 0 0 20px rgba(167, 139, 250, 0.2),
-              0 0 30px rgba(139, 92, 246, 0.15);
+    0 0 30px rgba(139, 92, 246, 0.15);
 }
 
 @keyframes bubbleRise {
@@ -132,50 +50,14 @@
     transform: translateY(0) scale(0.5);
     opacity: 0.4;
   }
+
   50% {
     opacity: 0.6;
   }
+
   100% {
     transform: translateY(-120vh) scale(1.2);
     opacity: 0;
-  }
-}
-
-/* ========== CARD PRINCIPAL ========== */
-.ranking-historico-card {
-  position: relative;
-  padding: 50px 45px;
-  border-radius: 35px;
-  background: rgba(30, 27, 75, 0.85);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: 
-    0 30px 90px rgba(0, 0, 0, 0.6),
-    0 0 0 1px rgba(167, 139, 250, 0.3) inset,
-    0 0 60px rgba(139, 92, 246, 0.4);
-  width: 900px;
-  max-width: 92vw;
-  border: 3px solid transparent;
-  background-image: 
-    linear-gradient(rgba(30, 27, 75, 0.85), rgba(30, 27, 75, 0.9)),
-    linear-gradient(135deg, #7c3aed, #8b5cf6, #a78bfa, #c4b5fd);
-  background-origin: border-box;
-  background-clip: padding-box, border-box;
-  z-index: 10;
-  animation: cardEntrance 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  overflow: visible;
-}
-
-@keyframes cardEntrance {
-  0% {
-    transform: scale(0.8) translateY(50px);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.02) translateY(-5px);
-  }
-  100% {
-    transform: scale(1) translateY(0);
-    opacity: 1;
   }
 }
 
@@ -235,9 +117,12 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }
@@ -358,39 +243,39 @@
   .gem {
     font-size: 32px;
   }
-  
+
   .bubble {
     width: 40px;
     height: 40px;
   }
-  
+
   .ranking-historico-card {
     padding: 40px 30px;
     width: 95vw;
   }
-  
+
   .ranking-historico-title {
     font-size: 32px;
   }
-  
+
   .table-wrapper {
     max-height: 400px;
   }
-  
+
   .table-header,
   .table-cell {
     padding: 12px 8px;
     font-size: 13px;
   }
-  
+
   .table-header {
     font-size: 13px;
   }
-  
+
   .ganador-cell {
     font-size: 14px;
   }
-  
+
   .puntaje-cell {
     font-size: 14px;
   }
@@ -400,43 +285,43 @@
   .gem {
     font-size: 28px;
   }
-  
+
   .bubble {
     width: 35px;
     height: 35px;
   }
-  
+
   .ranking-historico-card {
     padding: 35px 20px;
   }
-  
+
   .ranking-historico-title {
     font-size: 28px;
   }
-  
+
   .back-button {
     padding: 10px 16px;
     font-size: 14px;
   }
-  
+
   .table-wrapper {
     max-height: 350px;
   }
-  
+
   .table-header,
   .table-cell {
     padding: 10px 6px;
     font-size: 12px;
   }
-  
+
   .table-header {
     font-size: 12px;
   }
-  
+
   .partida-cell {
     font-size: 11px;
   }
-  
+
   .ganador-cell,
   .puntaje-cell {
     font-size: 13px;

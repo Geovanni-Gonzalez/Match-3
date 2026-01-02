@@ -1,8 +1,8 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import axios from 'axios';
-import { Bienvenida } from './Bienvenida';
-import { AuthContext } from '../context/AuthContext';
+import { Bienvenida } from '../Bienvenida';
+import { AuthContext } from '../../context/AuthContext';
 
 // Mock de axios
 jest.mock('axios');
@@ -20,7 +20,7 @@ const mockAuthContextValue = {
     isAuthenticated: false,
 };
 
-jest.mock('../context/AuthContext', () => ({
+jest.mock('../../context/AuthContext', () => ({
     useAuth: () => mockAuthContextValue,
     AuthContext: {
         Provider: ({ children }: { children: React.ReactNode }) => children
@@ -45,7 +45,7 @@ describe('Bienvenida Component', () => {
     it('validates nickname length', () => {
         renderWithAuth();
         const input = screen.getByPlaceholderText(/Tu nombre de jugador legendario/i);
-        const button = screen.getByText(/¡EMPEZAR AVENTURA!/i);
+        const button = screen.getByRole('button', { name: /¡EMPEZAR AVENTURA!/i });
 
         // Input too short
         fireEvent.change(input, { target: { value: 'ab' } });

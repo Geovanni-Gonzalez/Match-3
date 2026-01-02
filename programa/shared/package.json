@@ -5,6 +5,8 @@
   "main": "types.ts",
   "types": "types.ts",
   "scripts": {
-    "lint": "echo \"No linting for shared yet\""
+    "lint": "echo \"No linting for shared yet\"",
+    "test": "echo \"No tests for shared yet\"",
+    "test:coverage": "echo \"No coverage for shared yet\""
   }
 }

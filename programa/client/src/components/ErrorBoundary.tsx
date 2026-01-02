@@ -4,6 +4,7 @@
  */
 
 import { Component, ErrorInfo, ReactNode } from 'react';
+import { Logger } from '../utils/Logger';
 
 interface Props {
     children: ReactNode;
@@ -34,15 +35,12 @@ export class ErrorBoundary extends Component<Props, State> {
     }
 
     componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-        console.error('[ErrorBoundary] Error capturado:', error, errorInfo);
+        Logger.error('[ErrorBoundary] Error capturado:', error, errorInfo);
 
         this.setState({
             error,
             errorInfo
         });
-
-        // TODO: Enviar a Sentry cuando esté configurado
-        // Sentry.captureException(error, { extra: errorInfo });
     }
 
     handleReset = () => {

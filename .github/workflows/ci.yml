@@ -24,45 +24,23 @@ jobs:
         cache: 'npm'
         cache-dependency-path: '**/package-lock.json'
 
-    # --- SERVER ---
-    - name: Install Server Dependencies
+    # --- MONOREPO SETUP ---
+    - name: Install Dependencies (Root)
       run: |
-        cd programa/server
+        cd programa
         npm ci
 
-    - name: Lint Server
+    - name: Lint All Workspaces
       run: |
-        cd programa/server
+        cd programa
         npm run lint
 
-    - name: Test Server
+    - name: Test All Workspaces
       run: |
-        cd programa/server
+        cd programa
         npm test
 
-    - name: Build Server
+    - name: Build All Workspaces
       run: |
-        cd programa/server
-        npm run build
-
-    # --- CLIENT ---
-    - name: Install Client Dependencies
-      run: |
-        cd programa/client
-        npm ci
-
-    # (Optional) Lint Client if script exists
-    # - name: Lint Client
-    #   run: |
-    #     cd programa/client
-    #     npm run lint
-
-    - name: Test Client
-      run: |
-        cd programa/client
-        npm test -- --watchAll=false
-
-    - name: Build Client
-      run: |
-        cd programa/client
+        cd programa
         npm run build

@@ -16,6 +16,8 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useGameEvents } from '../hooks/useGameEvents';
 import '../styles/CrearPartida.css';
+import { Logger } from '../utils/Logger';
+import { Background } from '../components/Background';
 
 import { API_URL } from '../config';
 
@@ -69,17 +71,17 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({
    * Valida la sesión del usuario y maneja la respuesta.
    */
   const handleCrearPartida = async () => {
-    console.log('[CREAR PARTIDA] Iniciando...');
-    console.log('[CREAR PARTIDA] Usuario actual:', currentUser);
+    Logger.info('[CREAR PARTIDA] Iniciando...');
+    Logger.info('[CREAR PARTIDA] Usuario actual:', currentUser);
     
     if (!currentUser) {
-      console.error('[CREAR PARTIDA] Error: currentUser es null');
+      Logger.error('[CREAR PARTIDA] Error: currentUser es null');
       setError('Debes estar autenticado para crear una partida. Por favor, regresa e ingresa tu nickname.');
       return;
     }
 
     if (!currentUser.nickname) {
-      console.error('[CREAR PARTIDA] Error: nickname no existe en currentUser');
+      Logger.error('[CREAR PARTIDA] Error: nickname no existe en currentUser');
       setError('Error: No se encontró tu nickname. Por favor, regresa e ingresa nuevamente.');
       return;
     }
@@ -128,42 +130,7 @@ export const CrearPartida: React.FC<CrearPartidaProps> = ({
   // -------------------------------
   return (
     <div className="crear-partida-container">
-      {/* Fondo animado con gradiente */}
-      <div className="crear-partida-background"></div>
-      
-      {/* Partículas flotantes */}
-      {Array.from({ length: 30 }).map((_, i) => (
-        <div
-          key={i}
-          className="crear-partida-particle"
-          style={{
-            left: `${Math.random() * 100}%`,
-            animationDuration: `${8 + Math.random() * 12}s`,
-            animationDelay: `${Math.random() * 10}s`,
-          }}
-        />
-      ))}
-
-      {/* Gemas decorativas */}
-      <div className="gem gem-red" style={{ top: '8%', left: '10%', animationDelay: '0s' }}>💎</div>
-      <div className="gem gem-blue" style={{ top: '15%', right: '12%', animationDelay: '1s' }}>💎</div>
-      <div className="gem gem-green" style={{ bottom: '18%', left: '8%', animationDelay: '2s' }}>💎</div>
-      <div className="gem gem-yellow" style={{ top: '45%', left: '5%', animationDelay: '1.5s' }}>💎</div>
-      <div className="gem gem-purple" style={{ bottom: '25%', right: '10%', animationDelay: '2.5s' }}>💎</div>
-      <div className="gem gem-orange" style={{ top: '60%', right: '7%', animationDelay: '0.8s' }}>💎</div>
-
-      {/* Burbujas flotantes */}
-      {[...Array(8)].map((_, i) => (
-        <div
-          key={i}
-          className="bubble"
-          style={{
-            left: `${10 + i * 12}%`,
-            animationDuration: `${15 + Math.random() * 10}s`,
-            animationDelay: `${i * 2}s`,
-          }}
-        />
-      ))}
+      <Background />
 
       {/* Botón de retroceso */}
       <button className="back-button" onClick={onBack}>

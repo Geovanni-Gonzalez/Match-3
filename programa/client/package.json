@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@match3/shared": "*",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
@@ -20,8 +21,7 @@
     "react-transition-group": "^4.4.5",
     "socket.io-client": "^4.8.1",
     "typescript": "^4.9.5",
-    "web-vitals": "^2.1.4",
-    "@match3/shared": "*"
+    "web-vitals": "^2.1.4"
   },
   "scripts": {
     "start": "craco start",
@@ -62,7 +62,7 @@
       "!src/**/*.d.ts",
       "!src/index.tsx"
     ],
-    "coverageThresholds": {
+    "coverageThreshold": {
       "global": {
         "branches": 50,
         "functions": 50,
@@ -72,6 +72,7 @@
     }
   },
   "devDependencies": {
+    "@craco/craco": "^7.1.0",
     "@types/jest": "^30.0.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.2.0"

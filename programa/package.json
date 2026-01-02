@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "npm run test --workspaces",
+    "test:coverage": "npm run test:coverage --workspaces",
     "dev:server": "npm run dev -w server",
     "start:client": "npm start -w client",
     "build": "npm run build --workspaces",

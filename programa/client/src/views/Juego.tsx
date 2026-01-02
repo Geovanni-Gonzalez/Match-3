@@ -18,6 +18,7 @@ import { ScoreBoard } from "../components/ScoreBoard";
 import { Loading } from "../components/Loading";
 import '../styles/Juego.css';
 import { Celda } from "@match3/shared";
+import { Logger } from "../utils/Logger";
 
 interface JuegoProps {
   /** ID de la partida actual. */
@@ -100,7 +101,7 @@ export const Juego: React.FC<JuegoProps> = ({
     if (!hasSelection) return;
 
     const timerId = setTimeout(() => {
-      console.log("[Juego] Auto-match por inactividad");
+      Logger.info("[Juego] Auto-match por inactividad");
       handleMatch();
     }, 2000); // Requerimiento: 2 segundos de inactividad
 

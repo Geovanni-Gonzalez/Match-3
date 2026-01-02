@@ -19,104 +19,15 @@
 }
 
 /* ========== FONDO ANIMADO ========== */
-.crear-partida-background {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: var(--gradient-main);
-  background-size: 400% 400%;
-  animation: gradientFlow 15s ease infinite;
-  z-index: 0;
-}
+/* Usando utilidad global .animated-background */
 
 /* ========== PARTÍCULAS ========== */
-.crear-partida-particle {
-  position: absolute;
-  width: 5px;
-  height: 5px;
-  background: radial-gradient(circle, rgba(167, 139, 250, 0.8) 0%, rgba(139, 92, 246, 0.3) 70%, transparent 100%);
-  border-radius: 50%;
-  pointer-events: none;
-  animation: particleFloat linear infinite;
-  z-index: 1;
-  box-shadow: 0 0 15px rgba(167, 139, 250, 0.4);
-}
+/* Usando utilidad global .particle */
 
-@keyframes particleFloat {
-  0% {
-    transform: translateY(0) scale(0.5);
-    opacity: 0;
-  }
-
-  10% {
-    opacity: 1;
-  }
-
-  90% {
-    opacity: 1;
-  }
-
-  100% {
-    transform: translateY(-100vh) scale(1.2);
-    opacity: 0;
-  }
-}
 
 /* ========== GEMAS DECORATIVAS ========== */
-.gem {
-  position: absolute;
-  font-size: 48px;
-  animation: gemFloat 4s ease-in-out infinite;
-  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 30px currentColor);
-  pointer-events: none;
-  z-index: 2;
-}
+/* Usando utilidad global .gem */
 
-.gem-red {
-  color: var(--color-danger);
-}
-
-.gem-blue {
-  color: #3b82f6;
-}
-
-.gem-green {
-  color: var(--color-success);
-}
-
-.gem-yellow {
-  color: var(--color-warning);
-}
-
-.gem-purple {
-  color: var(--color-accent-4);
-}
-
-.gem-orange {
-  color: #f97316;
-}
-
-@keyframes gemFloat {
-
-  0%,
-  100% {
-    transform: translateY(0) rotate(0deg) scale(1);
-  }
-
-  25% {
-    transform: translateY(-20px) rotate(10deg) scale(1.1);
-  }
-
-  50% {
-    transform: translateY(-10px) rotate(-5deg) scale(1.05);
-  }
-
-  75% {
-    transform: translateY(-25px) rotate(8deg) scale(1.08);
-  }
-}
 
 /* ========== BURBUJAS DECORATIVAS ========== */
 .bubble {
@@ -168,38 +79,15 @@
 
 @keyframes cardEntrance {
   0% {
-    transform: scale(0.8) translateY(50px);
     opacity: 0;
+    transform: translateY(30px) scale(0.9);
   }
-
-  50% {
-    transform: scale(1.02) translateY(-5px);
-  }
-
   100% {
-    transform: scale(1) translateY(0);
     opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
-/* ========== HEADER ========== */
-.crear-partida-header {
-  text-align: center;
-  margin-bottom: 40px;
-  animation: headerSlideIn 0.6s ease-out 0.3s backwards;
-}
-
-@keyframes headerSlideIn {
-  0% {
-    transform: translateY(-30px);
-    opacity: 0;
-  }
-
-  100% {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
 
 .crear-partida-title {
   font-family: var(--font-heading);
