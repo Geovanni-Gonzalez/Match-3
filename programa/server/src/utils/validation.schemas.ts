@@ -12,7 +12,7 @@ export const crearPartidaSchema = Joi.object({
   tipoJuego: Joi.string().valid('Match', 'Tiempo').required(),
   tematica: Joi.string().valid('Gemas', 'Frutas', 'Animales').required(),
   numJugadoresMax: Joi.number().integer().min(2).max(4).required(),
-  duracion: Joi.number().integer().min(30).max(600).optional(),
+  duracion: Joi.number().integer().min(1).max(180).optional(),
 });
 
 /**
