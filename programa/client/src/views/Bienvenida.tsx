@@ -105,7 +105,7 @@ export const Bienvenida: React.FC = () => {
 
         {/* Input con diseño premium */}
         <div className="input-container input-wrapper">
-          <div className="input-icon">👤</div>
+
           <input
             type="text"
             placeholder="Tu nombre de jugador legendario"
