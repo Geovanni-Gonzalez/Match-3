@@ -1,4 +1,5 @@
 {
+    "project": "Match-3 Multiplayer",
     "tech": [
         "React",
         "Node.js",
@@ -7,27 +8,28 @@
         "MySQL"
     ],
     "features": [
-        "Multijugador en tiempo real (Hasta 4 jugadores)",
-        "Sistema de Ranking y Persistencia",
-        "Lógica de Match-3 en servidor (Anti-cheat)",
-        "Diseño Responsivo con Animaciones CSS/Glassmorphism",
-        "Salas de espera y Chat de Lobby"
+        "Real-time Multiplayer (Up to 4 players)",
+        "Server-side Move Validation (Anti-cheat)",
+        "Global Ranking & Performance System",
+        "Responsive Glassmorphism UI",
+        "Integrated Lobby Chat System"
     ],
     "stack": {
         "language": "TypeScript",
-        "framework": "React (Client) / Express (Server)",
+        "framework": "React / Express",
         "tools": [
             "Docker",
             "Socket.IO",
-            "MySQL",
-            "Craco/Vite"
-        ]
+            "Vite",
+            "Git"
+        ],
+        "database": "MySQL (Local & Remote persistence)"
     },
     "screenshots": [
         "https://raw.githubusercontent.com/Geovanni-González/Match-3/main/screenshots/principalImage.jpg"
     ],
     "description": {
-        "es": "Juego multijugador competitivo tipo Match-3 desarrollado con stack moderno (React 19 + Node.js). Utiliza WebSockets para sincronización en tiempo real, permitiendo partidas simultáneas con validación de movimientos en el servidor y persistencia de puntajes en MySQL.",
-        "en": "Competitive real-time multiplayer Match-3 game built with a modern stack (React 19 + Node.js). Uses WebSockets for real-time synchronization, enabling simultaneous matches with server-side move validation and score persistence in MySQL."
+        "es": "Juego multijugador competitivo tipo Match-3 desarrollado con React 19 y Node.js. Utiliza WebSockets para sincronización en tiempo real y validación en servidor.",
+        "en": "Competitive real-time multiplayer Match-3 game built with React 19 and Node.js. Uses WebSockets for real-time synchronization and server-side validation."
     }
 }

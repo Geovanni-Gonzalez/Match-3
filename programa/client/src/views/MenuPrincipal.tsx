@@ -10,7 +10,6 @@
  */
 
 import React from 'react';
-import '../styles/MenuPrincipal.css';
 import { Logger } from '../utils/Logger';
 import { Background } from '../components/Background';
 
@@ -36,16 +35,12 @@ interface MenuPrincipalProps {
  */
 export const MenuPrincipal: React.FC<MenuPrincipalProps> = ({ currentUser, onLogout, onNavigate }) => {
 
-  // ... (el resto del estado y la lógica)
-
   const handleUnirsePartida = () => {
-    // Usa onNavigate para cambiar a la vista del Lobby
     onNavigate('lobby');
     Logger.info("Navegar a vista de lobby de partidas.");
   }
 
   const handleNuevoJuego = () => {
-    // Usa onNavigate para cambiar a la vista de Crear Partida
     onNavigate('create_game');
     Logger.info("Navegar a vista de creación de partida.");
   };
@@ -56,41 +51,93 @@ export const MenuPrincipal: React.FC<MenuPrincipalProps> = ({ currentUser, onLog
   }
 
   return (
-    <div className="menu-container">
+    <div className="fixed inset-0 w-screen h-screen flex items-center justify-center overflow-hidden p-5">
       <Background />
 
-      <div className="menu-card premium-card">
+      <div className="relative w-[550px] max-w-[92vw] bg-white/5 backdrop-blur-3xl border border-white/10 p-[60px_50px] rounded-[30px] shadow-2xl animate-[headerSlideIn_0.6s_ease-out_0.3s_backwards] max-h-[95vh] overflow-y-auto">
+
         {/* Botón de cerrar sesión */}
-        <button onClick={onLogout} className="logout-button">
+        <button
+          onClick={onLogout}
+          className="absolute top-5 right-5 flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-red-600 to-red-500 text-white rounded-lg text-sm font-bold shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:shadow-red-600/50 active:translate-y-0 transition-all duration-300 z-20"
+        >
           <span>Salir</span>
         </button>
 
         {/* Header con bienvenida */}
-        <div className="menu-header">
-          <h1 className="menu-title premium-title">Menu Principal</h1>
-          <p className="menu-welcome">
-            ¡Bienvenido, <span className="menu-username">{currentUser.nickname}</span>!
+        <div className="text-center mb-12 animate-[headerSlideIn_0.6s_ease-out_0.3s_backwards]">
+          <h1 className="text-4xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 font-black tracking-tighter drop-shadow-lg mb-4">
+            Menu Principal
+          </h1>
+          <p className="text-lg text-indigo-300 font-semibold drop-shadow-sm">
+            ¡Bienvenido, <span className="text-white font-extrabold underline decoration-indigo-500 decoration-2">{currentUser.nickname}</span>!
           </p>
         </div>
 
         {/* Opciones del menú */}
-        <div className="menu-options">
-          <button onClick={handleNuevoJuego} className="menu-action-button">
-            <span className="button-icon">➕</span>
-            <span>Crear Partida Nueva</span>
-          </button>
+        <div className="flex flex-col gap-5">
+          <MenuButton
+            onClick={handleNuevoJuego}
+            delay="0.5s"
+            gradient="from-emerald-600 to-emerald-500"
+            shadow="shadow-emerald-600/40"
+            icon="➕"
+            label="Crear Partida Nueva"
+          />
 
-          <button onClick={handleUnirsePartida} className="menu-action-button">
-            <span className="button-icon">🎯</span>
-            <span>Unirse a Partida</span>
-          </button>
+          <MenuButton
+            onClick={handleUnirsePartida}
+            delay="0.7s"
+            gradient="from-orange-600 to-orange-500"
+            shadow="shadow-orange-600/40"
+            icon="🎯"
+            label="Unirse a Partida"
+          />
 
-          <button onClick={handleVerRanking} className="menu-action-button">
-            <span className="button-icon">🏆</span>
-            <span>Ver Ranking</span>
-          </button>
+          <MenuButton
+            onClick={handleVerRanking}
+            delay="0.9s"
+            gradient="from-sky-600 to-sky-500"
+            shadow="shadow-sky-600/40"
+            icon="🏆"
+            label="Ver Ranking"
+          />
         </div>
       </div>
     </div>
   );
 };
+
+interface MenuButtonProps {
+  onClick: () => void;
+  delay: string;
+  gradient: string;
+  shadow: string;
+  icon: string;
+  label: string;
+}
+
+const MenuButton: React.FC<MenuButtonProps> = ({ onClick, delay, gradient, shadow, icon, label }) => (
+  <button
+    onClick={onClick}
+    className={`
+      relative w-full p-6 border-none rounded-xl cursor-pointer 
+      flex items-center justify-center gap-3
+      text-lg font-extrabold uppercase tracking-wider text-white
+      bg-gradient-to-r ${gradient}
+      shadow-lg ${shadow}
+      transform transition-all duration-300
+      hover:-translate-y-1 hover:scale-[1.02]
+      active:-translate-y-0.5 active:scale-[0.98]
+      overflow-hidden group
+      animate-[buttonSlideIn_0.6s_ease-out_backwards]
+    `}
+    style={{ animationDelay: delay }}
+  >
+    {/* Shine effect */}
+    <div className="absolute top-0 -left-full w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-all duration-700 group-hover:left-full"></div>
+
+    <span className="text-2xl drop-shadow-md z-10">{icon}</span>
+    <span className="z-10">{label}</span>
+  </button>
+);

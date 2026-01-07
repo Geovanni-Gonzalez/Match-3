@@ -17,7 +17,6 @@ import { SalaDeEspera } from './views/SalaDeEspera';
 import { useAuth } from './context/AuthContext';
 import { GameProvider, useGame } from './context/GameContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import './styles/App.css';
 import { Juego } from './views/Juego';
 
 const App: React.FC = () => {
@@ -33,7 +32,7 @@ const App: React.FC = () => {
 
   return (
     <GameProvider>
-      <div className="app-container">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white overflow-x-hidden relative font-sans text-center">
         <TransitionGroup component={null}>
           <CSSTransition
             key={location.key}
@@ -41,7 +40,7 @@ const App: React.FC = () => {
             classNames="page"
             timeout={300}
           >
-            <div ref={nodeRef} className="page-transition-wrapper">
+            <div ref={nodeRef} className="absolute inset-0 w-full h-full">
               <ErrorBoundary>
                 <Routes location={location}>
                   <Route path="/" element={
@@ -121,15 +120,15 @@ const SalaDeEsperaWrapper = ({ onLeave }: any) => {
   const navigate = useNavigate();
 
   if (!partidaId) return <Navigate to="/menu" />;
-  
+
   return (
-    <SalaDeEspera 
-      partidaId={partidaId} 
-      onLeave={onLeave} 
+    <SalaDeEspera
+      partidaId={partidaId}
+      onLeave={onLeave}
       onStartGame={(id, tablero, config) => {
         startGame(tablero, config);
         navigate(`/juego/${id}`);
-      }} 
+      }}
     />
   );
 };
