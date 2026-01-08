@@ -1,35 +1,60 @@
 {
-    "project": "Match-3 Multiplayer",
-    "tech": [
-        "React",
-        "Node.js",
-        "TypeScript",
-        "Socket.IO",
-        "MySQL"
-    ],
-    "features": [
-        "Real-time Multiplayer (Up to 4 players)",
-        "Server-side Move Validation (Anti-cheat)",
-        "Global Ranking & Performance System",
-        "Responsive Glassmorphism UI",
-        "Integrated Lobby Chat System"
-    ],
-    "stack": {
-        "language": "TypeScript",
-        "framework": "React / Express",
-        "tools": [
-            "Docker",
+    "en": {
+        "tech": [
+            "React 19",
+            "Node.js",
+            "TypeScript",
             "Socket.IO",
-            "Vite",
-            "Git"
+            "MySQL"
         ],
-        "database": "MySQL (Local & Remote persistence)"
+        "features": [
+            "Real-time competitive multiplayer for up to 4 players",
+            "Strict server-side move validation (Anti-cheat system)",
+            "Global ranking ladder and player performance metrics",
+            "Responsive Glassmorphism UI with Framer Motion animations",
+            "Integrated real-time lobby chat system"
+        ],
+        "stack": {
+            "language": "TypeScript",
+            "framework": "React / Express",
+            "tools": [
+                "Vite",
+                "Socket.IO",
+                "Docker",
+                "Framer Motion"
+            ],
+            "database": "MySQL (Relational Persistence)"
+        },
+        "screenshots": [],
+        "description": "A high-performance multiplayer puzzle arena built with the latest React 19 features. This competitive Match-3 platform utilizes Socket.IO for sub-millisecond synchronization between up to four players in a single room. It implements a sophisticated server-side move validator to prevent cheating and features a premium Glassmorphism-inspired UI with fluid animations, providing a professional and engaging competitive gaming experience on any device."
     },
-    "screenshots": [
-        "https://raw.githubusercontent.com/Geovanni-González/Match-3/main/screenshots/principalImage.jpg"
-    ],
-    "description": {
-        "es": "Juego multijugador competitivo tipo Match-3 desarrollado con React 19 y Node.js. Utiliza WebSockets para sincronización en tiempo real y validación en servidor.",
-        "en": "Competitive real-time multiplayer Match-3 game built with React 19 and Node.js. Uses WebSockets for real-time synchronization and server-side validation."
+    "es": {
+        "tech": [
+            "React 19",
+            "Node.js",
+            "TypeScript",
+            "Socket.IO",
+            "MySQL"
+        ],
+        "features": [
+            "Multijugador competitivo en tiempo real para 4 jugadores",
+            "Validación estricta de movimientos en servidor (Anti-cheat)",
+            "Tabla de clasificación global y métricas de desempeño",
+            "Interfaz responsiva con Glásmorfismo y animaciones",
+            "Sistema de chat integrado en la sala de espera (Lobby)"
+        ],
+        "stack": {
+            "language": "TypeScript",
+            "framework": "React / Express",
+            "tools": [
+                "Vite",
+                "Socket.IO",
+                "Docker",
+                "Framer Motion"
+            ],
+            "database": "MySQL (Persistencia Relacional)"
+        },
+        "screenshots": [],
+        "description": "Un cine de puzles multijugador de alto rendimiento construido con las últimas características de React 19. Esta plataforma competitiva de Match-3 utiliza Socket.IO para una sincronización inferior a milisegundos entre hasta cuatro jugadores. Implementa un sofisticado validador de movimientos en el servidor para evitar trampas y cuenta con una interfaz premium inspirada en el Glásmorfismo con animaciones fluidas, proporcionando una experiencia de juego atractiva en cualquier dispositivo."
     }
 }
