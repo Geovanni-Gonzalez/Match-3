@@ -1,5 +1,7 @@
 ﻿# Match-3 Multiplayer
 
+[![CI](https://github.com/Geovanni-Gonzalez/Match-3/actions/workflows/ci.yml/badge.svg)](https://github.com/Geovanni-Gonzalez/Match-3/actions/workflows/ci.yml)
+
 ## Descripción
 Juego Match-3 multijugador en tiempo real con TypeScript, cliente React, servidor Node/Socket.IO y persistencia preparada para MySQL.
 

@@ -72,3 +72,14 @@ temp/
 .env.local
 .env.*.local
 secrets.*
+# Node / frontend
+.next/
+# Local agent/editor state
+.claude/
+CLAUDE.md
+# Environment and secrets
+# OS/editor noise
+desktop.ini
+# Logs and temporary files
+*.tmp
+*.bak
