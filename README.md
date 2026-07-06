@@ -8,6 +8,26 @@ Juego Match-3 multijugador en tiempo real con TypeScript, cliente React, servido
 ## Objetivo
 Construir un juego competitivo con estado compartido, validación en servidor y tipos compartidos.
 
+## Caso de estudio
+
+### Problema
+Un juego Match-3 multijugador necesita mantener el tablero, turnos, puntajes y eventos sincronizados entre clientes. Si cada cliente decide por su cuenta, aparecen estados inconsistentes y ventajas injustas.
+
+### Solución
+El proyecto separa el cliente visual, el servidor de autoridad y un paquete compartido de tipos. El servidor concentra las reglas principales y emite eventos en tiempo real para que todos los jugadores vean el mismo estado de partida.
+
+### Arquitectura
+- `client`: interfaz React para lobby, tablero y experiencia de juego.
+- `server`: API, eventos Socket.IO, validacion y orquestacion de partidas.
+- `shared`: contratos TypeScript compartidos entre cliente y servidor.
+- `docker-compose.yml`: entorno preparado para servicios auxiliares como base de datos.
+
+### Decisiones técnicas destacadas
+- TypeScript de extremo a extremo para reducir errores entre cliente y backend.
+- Eventos WebSocket para sincronizacion inmediata de acciones de juego.
+- Workspace multipaquete para separar responsabilidades sin duplicar contratos.
+- CI que construye cliente y servidor como unidades independientes.
+
 ## Tecnologías utilizadas
 - TypeScript
 - React
