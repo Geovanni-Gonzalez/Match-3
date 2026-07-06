@@ -68,8 +68,8 @@ Muestra arquitectura full stack en tiempo real, TypeScript compartido y pruebas.
 
 ## Mejoras futuras
 - Documentar variables de entorno
-- Documentar variables
-- Publicar capturas reales
+- Agregar guia de despliegue
+- Ampliar capturas del flujo multijugador
 
 ## Autor
 Geovanni González  
