@@ -26,7 +26,7 @@ El proyecto separa el cliente visual, el servidor de autoridad y un paquete comp
 - TypeScript de extremo a extremo para reducir errores entre cliente y backend.
 - Eventos WebSocket para sincronizacion inmediata de acciones de juego.
 - Workspace multipaquete para separar responsabilidades sin duplicar contratos.
-- CI que construye cliente y servidor como unidades independientes.
+- CI que ejecuta tests de servidor/cliente y construye ambos paquetes como unidades independientes.
 
 ## Tecnologías utilizadas
 - TypeScript
@@ -70,6 +70,17 @@ Alternativa con Docker, si el entorno tiene Docker disponible:
 ```bash
 docker compose up --build
 ```
+
+## Verificacion
+```bash
+cd Match-3/programa
+npm test --workspace=server
+npm test --workspace=client -- --watchAll=false
+npm run build --workspace=client
+npm run build --workspace=server
+```
+
+GitHub Actions ejecuta las suites Jest del servidor y del cliente antes de compilar ambos paquetes.
 
 ## Estructura del proyecto
 - programa/server/: API/sockets/pruebas

@@ -6,7 +6,7 @@ Backlog priorizado. Impacto/Esfuerzo: Alto/Medio/Bajo.
 
 | # | Mejora | Impacto | Esfuerzo | Prioridad |
 |---|---|---|---|---|
-| 1 | Añadir `npm test --workspace=server` (y client) al CI — hay 16 tests sin señal pública | Alto | Bajo | P0 |
+| 1 | ✅ Aplicado: CI ejecuta `npm test --workspace=server` y `npm test --workspace=client -- --watchAll=false` | Alto | Bajo | P0 |
 | 2 | Rotar la contraseña personal usada en `server/.env` local y dejar una dummy de desarrollo | Medio | Bajo | P0 |
 | 3 | GitHub Topics: `typescript`, `socket-io`, `multiplayer`, `game`, `mysql`, `worker-threads`, `react` + descripción | Medio | Bajo | P1 |
 | 4 | Eliminar `programa/.github/` anidado (workflow duplicado) y `.husky/_/` si está versionado localmente | Bajo | Bajo | P2 |
@@ -29,4 +29,4 @@ Backlog priorizado. Impacto/Esfuerzo: Alto/Medio/Bajo.
 
 ## Mejoras de GitHub
 
-Ya presentes: README caso-de-estudio con badge, LICENSE, `.env.example` en ambos paquetes, Docker, husky. Faltan: Topics (item 3), demo animada (item 5), CI con tests (item 1).
+Ya presentes: README caso-de-estudio con badge, LICENSE, `.env.example` en ambos paquetes, Docker, husky, CI con tests. Faltan: Topics (item 3), demo animada (item 5).

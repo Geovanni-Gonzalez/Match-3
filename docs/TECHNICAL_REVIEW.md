@@ -1,7 +1,7 @@
 # TECHNICAL_REVIEW — Match-3
 
 Fecha de revisión: 2026-07-16
-Método: análisis estático, enunciado (`docs/Proyecto Programado 4 Match 3.md`, IC-4700 Lenguajes de Programación), configuración, CI y git. Tests no ejecutados en esta pasada (🟦 estático); CI construye client y server pero **no ejecuta la suite Jest**.
+Método: análisis estático, enunciado (`docs/Proyecto Programado 4 Match 3.md`, IC-4700 Lenguajes de Programación), configuración, CI y git. Tests ejecutados localmente: server Jest pasa y client React Testing Library pasa; CI ahora ejecuta ambas suites antes del build.
 
 ## 1. Comprensión del proyecto
 
@@ -26,8 +26,8 @@ Enunciado pide juego Match-3 multijugador (2-4 jugadores), modalidades y ranking
 
 ## 4. Calidad y pruebas
 
-- 🟦 ~16 tests en 3 archivos: `MatchService.test.ts` (8), `Celda.test.ts` (5), `Bienvenida.test.tsx` (3) — incluye test de frontend (raro en el portafolio).
-- ⛔ CI solo hace `npm ci` + build de ambos workspaces; los tests existen pero no corren en CI.
+- ✅ Suites Jest/React Testing Library en server y client: `MatchService.test.ts`, `Celda.test.ts`, `Bienvenida.test.tsx` — incluye test de frontend (raro en el portafolio).
+- ✅ CI ejecuta tests de server y client antes de construir ambos workspaces.
 - JSDoc descriptivo real (no boilerplate) en workers y repositorios.
 - `.env` con credenciales locales existe en disco pero **no está trackeado** (verificado); `.env.example` presente en ambos paquetes.
 
@@ -41,7 +41,7 @@ Enunciado pide juego Match-3 multijugador (2-4 jugadores), modalidades y ranking
 
 | Hallazgo | Severidad | Nota |
 |---|---|---|
-| CI sin ejecución de tests | Media | 16 tests sin señal verde pública |
+| Tests de sockets ausentes | Media | Falta validar lobby/join/turnos end-to-end con `socket.io-client` |
 | `any[]` en las firmas del worker (`listaCeldas: any[]`) | Baja-Media | Contradice el valor "TypeScript de extremo a extremo" |
 | Contraseña personal en `.env` local (`server/.env`) | Baja | No trackeado, pero conviene rotarla y usar una dummy en dev |
 | Scaffolding duplicado: `programa/.github/` anidado y `.husky/_/` interno | Baja | Ruido |
@@ -50,8 +50,8 @@ Enunciado pide juego Match-3 multijugador (2-4 jugadores), modalidades y ranking
 
 - 30 segundos: README con caso de estudio + badges — bien posicionado.
 - 5 minutos: workers, repos y sockets segregados sostienen la impresión; los `any` y el CI incompleto la rebajan.
-- Nivel demostrado: **Mid** en backend en tiempo real. Justificación: decisiones de arquitectura correctas para estado compartido (autoridad, workers, validación server-side); le falta rigor de tipos y CI completo para Mid+.
+- Nivel demostrado: **Mid** en backend en tiempo real. Justificación: decisiones de arquitectura correctas para estado compartido (autoridad, workers, validación server-side) y CI con tests; le falta rigor de tipos y tests de sockets para Mid+.
 
 ## 8. Recomendaciones
 
-Ver `IMPROVEMENT_ROADMAP.md`. P0: ejecutar Jest en CI; tipar el worker.
+Ver `IMPROVEMENT_ROADMAP.md`. P0 de CI aplicado; siguiente foco: tipar el worker y cubrir sockets.
