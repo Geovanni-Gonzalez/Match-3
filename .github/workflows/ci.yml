@@ -25,6 +25,14 @@ jobs:
         working-directory: programa
         run: npm ci
 
+      - name: Test server
+        working-directory: programa
+        run: npm test --workspace=server
+
+      - name: Test client
+        working-directory: programa
+        run: npm test --workspace=client -- --watchAll=false
+
       - name: Build client
         working-directory: programa
         run: npm run build --workspace=client
